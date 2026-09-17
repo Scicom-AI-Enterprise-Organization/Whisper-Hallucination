@@ -167,7 +167,8 @@ Checkpoints are `myshell-ai/OpenVoiceV2`, `converter/*` only.
 **`.venv_higgs3`** also drives the cloning arm (`tts/clone_higgs3.py`): v3 takes
 `reference_audio` + `reference_sample_rate` + `reference_text`, so unlike Scicom's
 Multilingual-Expressive it can aim at a given speaker. `.venv_bench` drives
-`tts/clone_scicom.py`, which is speaker-NAME conditioned and therefore untargeted.
+`tts/clone_scicom.py`, which has both paths: `--mode clone` (reference audio, targeted)
+and `--mode named` (speaker name; no reference clip, so nothing to score `→ target` against).
 
 **`.venv_cosyvoice`** — CosyVoice 2. `openai-whisper`'s setup.py imports `pkg_resources`,
 which **setuptools removed in 81** — so it needs `--no-build-isolation` *and* `setuptools<81`
@@ -185,67 +186,77 @@ and every system fell through to "unknown". No braces in `:?` messages.
 
 ## VC selection, as measured
 
-46 scorable lexicon phrases × 4 target speakers (2 Malaysian-Emilia, 2 LibriSpeech) = 184
-clips per system. `tts/score_vc.py`, summary in `tts/vc_scores_summary.json`, figure from
-`tts/plot_vc.py`.
+46 scorable lexicon phrases × 4 speaker slots (2 Malaysian-Emilia + 2 LibriSpeech references
+for the targeted systems; 4 named speakers for the name path) = 184 clips per system.
+`tts/score_vc.py`, summary in `tts/vc_scores_summary.json`, figure from `tts/plot_vc.py`.
 
-CER alone picks the wrong winner: a converter that returns its input scores a perfect 0
-degradation and is worthless. So the table reports **ΔCER against the source clip** plus
-speaker similarity in both directions; the **gap** between them is the conversion that
-actually happened. Percentages are on a **calibrated** scale (`tts/calibrate_vc_sim.py`):
-at the clips' own duration (1.6 s), WavLM-sv scores 0.605 between different speakers and
-0.853 between two clips of the same one, so 0% = a stranger, 100% = the target.
+| | n | langs | CER | ΔCER | → target | ← source | gap | dur× | >2× | licence |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| **Multilingual-Expressive** *(speaker name)* | 184 | **21** | **0.365** | **+0.022** | n/a | 11% | — | 1.00 | 4% | ours |
+| kNN-VC | 184 | 20 | 0.441 | +0.099 | 68% | 59% | +9 | 0.99 | 0% | MIT |
+| OpenVoice v2 (20 s ref) | 184 | 19 | 0.457 | +0.115 | 62% | 56% | +6 | 0.99 | 0% | MIT |
+| OpenVoice v2 (6 s ref) | 184 | 20 | 0.467 | +0.125 | 61% | 53% | +8 | 0.99 | 0% | MIT |
+| seed-vc (6 s ref) | 184 | 20 | 0.472 | +0.129 | 68% | 49% | +19 | 0.99 | 0% | GPL-3.0 |
+| seed-vc (20 s ref) | 184 | **21** | 0.547 | +0.205 | 79% | 49% | +30 | 0.99 | 0% | GPL-3.0 |
+| Higgs Audio v3 *(cloning)* | 184 | 20 | 0.627 | +0.285 | 84% | 12% | +72 | 0.90 | 3% | non-commercial |
+| **Multilingual-Expressive** *(reference cloning)* | 184 | **21** | 1.740 | +1.397 | **103%** | 13% | **+90** | **3.27** | **68%** | ours |
+| OpenVoice + MeloTTS *(cloning)* | 40 | **4** | 0.077 | −0.434 | 69% | 19% | +50 | 1.13 | 0% | MIT |
+| CosyVoice 2 | **2** | — | — | — | — | — | — | — | — | Apache-2.0 |
 
-| | n | langs | CER | ΔCER | → target | ← source | gap | licence |
-|---|---:|---:|---:|---:|---:|---:|---:|---|
-| **Multilingual-Expressive-1.7B** *(untargeted)* | 138/138 | **21** | **0.395** | **+0.053** | — | **13%** | — | ours |
-| kNN-VC | 184/184 | 20 | 0.441 | +0.099 | 68% | 59% | +9 | MIT |
-| OpenVoice v2 (20 s ref) | 184/184 | 19 | 0.457 | +0.115 | 62% | 56% | +6 | MIT |
-| OpenVoice v2 (6 s ref) | 184/184 | 20 | 0.467 | +0.125 | 61% | 53% | +8 | MIT |
-| seed-vc (6 s ref) | 184/184 | 20 | 0.472 | +0.129 | 68% | 49% | +19 | GPL-3.0 |
-| seed-vc (20 s ref) | 184/184 | **21** | 0.549 | +0.207 | 79% | 49% | +29 | GPL-3.0 |
-| Higgs Audio v3 *(cloning)* | 184/184 | 20 | 0.654 | +0.312 | **84%** | **12%** | **+72** | non-commercial |
-| OpenVoice + MeloTTS *(cloning)* | 40/184 | **4** | 0.077 | −0.434 | 69% | 19% | +50 | MIT |
-| CosyVoice 2 | **2/184** | — | — | — | — | — | — | Apache-2.0 |
+**CER alone picks the wrong winner** — a converter that returns its input unchanged scores a
+perfect 0 degradation and is worthless. So the table reports ΔCER *against the source clip*,
+speaker similarity in both directions (the **gap** between them is the conversion that
+actually happened), and **dur×**, the median output length divided by the source's. Those
+percentages are calibrated, not raw cosines: at 1.6 s WavLM-sv scores 0.605 between different
+speakers and 0.853 between two clips of the same one (`tts/calibrate_vc_sim.py`), so 0% reads
+as "a stranger" and 100% as "the target".
 
-**Use Multilingual-Expressive-TTS-1.7B for the positive pool.** ΔCER +0.053 is half the best
-converter's, 21 languages, and 13% source retention means it leaves the original voice
-entirely. It conditions on a speaker NAME from `Scicom-intl/ExpressiveSpeech`, not a
-reference waveform, so it cannot render a *given* target — irrelevant when the requirement
-is "different, intelligible voices", decisive if you need a named speaker.
+**Multilingual-Expressive has two conditioning paths and they land at opposite extremes.**
 
-**Use Higgs Audio v3 if you need a named target.** The only system that genuinely transfers
-identity (+72 gap vs ≤29 for everything else). Costs the most intelligibility (+0.312) and
-its licence forbids using outputs to train non-Boson speech models — measurable, not usable
-for the corpus. Best usable-licence targeted system is **seed-vc (6 s ref)**.
+- *Speaker name* — a name token from the `ExpressiveSpeech` inventory — is the intelligibility
+  winner outright: **ΔCER +0.022**, four times better than the best converter, at the correct
+  duration and 11% source retention. It cannot aim at a named target, because a name is not a
+  reference you can score against.
+- *Reference cloning* — reference transcript plus NeuCodec tokens, per the
+  [base model card](https://huggingface.co/Scicom-intl/Multilingual-TTS-1.7B-Base#voice-cloning)
+  — produces the **best voice match measured**, 103% of the calibrated scale with a +90 gap.
+  It also does not stop: median **3.27× the source length**, 68% of clips over 2×, which is
+  what drags CER to 1.740. Sampling, greedy and terminal punctuation all over-generate, and
+  `generation_config.json` already sets `<|im_end|>` as EOS, so this is the model's behaviour
+  on two-word targets rather than a misconfiguration.
 
-**kNN-VC and OpenVoice barely convert.** A +6 to +9 gap means the output sits almost equally
-close to source and target: something in between, not the target's voice. Their good ΔCER is
-partly explained by not changing much. Reference length is a real dial — seed-vc at 20 s
-buys +29 identity for 0.078 more CER.
+**Read the 103% with care.** Longer audio gives a better x-vector estimate, and the
+calibration was measured at 1.6 s while these clips run past 5 s, so the cloning row's
+similarity is flattered by the very over-generation that ruins its CER. The +90 gap is real —
+it is clearly the target's voice and not the source's — but it is not directly comparable
+with the systems that stop on time.
 
-**Nobody reaches the ceiling** (best 84%), and the floor/ceiling distributions overlap
-heavily at 1.6 s. Read these as "a different voice", not "this specific speaker".
+**kNN-VC and OpenVoice barely convert.** Gaps of +6 to +9 mean the output sits almost equally
+close to the target and to the source. Their good ΔCER is partly explained by not changing
+much. seed-vc at +19 (+30 with a 20 s reference) is the best of the permissively-licensed
+converters, and reference length is a dial: +11 points of identity for 0.076 more CER.
 
-**Cloned TTS is a coverage story.** MeloTTS covers 4 of 21 languages; CosyVoice's frontend is
-zh/en/ja/ko. Conversion over a multilingual TTS covers the language range; cloned TTS does not.
+**What to use:**
 
-**CosyVoice 2 could not be measured.** Its flow encoder dies with **SIGFPE** — a signal, so
-Python cannot catch it — most often when the source is longer than the speaker prompt. Long
-reference, short reference, single-threaded BLAS, chunked restarts and a pre-CosyVoice3
-checkout all still crash within a few conversions; one process once completed 80.
-`tts/setup/run_cosyvoice_resumable.sh` grinds through restarts if it is ever worth retrying.
+- **Populating the positive pool → Multilingual-Expressive, speaker-name mode.** +0.022 ΔCER
+  at the right duration across 21 languages. When the requirement is "different, intelligible
+  voices" rather than "this specific speaker", nothing else is close.
+- **Hitting a named target → Multilingual-Expressive reference cloning is the best voice
+  match, but needs duration control first** — trimming to the phrase, or a stop condition.
+  Out of the box, **Higgs Audio v3** is the best targeted cloner that terminates properly
+  (84%, 0.90×), though its licence forbids using outputs to train non-Boson speech models.
+  Among permissive licences, **seed-vc (6 s ref)**.
+
+**Nobody else reaches the ceiling**, and the floor/ceiling distributions overlap heavily at
+1.6 s. **Cloned TTS is a coverage story**: MeloTTS covers 4 of 21 languages and CosyVoice's
+frontend is zh/en/ja/ko. **CosyVoice 2 could not be measured at all** — its flow encoder dies
+with SIGFPE, which no `except` can catch.
 
 **`phrases.jsonl` has 51 entries but only 49 distinct phrases** (`thanks for watching` and
-`thank you for watching` appear twice). The VC Writer originally keyed dedup on
-`(target, phrase)`, so systems calling `skip()` silently rendered fewer clips than those that
-did not. It now keys on the source clip path, and `score_vc.py` deduplicates so every system
-is scored on the same pairs.
-
-**The degenerate lexicon entries are in this phrase set too** — `त र`, `त ह`,
-`સ સ સ સ સ સ સ`. `score_vc.py` excludes them (3 phrases × 4 targets = 12 rows per system).
-They are the same entries that gave `bn` CER 22.9 in the TTS table below, which was *not*
-re-run with the filter — that column is still distorted.
+`thank you for watching` twice). The Writer keys dedup on the source clip path, not the text —
+keying on the phrase silently skipped repeats for systems that call `skip()`. `score_vc.py`
+deduplicates so every system is scored on the same pairs, and the degenerate entries
+(`त र`, `त ह`, `સ સ સ સ સ સ સ`) are excluded, 3 phrases × 4 slots = 12 rows per system.
 
 ## TTS selection, as measured
 

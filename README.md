@@ -148,66 +148,102 @@ The benchmark's weakest arm is its positives — 52% of `genuine` is synthetic M
 single TTS voice. Fixing that needs both a multilingual generator and a way to put the same
 phrase in many voices, so both were chosen by measurement rather than by reputation.
 
-**TTS** (48 phrases, 22 languages, ASR round-trip CER, `tts/score_tts.py`): OmniVoice for the
-100-language sweep — Apache-2.0 and 97/100 languages — and Multilingual-Expressive for
-ms/en/zh/ta. Full table in `CLAUDE.md`.
+### TTS candidates
 
-**Voice conversion and cloning** (46 scorable phrases × 4 target speakers = 184 clips per
-system, `tts/score_vc.py`, results in `tts/vc_scores_summary.json`):
+48 lexicon phrases, 22 languages, identical text, ASR round-trip CER (`tts/score_tts.py`;
+summary re-derived by `tts/aggregate_tts.py`, which excludes the degenerate lexicon entries —
+leaving them in puts `bn` at CER 22.9 and swamps every mean):
+
+![TTS selection](tts/tts_results.png)
+
+| | mean CER | median | wins | licence | coverage |
+|---|---:|---:|---:|---|---|
+| **Multilingual-Expressive-TTS-1.7B** | **0.221** | **0.000** | **18** | ours | untagged |
+| OmniVoice | 0.349 | 0.018 | 3 | **Apache-2.0** | **97/100 langs** |
+| Higgs Audio v2 | 1.089 | 0.713 | 0 | non-commercial | — |
+| Higgs Audio v3 | 1.230 | 0.483 | 1 | non-commercial | 82/100 |
+
+**OmniVoice** drives the 100-language sweep — its coverage is enumerable and the licence is
+clean — and **Multilingual-Expressive** handles ms/en/zh/ta, where it wins outright. Higgs is
+out on both counts; its licence independently forbids using outputs to train non-Boson speech
+models.
+
+### Voice conversion and cloning candidates
+
+46 scorable phrases × 4 speaker slots = 184 clips per system (`tts/score_vc.py`, results in
+`tts/vc_scores_summary.json`):
 
 ![Voice conversion results](tts/vc_results.png)
 
-| | n | langs | CER | ΔCER | → target | ← source | gap | licence |
-|---|---:|---:|---:|---:|---:|---:|---:|---|
-| **Multilingual-Expressive-1.7B** *(untargeted)* | 138/138 | **21** | **0.395** | **+0.053** | — | **13%** | — | ours |
-| kNN-VC | 184/184 | 20 | 0.441 | +0.099 | 68% | 59% | +9 | MIT |
-| OpenVoice v2 (20 s ref) | 184/184 | 19 | 0.457 | +0.115 | 62% | 56% | +6 | MIT |
-| OpenVoice v2 (6 s ref) | 184/184 | 20 | 0.467 | +0.125 | 61% | 53% | +8 | MIT |
-| seed-vc (6 s ref) | 184/184 | 20 | 0.472 | +0.129 | 68% | 49% | +19 | GPL-3.0 |
-| seed-vc (20 s ref) | 184/184 | **21** | 0.549 | +0.207 | 79% | 49% | +29 | GPL-3.0 |
-| Higgs Audio v3 *(cloning)* | 184/184 | 20 | 0.654 | +0.312 | **84%** | **12%** | **+72** | non-commercial |
-| OpenVoice + MeloTTS *(cloning)* | 40/184 | **4** | 0.077 | −0.434 | 69% | 19% | +50 | MIT |
-| CosyVoice 2 | **2/184** | — | — | — | — | — | — | Apache-2.0 |
+| | n | langs | CER | ΔCER | → target | ← source | gap | dur× | >2× | licence |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| **Multilingual-Expressive** *(speaker name)* | 184 | **21** | **0.365** | **+0.022** | n/a | 11% | — | 1.00 | 4% | ours |
+| kNN-VC | 184 | 20 | 0.441 | +0.099 | 68% | 59% | +9 | 0.99 | 0% | MIT |
+| OpenVoice v2 (20 s ref) | 184 | 19 | 0.457 | +0.115 | 62% | 56% | +6 | 0.99 | 0% | MIT |
+| OpenVoice v2 (6 s ref) | 184 | 20 | 0.467 | +0.125 | 61% | 53% | +8 | 0.99 | 0% | MIT |
+| seed-vc (6 s ref) | 184 | 20 | 0.472 | +0.129 | 68% | 49% | +19 | 0.99 | 0% | GPL-3.0 |
+| seed-vc (20 s ref) | 184 | **21** | 0.547 | +0.205 | 79% | 49% | +30 | 0.99 | 0% | GPL-3.0 |
+| Higgs Audio v3 *(cloning)* | 184 | 20 | 0.627 | +0.285 | 84% | 12% | +72 | 0.90 | 3% | non-commercial |
+| **Multilingual-Expressive** *(reference cloning)* | 184 | **21** | 1.740 | +1.397 | **103%** | 13% | **+90** | **3.27** | **68%** | ours |
+| OpenVoice + MeloTTS *(cloning)* | 40 | **4** | 0.077 | −0.434 | 69% | 19% | +50 | 1.13 | 0% | MIT |
+| CosyVoice 2 | **2** | — | — | — | — | — | — | — | — | Apache-2.0 |
 
 **CER alone picks the wrong winner** — a converter that returns its input unchanged scores a
-perfect 0 degradation and is worthless. So the table reports ΔCER *against the source clip*
-plus speaker similarity in both directions, and the **gap** between them is the conversion
-that actually happened. Those percentages are calibrated, not raw cosines: at the converted
-clips' own duration (1.6 s) WavLM-sv scores 0.605 between different speakers and 0.853
-between two clips of the same one (`tts/calibrate_vc_sim.py`), so 0% reads as "a stranger"
-and 100% as "the target". Raw, every system lands in a 0.75–0.81 band that looks identical.
+perfect 0 degradation and is worthless. So the table reports ΔCER *against the source clip*,
+speaker similarity in both directions (the **gap** between them is the conversion that
+actually happened), and **dur×**, the median output length divided by the source's. Those
+percentages are calibrated, not raw cosines: at 1.6 s WavLM-sv scores 0.605 between different
+speakers and 0.853 between two clips of the same one (`tts/calibrate_vc_sim.py`), so 0% reads
+as "a stranger" and 100% as "the target".
+
+**Multilingual-Expressive has two conditioning paths and they land at opposite extremes.**
+
+- *Speaker name* — a name token from the `ExpressiveSpeech` inventory — is the intelligibility
+  winner outright: **ΔCER +0.022**, four times better than the best converter, at the correct
+  duration and 11% source retention. It cannot aim at a named target, because a name is not a
+  reference you can score against.
+- *Reference cloning* — reference transcript plus NeuCodec tokens, per the
+  [base model card](https://huggingface.co/Scicom-intl/Multilingual-TTS-1.7B-Base#voice-cloning)
+  — produces the **best voice match measured**, 103% of the calibrated scale with a +90 gap.
+  It also does not stop: median **3.27× the source length**, 68% of clips over 2×, which is
+  what drags CER to 1.740. Sampling, greedy and terminal punctuation all over-generate, and
+  `generation_config.json` already sets `<|im_end|>` as EOS, so this is the model's behaviour
+  on two-word targets rather than a misconfiguration.
+
+**Read the 103% with care.** Longer audio gives a better x-vector estimate, and the
+calibration was measured at 1.6 s while these clips run past 5 s, so the cloning row's
+similarity is flattered by the very over-generation that ruins its CER. The +90 gap is real —
+it is clearly the target's voice and not the source's — but it is not directly comparable
+with the systems that stop on time.
 
 **kNN-VC and OpenVoice barely convert.** Gaps of +6 to +9 mean the output sits almost equally
-close to the target and to the source — it is something in between, not the target's voice.
-Their good ΔCER is partly explained by not changing much. seed-vc at +19 is the best of the
-permissively-licensed converters; its 20 s reference buys +29 for 0.078 more CER, so
-reference length is a dial between identity and intelligibility.
+close to the target and to the source. Their good ΔCER is partly explained by not changing
+much. seed-vc at +19 (+30 with a 20 s reference) is the best of the permissively-licensed
+converters, and reference length is a dial: +11 points of identity for 0.076 more CER.
 
-**Two systems win, for two different jobs:**
+**What to use:**
 
-- **Populating the positive pool → Multilingual-Expressive-TTS-1.7B.** ΔCER +0.053 is half
-  the best converter's, it covers 21 languages, and at 13% source retention it leaves the
-  original voice entirely. It conditions on a speaker *name* from a fixed inventory, so it
-  cannot render *your* target's voice — which does not matter when the requirement is
-  "different, intelligible voices" rather than "this specific speaker".
-- **Hitting a named target → Higgs Audio v3**, the only system that genuinely transfers
-  identity (+72 gap, against ≤29 for everything else). It costs the most intelligibility
-  (ΔCER +0.312) and its licence forbids using outputs to train non-Boson speech models, so
-  it can be measured but cannot feed the published corpus. Among usable licences,
-  **seed-vc (6 s ref)**.
+- **Populating the positive pool → Multilingual-Expressive, speaker-name mode.** +0.022 ΔCER
+  at the right duration across 21 languages. When the requirement is "different, intelligible
+  voices" rather than "this specific speaker", nothing else is close.
+- **Hitting a named target → Multilingual-Expressive reference cloning is the best voice
+  match, but needs duration control first** — trimming to the phrase, or a stop condition.
+  Out of the box, **Higgs Audio v3** is the best targeted cloner that terminates properly
+  (84%, 0.90×), though its licence forbids using outputs to train non-Boson speech models.
+  Among permissive licences, **seed-vc (6 s ref)**.
 
-**Nobody reaches the ceiling** — even Higgs stops at 84% of the same-speaker range, and the
-floor/ceiling distributions overlap heavily at this duration. **Cloned TTS is a coverage
-story**: MeloTTS covers 4 of 21 languages and CosyVoice's frontend is zh/en/ja/ko.
-**CosyVoice 2 could not be measured at all** — its flow encoder dies with SIGFPE, which no
-`except` can catch; see `CLAUDE.md` for what was tried.
+**Nobody else reaches the ceiling**, and the floor/ceiling distributions overlap heavily at
+1.6 s. **Cloned TTS is a coverage story**: MeloTTS covers 4 of 21 languages and CosyVoice's
+frontend is zh/en/ja/ko. **CosyVoice 2 could not be measured at all** — its flow encoder dies
+with SIGFPE, which no `except` can catch.
 
 ```bash
 python tts/build_vc_targets.py --device cuda:6      # 4 target speakers, medoid-filtered
 bash tts/setup/install_vc.sh seedvc                 # one venv per candidate
 python tts/vc_seedvc.py --device cuda:6 --ref short     # conversion candidates
 python tts/clone_higgs3.py --device cuda:7              # cloning candidates
-python tts/clone_scicom.py --device cuda:6              # untargeted arm
+python tts/clone_scicom.py --mode clone --device cuda:6 # Scicom, reference-audio cloning
+python tts/clone_scicom.py --mode named --device cuda:6 # Scicom, speaker-name conditioning
 python tts/score_vc.py --systems tts/vc_out/* --device cuda:6
 python tts/calibrate_vc_sim.py --device cuda:6          # the % scale above
 python tts/plot_vc.py                                   # the figure above

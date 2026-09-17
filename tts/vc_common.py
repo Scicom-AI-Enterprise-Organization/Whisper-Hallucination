@@ -86,7 +86,8 @@ class Writer:
         self.done, self.poison, self.crashes = set(), set(), {}
         if resume and manifest.exists() and manifest.stat().st_size:
             with manifest.open(encoding="utf-8") as fh:
-                self.done = {(r["target"], r["phrase"]) for r in csv.DictReader(fh)}
+                # Must match key() exactly -- keyed on the source clip, not its text.
+                self.done = {(r["target"], r["src_audio"]) for r in csv.DictReader(fh)}
             if self.crash_file.exists():
                 self.crashes = json.loads(self.crash_file.read_text())
             if self.attempt_file.exists():

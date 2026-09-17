@@ -29,8 +29,9 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  SYSTEMS  (key in vc_scores.json → display name, family, whether it is ours)
-#  family: 'conversion' converts existing audio · 'cloning' synthesises in a voice
-#          'untargeted' cannot aim at a given speaker at all
+#  family: 'conversion' converts existing audio · 'cloning' synthesises in a target's voice
+#          'untargeted' conditioned on a speaker NAME, so there is no reference to score
+#          against — a property of that prompt mode, not of the model
 # ══════════════════════════════════════════════════════════════════════════════
 SYSTEMS = [
     ('knnvc',             'kNN-VC',                 'conversion', False),
@@ -40,7 +41,8 @@ SYSTEMS = [
     ('openvoice_longref', 'OpenVoice (20 s ref)',   'conversion', False),
     ('openvoice_clone',   'OpenVoice + MeloTTS',    'cloning',    False),
     ('higgs3_clone',      'Higgs Audio v3',         'cloning',    False),
-    ('scicom_untargeted', 'Multilingual-Expressive','untargeted', True),
+    ('scicom_clone',      'Multilingual-Expressive\n(reference cloning)', 'cloning',    True),
+    ('scicom_untargeted', 'Multilingual-Expressive\n(speaker name)',      'untargeted', True),
 ]
 
 # Systems that never produced a scorable grid — shown in the coverage panel only.
@@ -100,6 +102,7 @@ def load():
                         d_cer=r['mean_d_cer'], cer=r['mean_cer'],
                         tgt=to_pct(r['mean_sim_tgt']), src=to_pct(r['mean_sim_src']),
                         langs=r['langs'], n=r['n'], ok=r['synth_ok'],
+                        dur=r.get('median_dur_ratio'), overlong=r.get('overlong_rate'),
                         targeted=r['targeted']))
     return pts, floor, ceil, cal
 
@@ -191,14 +194,14 @@ def draw_conversion(ax, pts, ss):
             ax.text(p['tgt'] + 1.5, i - h/2, f"{p['tgt']:.0f}%", va='center', ha='left',
                     fontsize=7.8, color=ss['conv_edge'], fontweight='bold')
         else:
-            ax.text(2, i - h/2, 'no target to aim at', va='center', ha='left',
+            ax.text(2, i - h/2, 'name-conditioned: no reference to score', va='center', ha='left',
                     fontsize=7.6, color='#8a8a8a', style='italic')
         ax.barh(i + h/2, p['src'], height=h, color=ss['clone_color'],
                 edgecolor=ss['clone_edge'], linewidth=0.9, zorder=3)
         ax.text(p['src'] + 1.5, i + h/2, f"{p['src']:.0f}%", va='center', ha='left',
                 fontsize=7.8, color=ss['clone_edge'], fontweight='bold')
         if p['tgt'] is not None:
-            ax.text(96, i, f"gap {p['tgt'] - p['src']:+.0f}", va='center', ha='right',
+            ax.text(116, i, f"gap {p['tgt'] - p['src']:+.0f}", va='center', ha='right',
                     fontsize=8, fontweight='bold',
                     color=ss['ours_color'] if p['tgt'] - p['src'] > 15 else '#8a8a8a')
 
@@ -206,11 +209,58 @@ def draw_conversion(ax, pts, ss):
     ax.set_yticklabels([p['label'] for p in rows], fontsize=8.5, fontweight='bold',
                        color=ss['label_color'])
     ax.set_ylim(len(rows) - 0.4, -0.6)
-    ax.set_xlim(0, 100)
+    ax.set_xlim(0, 118)          # one system exceeds the calibrated ceiling
+    ax.axvline(100, color=ss['band_color'], linewidth=1.2, linestyle='--', alpha=0.5, zorder=2)
     ax.set_xlabel('position on the calibrated speaker scale (%)',
                   fontsize=ss['axis_fontsize'], color=ss['tick_color'], labelpad=6)
     ax.tick_params(colors=ss['tick_color'], labelsize=ss['tick_fontsize'])
     ax.set_title('Did the voice actually move?',
+                 fontsize=ss['title_fontsize'], color=ss['title_color'],
+                 fontweight='bold', pad=10)
+    for spine in ax.spines.values():
+        spine.set_color('#cccccc')
+
+
+def draw_duration(ax, pts, ss):
+    """Output length relative to the source clip.
+
+    A cloning model that keeps talking past a two-word phrase produces a clip that is not a
+    clean positive, whatever its CER says. Conversion systems are pinned at 1.0 by
+    construction; the cloning ones are free to run on, and one of them does.
+    """
+    rows = [p for p in pts if p.get('dur') is not None]
+    rows.sort(key=lambda p: p['dur'])
+    y = np.arange(len(rows))
+
+    ax.set_facecolor(ss['bg_color'])
+    ax.grid(True, axis='x', color=ss['grid_color'], linewidth=0.8, linestyle='--', alpha=0.6)
+    ax.set_axisbelow(True)
+    ax.axvline(1.0, color='#00997a', linewidth=1.4, linestyle='--', alpha=0.7, zorder=2)
+    ax.text(1.03, len(rows) - 0.45, ' same length as the source', fontsize=7.6,
+            color='#00997a', style='italic', va='top')
+
+    for i, p in enumerate(rows):
+        ck, ek = FAMILY_COLOR[p['family']]
+        over = p['dur'] > 2.0
+        ax.barh(i, p['dur'], height=0.6,
+                color=ss['pick_color'] if over else ss[ck],
+                edgecolor=ss['pick_color'] if over else ss[ek],
+                linewidth=0.9, zorder=3)
+        note = f"{p['dur']:.2f}×"
+        if p.get('overlong'):
+            note += f"   {p['overlong']:.0%} of clips over 2×"
+        ax.text(p['dur'] + 0.06, i, note, va='center', ha='left', fontsize=8,
+                color=ss['pick_color'] if over else ss['label_color'], fontweight='bold')
+
+    ax.set_yticks(y)
+    ax.set_yticklabels([p['label'] for p in rows], fontsize=8.5, fontweight='bold',
+                       color=ss['label_color'])
+    ax.set_ylim(len(rows) - 0.4, -0.6)
+    ax.set_xlim(0, max(p['dur'] for p in rows) * 1.55)
+    ax.set_xlabel('median output length ÷ source length',
+                  fontsize=ss['axis_fontsize'], color=ss['tick_color'], labelpad=6)
+    ax.tick_params(colors=ss['tick_color'], labelsize=ss['tick_fontsize'])
+    ax.set_title('Does it stop when the phrase does?',
                  fontsize=ss['title_fontsize'], color=ss['title_color'],
                  fontweight='bold', pad=10)
     for spine in ax.spines.values():
@@ -271,16 +321,17 @@ def main():
     # Hand-tuned to keep the four systems clustered near ΔCER 0.10-0.13 legible; leader
     # lines connect each label back to its dot.
     draw_tradeoff(ax_t, pts, ss, offsets={
-        'openvoice_clone':   ( 0.030,  11.0),
-        'knnvc':             (-0.150,  14.0),
-        'seedvc':            ( 0.020,   9.0),
-        'openvoice_longref': (-0.215, -10.0),
-        'openvoice':         (-0.090, -19.0),
-        'seedvc_longref':    (-0.105,  19.0),
-        'higgs3_clone':      ( 0.006, -21.0),
+        'openvoice_clone':   ( 0.02,   26.0),
+        'knnvc':             (-0.50,   17.0),
+        'seedvc':            ( 0.12,  -13.0),
+        'openvoice_longref': (-0.52,  -22.0),
+        'openvoice':         ( 0.16,  -33.0),
+        'seedvc_longref':    ( 0.22,   14.0),
+        'higgs3_clone':      ( 0.40,  -14.0),
+        'scicom_clone':      (-0.45,   13.0),
     })
     draw_conversion(ax_g, pts, ss)
-    draw_coverage(ax_c, pts, ss)
+    draw_duration(ax_c, pts, ss)
 
     handles = [
         mlines.Line2D([], [], marker='o', linestyle='None', color=ss['conv_color'],
@@ -291,7 +342,7 @@ def main():
                       markersize=9, label='zero-shot cloning'),
         mlines.Line2D([], [], marker='o', linestyle='None', color=ss['ours_color'],
                       markeredgecolor=ss['ours_edge'], markeredgewidth=1.5,
-                      markersize=9, label='Scicom (untargeted — no reference input)'),
+                      markersize=9, label='Scicom (name-conditioned — no reference to score)'),
         mlines.Line2D([], [], marker='o', linestyle='None', color='#ffffff',
                       markeredgecolor=ss['pick_color'], markeredgewidth=2.4,
                       markersize=10, label='best targeted pick with a usable licence'),
