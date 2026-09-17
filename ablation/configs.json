@@ -1,0 +1,266 @@
+{
+  "_doc": "Ablation grid for reducing hallucination + repetition on whisper-large-v3. Stage 1 is one-factor-at-a-time off `baseline` so each knob's effect is attributable; stage 2 combines the winners. Every config is scored on ALL arms, because the whole difficulty is that the knobs which kill hallucination also delete real speech - a config is only a win if the non-speech arms improve AND the genuine arms do not regress.",
+  "_engine": "faster-whisper (CTranslate2) for the decoder-parameter configs. repetition_penalty and no_repeat_ngram_size are faster-whisper-only; openai-whisper instead exposes hallucination_silence_threshold, covered by `oai_hallucination_silence`. The `hsp_*` configs need HF transformers instead: CTranslate2 does not expose decoder hidden states, and hallucination-space projection edits them mid-forward.",
+  "baseline": {
+    "_stage": "baseline",
+    "_why": "faster-whisper defaults, which mirror openai-whisper's reference decode.",
+    "model": "large-v3",
+    "beam_size": 5,
+    "temperature": [
+      0.0,
+      0.2,
+      0.4,
+      0.6,
+      0.8,
+      1.0
+    ],
+    "compression_ratio_threshold": 2.4,
+    "log_prob_threshold": -1.0,
+    "no_speech_threshold": 0.6,
+    "condition_on_previous_text": true,
+    "repetition_penalty": 1.0,
+    "no_repeat_ngram_size": 0,
+    "vad_filter": false
+  },
+  "no_condition": {
+    "_stage": "ofat",
+    "_factor": "condition_on_previous_text",
+    "_why": "The cascade mechanism: each window's output is fed back as the next window's prompt, so one hallucination becomes self-reinforcing. Expected to be the single largest effect on long-form looping.",
+    "condition_on_previous_text": false,
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "greedy_only": {
+    "_stage": "ofat",
+    "_factor": "temperature",
+    "_why": "Removes temperature fallback. Fallback is meant to escape loops, but resampling at T=1.0 also invents text.",
+    "temperature": [
+      0.0
+    ],
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "cr_strict": {
+    "_stage": "ofat",
+    "_factor": "compression_ratio_threshold",
+    "_why": "gzip compression ratio is Whisper's built-in repetition detector; 2.4 is lenient and lets short loops through.",
+    "compression_ratio_threshold": 1.8,
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "cr_off": {
+    "_stage": "ofat",
+    "_factor": "compression_ratio_threshold",
+    "_why": "Control: confirms the threshold is doing work at all.",
+    "compression_ratio_threshold": null,
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "nospeech_low": {
+    "_stage": "ofat",
+    "_factor": "no_speech_threshold",
+    "no_speech_threshold": 0.4,
+    "_why": "Lower = more aggressive about declaring a window silent. Directly targets the silence arm.",
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "nospeech_high": {
+    "_stage": "ofat",
+    "_factor": "no_speech_threshold",
+    "no_speech_threshold": 0.8,
+    "_why": "Control in the opposite direction; should make the silence arm worse.",
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "logprob_strict": {
+    "_stage": "ofat",
+    "_factor": "log_prob_threshold",
+    "log_prob_threshold": -0.5,
+    "_why": "Hallucinated spans tend to be low-confidence; tightening should drop them, at the cost of real quiet speech.",
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "reppen_105": {
+    "_stage": "ofat",
+    "_factor": "repetition_penalty",
+    "repetition_penalty": 1.05,
+    "_why": "Direct anti-loop pressure on the decoder. Risk: penalises genuinely repeated words - exactly the reduplication arm.",
+    "_engine": "portable (vLLM + faster-whisper)"
+  },
+  "reppen_110": {
+    "_stage": "ofat",
+    "_factor": "repetition_penalty",
+    "repetition_penalty": 1.1,
+    "_engine": "portable (vLLM + faster-whisper)"
+  },
+  "reppen_120": {
+    "_stage": "ofat",
+    "_factor": "repetition_penalty",
+    "repetition_penalty": 1.2,
+    "_engine": "portable (vLLM + faster-whisper)"
+  },
+  "norepeat_3": {
+    "_stage": "ofat",
+    "_factor": "no_repeat_ngram_size",
+    "no_repeat_ngram_size": 3,
+    "_why": "Hard ban on repeating any trigram. Should crush looping and should also make `tu tu tu tu` untranscribable - the clearest illustration that these knobs trade hallucination against genuine repetition.",
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "norepeat_5": {
+    "_stage": "ofat",
+    "_factor": "no_repeat_ngram_size",
+    "no_repeat_ngram_size": 5,
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "greedy_beam1": {
+    "_stage": "ofat",
+    "_factor": "beam_size",
+    "beam_size": 1,
+    "_why": "Beam search can lock onto a high-likelihood repeating path; greedy sometimes loops less.",
+    "_engine": "portable (vLLM + faster-whisper)"
+  },
+  "vad_on": {
+    "_stage": "ofat",
+    "_factor": "vad_filter",
+    "vad_filter": true,
+    "_why": "Silero VAD strips non-speech before the encoder ever sees it. The WhisperX finding: external VAD boundaries beat decoded timestamp tokens.",
+    "_engine": "portable (vLLM + faster-whisper)"
+  },
+  "vad_strict": {
+    "_stage": "ofat",
+    "_factor": "vad_filter",
+    "vad_filter": true,
+    "vad_parameters": {
+      "min_silence_duration_ms": 300,
+      "speech_pad_ms": 100
+    },
+    "_why": "Tighter VAD; risks clipping genuine short turns like a bare `terima kasih`.",
+    "_engine": "portable (vLLM + faster-whisper)"
+  },
+  "combo_cond_vad": {
+    "_stage": "combo",
+    "_why": "The two mechanism-level fixes together, no decoder hacks.",
+    "condition_on_previous_text": false,
+    "vad_filter": true,
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "combo_cond_vad_cr": {
+    "_stage": "combo",
+    "_why": "Adds the built-in repetition detector, tightened.",
+    "condition_on_previous_text": false,
+    "vad_filter": true,
+    "compression_ratio_threshold": 1.8,
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "combo_full": {
+    "_stage": "combo",
+    "_why": "Belt and braces. Expected to win the non-speech arms and lose the reduplication arm - the point is to measure that cost, not to ship it blind.",
+    "condition_on_previous_text": false,
+    "vad_filter": true,
+    "compression_ratio_threshold": 1.8,
+    "repetition_penalty": 1.1,
+    "no_repeat_ngram_size": 3,
+    "no_speech_threshold": 0.4,
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "combo_conservative": {
+    "_stage": "combo",
+    "_why": "Candidate for production: mechanism fixes only, nothing that forbids genuine repetition.",
+    "condition_on_previous_text": false,
+    "vad_filter": true,
+    "no_speech_threshold": 0.4,
+    "_engine": "faster-whisper ONLY — not available in vLLM"
+  },
+  "model_turbo": {
+    "_stage": "model",
+    "model": "large-v3-turbo",
+    "_why": "HALAS measured turbo as hallucinating MORE than large-v3 (1060 vs 858 of 3611); worth confirming on Malaysian audio."
+  },
+  "model_distil": {
+    "_stage": "model",
+    "model": "distil-large-v3",
+    "_why": "Distilled models carry a weaker LM prior, which is what drives the fallback text."
+  },
+  "model_crisper": {
+    "_stage": "model",
+    "model": "nyrahealth/CrisperWhisper",
+    "_why": "Purpose-built for verbatim timestamps; HALAS measured the lowest Whisper-family hallucination rate (772/3611)."
+  },
+  "hsp_gated": {
+    "_stage": "intervention",
+    "_engine": "transformers (needs decoder hidden-state access; NOT runnable under faster-whisper)",
+    "_paper": "Abbasihafshejani & Jadliwala, Reducing Hallucinated Transcripts in Whisper via Hallucination Space Projection, arXiv:2609.04561",
+    "_why": "Training-free inference-time intervention, so it belongs in a zero-training-cost ablation. Estimate a low-rank hallucination subspace by SVD over (hallucinating - correctly-empty) decoder activations on non-speech calibration audio, then project hidden states away from it. Gated on Whisper's own no-speech probability so genuine speech is left alone.",
+    "_hparams_large_v3": {
+      "layer": 28,
+      "rank": 4,
+      "alpha": 1.0,
+      "gate_no_speech_prob": 0.05,
+      "rejection_threshold": 0.6,
+      "calibration": "1,200 non-speech clips"
+    },
+    "_reported": {
+      "esc50_hr": "44.25% -> 8.38%",
+      "urbansound8k_hr": "76.08% -> 2.74%",
+      "fsd50k_hr": "21.35% -> 1.15%",
+      "librispeech_wer_clean": "4.06% -> 6.17%",
+      "librispeech_wer_other": "5.87% -> 6.57%"
+    }
+  },
+  "hsp_always_on": {
+    "_stage": "intervention",
+    "_engine": "transformers",
+    "_why": "Ungated variant. Near-eliminates the hallucination rate (ESC-50 44.25% -> 1.50%) but triples LibriSpeech WER (4.06% -> 12.95%). Included as the upper bound on what suppression costs, not as a candidate to ship.",
+    "_reported": {
+      "esc50_hr": "44.25% -> 1.50%",
+      "librispeech_wer_clean": "4.06% -> 12.95%"
+    }
+  },
+  "_vllm_note": "PRODUCTION STACK IS vLLM. vLLM serves Whisper as a model; it does NOT implement openai-whisper's transcription loop. Unavailable there: no_speech_threshold, compression_ratio_threshold, logprob_threshold, condition_on_previous_text, the temperature-fallback ladder, no_repeat_ngram_size, and hallucination_silence_threshold. vLLM's /v1/audio/transcriptions exposes temperature, top_p, top_k, min_p, seed, repetition_penalty, presence_penalty, frequency_penalty, and beam search (documented as 'highly inefficient' for encoder-decoder). verbose_json does not return no_speech_prob, so hall_rate_filtered cannot be computed from a vLLM response either. The faster-whisper-only configs are kept because they diagnose WHERE the failure comes from, but a fix that only exists there is not shippable on this stack.",
+  "vllm_reppen_110": {
+    "_stage": "vllm",
+    "_engine": "vLLM",
+    "_why": "repetition_penalty is the one anti-loop knob vLLM exposes natively.",
+    "repetition_penalty": 1.1
+  },
+  "vllm_reppen_125": {
+    "_stage": "vllm",
+    "_engine": "vLLM",
+    "repetition_penalty": 1.25,
+    "_why": "Harder push. Expect the reduplication arm to start under-counting genuine repeats."
+  },
+  "vllm_freqpen_05": {
+    "_stage": "vllm",
+    "_engine": "vLLM",
+    "frequency_penalty": 0.5,
+    "_why": "Scales with how often a token already appeared, so it targets long runs specifically rather than any repeat."
+  },
+  "vllm_prespen_05": {
+    "_stage": "vllm",
+    "_engine": "vLLM",
+    "presence_penalty": 0.5,
+    "_why": "Flat penalty on any token already seen; blunter than frequency_penalty."
+  },
+  "vllm_maxtokens_cap": {
+    "_stage": "vllm",
+    "_engine": "vLLM",
+    "max_tokens": 96,
+    "_why": "The highest-value cheap fix on this stack. Since vLLM cannot cascade across windows, a runaway is bounded by one window's token budget; capping it truncates `tutututu...` directly. A 30 s window of real speech rarely exceeds ~96 tokens. Verify that bound against librispeech_test_clean and genuine before shipping -- a cap that clips real speech is a worse bug than the loop."
+  },
+  "vllm_temp0": {
+    "_stage": "vllm",
+    "_engine": "vLLM",
+    "temperature": 0.0,
+    "_why": "Deterministic baseline. vLLM has no fallback ladder, so temperature is a single value, not a sequence."
+  },
+  "ext_vad_silero": {
+    "_stage": "external",
+    "_engine": "any (pre-processing)",
+    "_why": "Strip non-speech before the audio reaches Whisper. Independent of serving engine, and given that silence AND music AND noise all trigger hallucination, this is the highest-leverage fix available on vLLM. Measure the cost on speech_in_noise, where VAD must not clip real speech under a music bed."
+  },
+  "ext_postfilter_lexicon": {
+    "_stage": "external",
+    "_engine": "any (post-processing)",
+    "_why": "Drop outputs matching phrases that NEVER occur in genuine speech. Safety of each phrase is measured, not assumed — see phrases/ban_candidates.csv, built from the lexicon crossed against the genuine + librispeech transcripts."
+  },
+  "ext_vad_plus_postfilter": {
+    "_stage": "external",
+    "_engine": "any",
+    "_why": "The shippable combination on the current stack: VAD in front, measured lexicon filter behind, plus vLLM's repetition_penalty in the middle."
+  },
+  "_run_order": "PRIORITY 1 (shippable, run first): the `vllm` and `external` stages, plus `baseline`. PRIORITY 2 (diagnostic only, run if GPU time allows): `ofat`, `combo`, `model`. PRIORITY 3 (needs a transformers deployment that does not exist here): `intervention`. faster-whisper cannot serve at production scale, so anything that only works there explains a mechanism but cannot be deployed.",
+  "_cascade_note": "vLLM chunks audio into independent 30 s windows and does NOT carry previous text across them (open feature request, vllm PR #20249). So the cascade failure mode -- one hallucination becoming the next window's prompt and self-reinforcing -- is structurally IMPOSSIBLE on this stack. `condition_on_previous_text=False`, the single largest lever in the faster-whisper grid, is therefore already in effect for free. What remains is WITHIN-window runaway, which is exactly the tutututu case, and which `max_tokens` bounds directly. Expect the vLLM baseline to loop less than the faster-whisper baseline; do not read that as vLLM being a better model."
+}

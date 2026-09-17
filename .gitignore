@@ -1,0 +1,20 @@
+# Generated / fetched audio — rebuild from scripts/, or pull the published dataset
+audio/
+audio_train/
+corpus/
+build/
+tts/out/
+emilia_raw/
+
+# Per-model venvs (their torch/torchao pins conflict; see CLAUDE.md)
+.venv*/
+
+# Secrets — restore on the box with `claude-ping env-sync`
+.env
+
+__pycache__/
+*.pyc
+.DS_Store
+.cping/
+
+claude-ping.json

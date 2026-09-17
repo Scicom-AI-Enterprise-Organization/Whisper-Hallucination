@@ -1,0 +1,428 @@
+{
+  "whisper-large-v2": {
+    "genuine": {
+      "n": 4694,
+      "loop_rate": 0.0,
+      "max_run": 3,
+      "lexicon_rate": 0.0096,
+      "empty_rate": 0.0,
+      "wer": 0.3536,
+      "cer": 0.4387
+    },
+    "genuine_isolated": {
+      "n": 88,
+      "loop_rate": 0.0,
+      "max_run": 1,
+      "lexicon_rate": 0.7273,
+      "empty_rate": 0.0,
+      "wer": 0.2386,
+      "cer": 0.2695
+    },
+    "librispeech_test_clean": {
+      "n": 2620,
+      "loop_rate": 0.0004,
+      "max_run": 209,
+      "lexicon_rate": 0.0011,
+      "empty_rate": 0.0,
+      "wer": 0.0451,
+      "cer": 0.0228
+    },
+    "music": {
+      "n": 600,
+      "loop_rate": 0.03,
+      "max_run": 440,
+      "lexicon_rate": 0.2917,
+      "empty_rate": 0.0133,
+      "hallucination_rate_any_output": 1.0,
+      "hallucination_rate": 0.9867,
+      "top_hallucinations": [
+        {
+          "text": "so",
+          "count": 49
+        },
+        {
+          "text": "បានានានានានានានានានានានានានានានានានានានានានានានានានានានានានានានានានានានានានានានា",
+          "count": 23
+        },
+        {
+          "text": "you",
+          "count": 18
+        },
+        {
+          "text": "Oh",
+          "count": 17
+        },
+        {
+          "text": "I",
+          "count": 16
+        }
+      ]
+    },
+    "nonspeech": {
+      "n": 1168,
+      "loop_rate": 0.0171,
+      "max_run": 440,
+      "lexicon_rate": 0.6592,
+      "empty_rate": 0.012,
+      "hallucination_rate_any_output": 1.0,
+      "hallucination_rate": 0.988,
+      "top_hallucinations": [
+        {
+          "text": "you",
+          "count": 431
+        },
+        {
+          "text": "You",
+          "count": 46
+        },
+        {
+          "text": "I",
+          "count": 40
+        },
+        {
+          "text": "Thanks for watching!",
+          "count": 19
+        },
+        {
+          "text": "bell",
+          "count": 16
+        }
+      ]
+    },
+    "reduplication": {
+      "n": 1440,
+      "loop_rate": 0.0271,
+      "max_run": 440,
+      "lexicon_rate": 0.8778,
+      "empty_rate": 0.0,
+      "overgen_p50": 0.0,
+      "overgen_p95": 0.833,
+      "overgen_max": 81.875,
+      "runaway_rate": 0.0049
+    },
+    "silence": {
+      "n": 42,
+      "loop_rate": 0.0,
+      "max_run": 1,
+      "lexicon_rate": 0.4286,
+      "empty_rate": 0.1429,
+      "hallucination_rate_any_output": 1.0,
+      "hallucination_rate": 0.8571,
+      "top_hallucinations": [
+        {
+          "text": "you",
+          "count": 18
+        },
+        {
+          "text": ". .",
+          "count": 4
+        },
+        {
+          "text": "Yn ystod y 20. mlynedd, mae'r cyfrifiadau a'r cyfrifiadau a'r cyfrifiadau a'r cy",
+          "count": 4
+        },
+        {
+          "text": ".",
+          "count": 2
+        },
+        {
+          "text": "Yn ystod y blynyddoedd, mae'r cyflwyniad yn ymwneud â'r cyflwyniad yma.",
+          "count": 2
+        }
+      ]
+    },
+    "speech_in_noise": {
+      "n": 1200,
+      "loop_rate": 0.0025,
+      "max_run": 422,
+      "lexicon_rate": 0.0042,
+      "empty_rate": 0.0,
+      "wer": 0.416,
+      "cer": 0.2964
+    }
+  },
+  "whisper-large-v3": {
+    "genuine": {
+      "n": 4694,
+      "loop_rate": 0.0004,
+      "max_run": 175,
+      "lexicon_rate": 0.0075,
+      "empty_rate": 0.0002,
+      "wer": 0.3175,
+      "cer": 0.1898
+    },
+    "genuine_isolated": {
+      "n": 88,
+      "loop_rate": 0.0,
+      "max_run": 1,
+      "lexicon_rate": 0.7386,
+      "empty_rate": 0.0,
+      "wer": 0.2386,
+      "cer": 0.3158
+    },
+    "librispeech_test_clean": {
+      "n": 2620,
+      "loop_rate": 0.0,
+      "max_run": 3,
+      "lexicon_rate": 0.0008,
+      "empty_rate": 0.0,
+      "wer": 0.0347,
+      "cer": 0.0143
+    },
+    "music": {
+      "n": 600,
+      "loop_rate": 0.0133,
+      "max_run": 147,
+      "lexicon_rate": 0.42,
+      "empty_rate": 0.03,
+      "hallucination_rate_any_output": 1.0,
+      "hallucination_rate": 0.97,
+      "top_hallucinations": [
+        {
+          "text": "Thank you.",
+          "count": 173
+        },
+        {
+          "text": "¶¶",
+          "count": 86
+        },
+        {
+          "text": ".",
+          "count": 16
+        },
+        {
+          "text": "© BF-WATCH TV 2021",
+          "count": 13
+        },
+        {
+          "text": "Bye.",
+          "count": 6
+        }
+      ]
+    },
+    "nonspeech": {
+      "n": 1168,
+      "loop_rate": 0.0274,
+      "max_run": 440,
+      "lexicon_rate": 0.6687,
+      "empty_rate": 0.101,
+      "hallucination_rate_any_output": 1.0,
+      "hallucination_rate": 0.899,
+      "top_hallucinations": [
+        {
+          "text": "you",
+          "count": 334
+        },
+        {
+          "text": "Thank you.",
+          "count": 182
+        },
+        {
+          "text": ".",
+          "count": 94
+        },
+        {
+          "text": "Bye.",
+          "count": 39
+        },
+        {
+          "text": ". . .",
+          "count": 22
+        }
+      ]
+    },
+    "reduplication": {
+      "n": 1440,
+      "loop_rate": 0.1826,
+      "max_run": 440,
+      "lexicon_rate": 0.3757,
+      "empty_rate": 0.0007,
+      "overgen_p50": 0.0,
+      "overgen_p95": 1.0,
+      "overgen_max": 136.5,
+      "runaway_rate": 0.0292
+    },
+    "silence": {
+      "n": 42,
+      "loop_rate": 0.0,
+      "max_run": 1,
+      "lexicon_rate": 0.5952,
+      "empty_rate": 0.381,
+      "hallucination_rate_any_output": 1.0,
+      "hallucination_rate": 0.619,
+      "top_hallucinations": [
+        {
+          "text": ".",
+          "count": 16
+        },
+        {
+          "text": "you",
+          "count": 15
+        },
+        {
+          "text": "Thank you.",
+          "count": 3
+        },
+        {
+          "text": "Takk for at du så med.",
+          "count": 3
+        },
+        {
+          "text": "Amen.",
+          "count": 2
+        }
+      ]
+    },
+    "speech_in_noise": {
+      "n": 1200,
+      "loop_rate": 0.0008,
+      "max_run": 67,
+      "lexicon_rate": 0.0167,
+      "empty_rate": 0.0,
+      "wer": 0.3446,
+      "cer": 0.2058
+    }
+  },
+  "whisper-large-v3-turbo": {
+    "genuine": {
+      "n": 4694,
+      "loop_rate": 0.0006,
+      "max_run": 396,
+      "lexicon_rate": 0.0087,
+      "empty_rate": 0.0,
+      "wer": 0.3175,
+      "cer": 0.177
+    },
+    "genuine_isolated": {
+      "n": 88,
+      "loop_rate": 0.0,
+      "max_run": 1,
+      "lexicon_rate": 0.7386,
+      "empty_rate": 0.0,
+      "wer": 0.2955,
+      "cer": 0.3372
+    },
+    "librispeech_test_clean": {
+      "n": 2620,
+      "loop_rate": 0.0,
+      "max_run": 3,
+      "lexicon_rate": 0.0008,
+      "empty_rate": 0.0,
+      "wer": 0.0352,
+      "cer": 0.0148
+    },
+    "music": {
+      "n": 600,
+      "loop_rate": 0.0183,
+      "max_run": 220,
+      "lexicon_rate": 0.5433,
+      "empty_rate": 0.0333,
+      "hallucination_rate_any_output": 1.0,
+      "hallucination_rate": 0.9667,
+      "top_hallucinations": [
+        {
+          "text": "Thank you.",
+          "count": 149
+        },
+        {
+          "text": "so",
+          "count": 38
+        },
+        {
+          "text": "The End",
+          "count": 31
+        },
+        {
+          "text": "¶¶",
+          "count": 23
+        },
+        {
+          "text": ".",
+          "count": 14
+        }
+      ]
+    },
+    "nonspeech": {
+      "n": 1168,
+      "loop_rate": 0.0077,
+      "max_run": 440,
+      "lexicon_rate": 0.6926,
+      "empty_rate": 0.1926,
+      "hallucination_rate_any_output": 1.0,
+      "hallucination_rate": 0.8074,
+      "top_hallucinations": [
+        {
+          "text": "you",
+          "count": 449
+        },
+        {
+          "text": ".",
+          "count": 182
+        },
+        {
+          "text": "Thank you.",
+          "count": 90
+        },
+        {
+          "text": "Продолжение следует...",
+          "count": 25
+        },
+        {
+          "text": "ご視聴ありがとうございました",
+          "count": 25
+        }
+      ]
+    },
+    "reduplication": {
+      "n": 1440,
+      "loop_rate": 0.0951,
+      "max_run": 440,
+      "lexicon_rate": 0.516,
+      "empty_rate": 0.0521,
+      "overgen_p50": 0.0,
+      "overgen_p95": 18.333,
+      "overgen_max": 585.667,
+      "runaway_rate": 0.0583
+    },
+    "silence": {
+      "n": 42,
+      "loop_rate": 0.0,
+      "max_run": 1,
+      "lexicon_rate": 0.5952,
+      "empty_rate": 0.4048,
+      "hallucination_rate_any_output": 1.0,
+      "hallucination_rate": 0.5952,
+      "top_hallucinations": [
+        {
+          "text": ".",
+          "count": 16
+        },
+        {
+          "text": "Thank you.",
+          "count": 16
+        },
+        {
+          "text": "you",
+          "count": 7
+        },
+        {
+          "text": "so",
+          "count": 2
+        },
+        {
+          "text": "...",
+          "count": 1
+        }
+      ]
+    },
+    "speech_in_noise": {
+      "n": 1200,
+      "loop_rate": 0.0033,
+      "max_run": 215,
+      "lexicon_rate": 0.0167,
+      "empty_rate": 0.0,
+      "wer": 0.3606,
+      "cer": 0.2111
+    }
+  }
+}
