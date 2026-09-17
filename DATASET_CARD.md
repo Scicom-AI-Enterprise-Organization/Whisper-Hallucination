@@ -83,7 +83,8 @@ configs:
 > **This is a BENCHMARK. Every audio config is `test` — do not fine-tune on it.**
 > Training on these clips invalidates every number you would then report. Build training
 > data separately from the same source corpora, excluding the items listed in
-> `benchmark/exclusions.json` in the project repo (546 FMA tracks, 1,168 FSD50K ids,
+> [`benchmark/exclusions.json`](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/blob/main/benchmark/exclusions.json) in the project
+> repo (546 FMA tracks, 1,168 FSD50K ids,
 > 2,620 LibriSpeech utterances, and the Malay/Lingua Libre stems).
 >
 > Structural disjointness is easy here: the benchmark draws FSD50K's **eval** split and FMA
@@ -95,6 +96,10 @@ Audio probes and phrase lexicons for measuring the two failure modes of `whisper
 
 - **hallucination** — text with no phonetic basis in the audio (`Terima kasih.` over silence)
 - **repetition / looping** — the decoder emits a unit far more times than it was spoken
+
+**Code, build scripts and design notes:** [github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination)
+— arm builders, the benchmark harness, `benchmark/exclusions.json`, the ablation grid and the
+training-corpus tooling all live there.
 
 ## The problem this is built around
 
@@ -120,62 +125,28 @@ A detector that only reads the text cannot tell these apart. That is the point.
 
 ## Baseline scores
 
-Measured 2026-09-16 on 2x NVIDIA H20, `transformers` 5.17, fp16, **greedy decoding, no forced language, no temperature fallback** — deliberately plain, so the numbers describe the checkpoint rather than a decoding wrapper. Reproduce with `bench/run_benchmark.py` (below); all 11,852 clips per model.
+Five checkpoints × 8 arms × 11,852 clips per model, measured 2026-09-16/17 on 2× NVIDIA H20
+with greedy decoding and no temperature fallback: `large-v2`, `large-v3`, `large-v3-turbo`,
+and the two Malaysian fine-tunes `mesolitica/malaysian-whisper-large-v2` and
+`mesolitica/Malaysian-whisper-large-v3-turbo-v3`.
 
-### Hallucination on non-speech — reference is the empty string
+**Full tables — hallucination rates, repetition runaway, WER, and what each model actually
+emits on silence and music — are in the project repo:
+[README → Measured baselines](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination#measured-baselines).** Raw numbers: `bench/scores.json`.
 
-| arm | n | large-v2 | large-v3 | large-v3-turbo |
-|---|---:|---:|---:|---:|
-| `silence` | 42 | 85.7% | 61.9% | 59.5% |
-| `music` | 600 | 98.7% | 97.0% | 96.7% |
-| `nonspeech` | 1,168 | 98.8% | 89.9% | 80.7% |
+Headline: on non-speech, hallucination runs 9.3-98.8% depending on model and arm. For the
+three **OpenAI** checkpoints it is **100.0% everywhere** once a bare `"."` counts as output —
+every clip produces something. The Malaysian fine-tunes break that: `Malaysian-turbo-v3`
+returns a genuinely empty string on 90.6% of voice-free clips. It pays for that on the other
+axis, running away on 14.5% of `reduplication` clips against 5.8% for the checkpoint it came
+from, and emitting nothing on 58% of them. LibriSpeech test-clean sits at 3.5% for `large-v3`,
+matching the published figure — the check that the harness is wired correctly.
 
-`any output` — counting a bare `"."` as a hallucination too — is **100.0% for every model on every non-speech arm**. Every single clip produced something. The table above uses the stricter reading: output containing actual word content.
+Measuring both failure modes on the same clips is the point: ranked on hallucination alone
+`Malaysian-turbo-v3` wins by a distance; ranked on raw WER it looks unusable, and ~1% of
+looping clips account for most of that gap.
 
-### Repetition runaway — `reduplication`, 1,440 clips
-
-| metric | large-v2 | large-v3 | large-v3-turbo |
-|---|---:|---:|---:|
-| emitted/true repeats, p50 | 0.000 | 0.000 | 0.000 |
-| emitted/true repeats, **p95** | 0.833 | 1.000 | 18.333 |
-| emitted/true repeats, max | 81.9 | 136.5 | 585.7 |
-| clips over-generating >1.5x | 0.5% | 2.9% | 5.8% |
-| longest consecutive token run | 440 | 440 | 440 |
-
-**`large-v3-turbo` over-generates repeats 18x at p95.** A `max_run` of 440 is the `max_new_tokens` cap — the decoder repeated one token until it ran out of budget. `large-v2` sits at 0.833, i.e. it *under*-counts genuine repeats instead.
-
-### Word error rate — what a mitigation must not break
-
-| arm | n | large-v2 | large-v3 | large-v3-turbo |
-|---|---:|---:|---:|---:|
-| `librispeech_test_clean` | 2,620 | 4.5% | 3.5% | 3.5% |
-| `genuine` | 4,694 | 35.4% | 31.8% | 31.8% |
-| `genuine_isolated` | 88 | 23.9% | 23.9% | 29.5% |
-| `speech_in_noise` | 1,200 | 41.6% | 34.5% | 36.1% |
-
-LibriSpeech test-clean lands at 3.5% for large-v3, matching the published figure — a sanity check that the harness is wired correctly. `genuine` is high (31.8%) because it mixes Sarawak dialect, synthetic Manglish and read prose; treat it as a relative guard, not an absolute quality number.
-
-### What the models actually say
-
-| model | on `silence` | on `music` |
-|---|---|---|
-| large-v2 | `you` ×18 · `. .` ×4 · `Yn ystod y 20. mlynedd, ma` ×4 | `so` ×49 · `បានានានានានានានានានានានានា` ×23 · `you` ×18 |
-| large-v3 | `.` ×16 · `you` ×15 · `Thank you.` ×3 | `Thank you.` ×173 · `¶¶` ×86 · `.` ×16 |
-| large-v3-turbo | `.` ×16 · `Thank you.` ×16 · `you` ×7 | `Thank you.` ×149 · `so` ×38 · `The End` ×31 |
-
-These match the shipped `lexicon`: `Thank you.` is its top English entry (31,353 observations), and `© BF-WATCH TV 2021` appears 13x on music. Language drift is visible too — large-v2 emits Welsh on silence and a Khmer repetition loop on music.
-
-### Reproducing
-
-```bash
-uv venv --system-site-packages .venv && VIRTUAL_ENV=.venv uv pip install transformers datasets accelerate soundfile
-
-python bench/run_benchmark.py --model openai/whisper-large-v3 --device cuda:0
-python bench/score_benchmark.py --results bench/results --lexicon lexicon/combined_lexicon.csv
-```
-
-Source ships with this dataset: `bench/run_benchmark.py` (inference), `bench/score_benchmark.py`
-(metrics), `bench/metrics.py` (metric definitions), `bench/scores.json` (these numbers).
+The benchmark harness ([`bench/`](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/tree/main/bench)) ships with this dataset and in the repo.
 
 ## Configs
 
@@ -433,7 +404,8 @@ plus `music` for the harder, more realistic condition.
 - **`speech_in_noise` is synthetic mixing**, not natively recorded noisy speech. SNR is
   exact and controllable, which is the point, but channel effects and Lombard speech
   (people talk differently in noise) are absent.
-- **No ablation results here.** See the design notes in the project repo.
+- **No ablation results here.** See the design notes in the project repo:
+  [`ABLATION.md`](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/blob/main/ABLATION.md), [`TRAINING.md`](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/blob/main/TRAINING.md).
 - FLEURS is human-read Wikipedia prose, so it contributes almost no conversational
   closers — 3,740 utterances yielded one `terima kasih`. Register matters more than size.
 
@@ -495,6 +467,10 @@ are **model errors, not anything a person said**, and the upstream sources carry
 warning. They are kept because removing them would misrepresent the failure mode.
 
 ## Citation
+
+Dataset: `Scicom-intl/Whisper-Hallucination`. Code: https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination
+
+Built on:
 
 - Koenecke, Choi, Mei, Schellmann, Sloane. *Careless Whisper: Speech-to-Text Hallucination Harms.* FAccT 2024.
 - Barański et al. *Investigation of Whisper ASR Hallucinations Induced by Non-Speech Audio.* ICASSP 2025. (`arXiv:2501.11378`)

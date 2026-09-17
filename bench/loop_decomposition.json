@@ -1,0 +1,132 @@
+{
+  "Malaysian-whisper-large-v3-turbo-v3": {
+    "librispeech_test_clean": {
+      "n": 2620,
+      "loop_rate": 0.0008,
+      "wer": 0.1064,
+      "wer_excluding_looped": 0.0691
+    },
+    "genuine": {
+      "n": 4694,
+      "loop_rate": 0.0094,
+      "wer": 0.6067,
+      "wer_excluding_looped": 0.339
+    },
+    "genuine_isolated": {
+      "n": 88,
+      "loop_rate": 0.0,
+      "wer": 0.4659,
+      "wer_excluding_looped": 0.4659
+    },
+    "speech_in_noise": {
+      "n": 1200,
+      "loop_rate": 0.01,
+      "wer": 0.5871,
+      "wer_excluding_looped": 0.2559
+    }
+  },
+  "malaysian-whisper-large-v2": {
+    "librispeech_test_clean": {
+      "n": 2620,
+      "loop_rate": 0.0,
+      "wer": 0.0351,
+      "wer_excluding_looped": 0.0351
+    },
+    "genuine": {
+      "n": 4694,
+      "loop_rate": 0.0009,
+      "wer": 0.4233,
+      "wer_excluding_looped": 0.4117
+    },
+    "genuine_isolated": {
+      "n": 88,
+      "loop_rate": 0.0,
+      "wer": 0.4205,
+      "wer_excluding_looped": 0.4205
+    },
+    "speech_in_noise": {
+      "n": 1200,
+      "loop_rate": 0.0008,
+      "wer": 0.5111,
+      "wer_excluding_looped": 0.4934
+    }
+  },
+  "whisper-large-v2": {
+    "librispeech_test_clean": {
+      "n": 2620,
+      "loop_rate": 0.0004,
+      "wer": 0.0451,
+      "wer_excluding_looped": 0.0413
+    },
+    "genuine": {
+      "n": 4694,
+      "loop_rate": 0.0,
+      "wer": 0.3536,
+      "wer_excluding_looped": 0.3536
+    },
+    "genuine_isolated": {
+      "n": 88,
+      "loop_rate": 0.0,
+      "wer": 0.2386,
+      "wer_excluding_looped": 0.2386
+    },
+    "speech_in_noise": {
+      "n": 1200,
+      "loop_rate": 0.0025,
+      "wer": 0.416,
+      "wer_excluding_looped": 0.3679
+    }
+  },
+  "whisper-large-v3": {
+    "librispeech_test_clean": {
+      "n": 2620,
+      "loop_rate": 0.0,
+      "wer": 0.0347,
+      "wer_excluding_looped": 0.0347
+    },
+    "genuine": {
+      "n": 4694,
+      "loop_rate": 0.0004,
+      "wer": 0.3175,
+      "wer_excluding_looped": 0.3162
+    },
+    "genuine_isolated": {
+      "n": 88,
+      "loop_rate": 0.0,
+      "wer": 0.2386,
+      "wer_excluding_looped": 0.2386
+    },
+    "speech_in_noise": {
+      "n": 1200,
+      "loop_rate": 0.0008,
+      "wer": 0.3446,
+      "wer_excluding_looped": 0.3436
+    }
+  },
+  "whisper-large-v3-turbo": {
+    "librispeech_test_clean": {
+      "n": 2620,
+      "loop_rate": 0.0,
+      "wer": 0.0352,
+      "wer_excluding_looped": 0.0352
+    },
+    "genuine": {
+      "n": 4694,
+      "loop_rate": 0.0006,
+      "wer": 0.3175,
+      "wer_excluding_looped": 0.313
+    },
+    "genuine_isolated": {
+      "n": 88,
+      "loop_rate": 0.0,
+      "wer": 0.2955,
+      "wer_excluding_looped": 0.2955
+    },
+    "speech_in_noise": {
+      "n": 1200,
+      "loop_rate": 0.0033,
+      "wer": 0.3606,
+      "wer_excluding_looped": 0.3267
+    }
+  }
+}

@@ -142,6 +142,111 @@ system message, the processor accepts only `return_tensors="pt"`, and generate r
 codebook tokens where **1024/1025 are BOS/EOS markers** that must be stripped before
 `audio_tokenizer.decode` (which also has to be moved to the GPU).
 
+## Voice conversion / cloning candidates
+
+Four more venvs, same reason as the TTS ones — `tts/setup/install_vc.sh <name>` builds each:
+
+**`.venv_knnvc`** — kNN-VC. Three deps (torch, torchaudio, numpy); the repo vendors WavLM and
+torch.hub fetches WavLM-Large + the prematched HiFi-GAN on first run. The only candidate that
+needs *minutes* of target audio rather than one clip — its "speaker" is a pile of WavLM frames
+to match against, which is also why it should be the most language-agnostic.
+
+**`.venv_seedvc`** — seed-vc. `requirements.txt` opens with four `--pre --index-url nightly`
+lines that fight the pinned versions below them; drop those, keep the pins. Drive it through
+`seed_vc_wrapper.SeedVCWrapper`, not `inference.py` — the CLI reloads every model per call.
+It resolves configs relative to cwd, so `os.chdir(repo)` before constructing it.
+
+**`.venv_openvoice`** — OpenVoice v2. Their `numpy==1.22` / `librosa==0.9.1` pins have no
+wheels for modern Python; the modern pair works. Skip `se_extractor` (it runs
+whisper-timestamped just to segment a reference) and call `ToneColorConverter.extract_se`
+directly. Kill the watermark (it perturbs the audio the scorer measures) by setting
+`conv.watermark_model = None` after construction — the documented `enable_watermark=False`
+kwarg is forwarded to a parent that does not accept it and raises.
+Checkpoints are `myshell-ai/OpenVoiceV2`, `converter/*` only.
+
+**`.venv_higgs3`** also drives the cloning arm (`tts/clone_higgs3.py`): v3 takes
+`reference_audio` + `reference_sample_rate` + `reference_text`, so unlike Scicom's
+Multilingual-Expressive it can aim at a given speaker. `.venv_bench` drives
+`tts/clone_scicom.py`, which is speaker-NAME conditioned and therefore untargeted.
+
+**`.venv_cosyvoice`** — CosyVoice 2. `openai-whisper`'s setup.py imports `pkg_resources`,
+which **setuptools removed in 81** — so it needs `--no-build-isolation` *and* `setuptools<81`
+in the venv. Not optional: `cosyvoice/cli/frontend.py` does `import whisper` at module level.
+Needs
+`third_party/Matcha-TTS` on `sys.path`, and it hardcodes `cuda:0`, so pick the GPU with
+`CUDA_VISIBLE_DEVICES` **before importing torch**, not with a device argument.
+
+New box paths — all added to `sync_excludes`, do that *before* generating anything:
+`vc_repos/` (cloned repos + checkpoints), `tts/vc_targets/`, `tts/vc_out/`, `tts/vc_scores.json`.
+
+**`${1:?usage: ... {a|b}}` in bash.** The expansion ends at the *first* `}`, so a usage message
+containing braces leaks the rest into the variable — `install_vc.sh knnvc` set `sys=knnvc}`
+and every system fell through to "unknown". No braces in `:?` messages.
+
+## VC selection, as measured
+
+46 scorable lexicon phrases × 4 target speakers (2 Malaysian-Emilia, 2 LibriSpeech) = 184
+clips per system. `tts/score_vc.py`, summary in `tts/vc_scores_summary.json`, figure from
+`tts/plot_vc.py`.
+
+CER alone picks the wrong winner: a converter that returns its input scores a perfect 0
+degradation and is worthless. So the table reports **ΔCER against the source clip** plus
+speaker similarity in both directions; the **gap** between them is the conversion that
+actually happened. Percentages are on a **calibrated** scale (`tts/calibrate_vc_sim.py`):
+at the clips' own duration (1.6 s), WavLM-sv scores 0.605 between different speakers and
+0.853 between two clips of the same one, so 0% = a stranger, 100% = the target.
+
+| | n | langs | CER | ΔCER | → target | ← source | gap | licence |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| **Multilingual-Expressive-1.7B** *(untargeted)* | 138/138 | **21** | **0.395** | **+0.053** | — | **13%** | — | ours |
+| kNN-VC | 184/184 | 20 | 0.441 | +0.099 | 68% | 59% | +9 | MIT |
+| OpenVoice v2 (20 s ref) | 184/184 | 19 | 0.457 | +0.115 | 62% | 56% | +6 | MIT |
+| OpenVoice v2 (6 s ref) | 184/184 | 20 | 0.467 | +0.125 | 61% | 53% | +8 | MIT |
+| seed-vc (6 s ref) | 184/184 | 20 | 0.472 | +0.129 | 68% | 49% | +19 | GPL-3.0 |
+| seed-vc (20 s ref) | 184/184 | **21** | 0.549 | +0.207 | 79% | 49% | +29 | GPL-3.0 |
+| Higgs Audio v3 *(cloning)* | 184/184 | 20 | 0.654 | +0.312 | **84%** | **12%** | **+72** | non-commercial |
+| OpenVoice + MeloTTS *(cloning)* | 40/184 | **4** | 0.077 | −0.434 | 69% | 19% | +50 | MIT |
+| CosyVoice 2 | **2/184** | — | — | — | — | — | — | Apache-2.0 |
+
+**Use Multilingual-Expressive-TTS-1.7B for the positive pool.** ΔCER +0.053 is half the best
+converter's, 21 languages, and 13% source retention means it leaves the original voice
+entirely. It conditions on a speaker NAME from `Scicom-intl/ExpressiveSpeech`, not a
+reference waveform, so it cannot render a *given* target — irrelevant when the requirement
+is "different, intelligible voices", decisive if you need a named speaker.
+
+**Use Higgs Audio v3 if you need a named target.** The only system that genuinely transfers
+identity (+72 gap vs ≤29 for everything else). Costs the most intelligibility (+0.312) and
+its licence forbids using outputs to train non-Boson speech models — measurable, not usable
+for the corpus. Best usable-licence targeted system is **seed-vc (6 s ref)**.
+
+**kNN-VC and OpenVoice barely convert.** A +6 to +9 gap means the output sits almost equally
+close to source and target: something in between, not the target's voice. Their good ΔCER is
+partly explained by not changing much. Reference length is a real dial — seed-vc at 20 s
+buys +29 identity for 0.078 more CER.
+
+**Nobody reaches the ceiling** (best 84%), and the floor/ceiling distributions overlap
+heavily at 1.6 s. Read these as "a different voice", not "this specific speaker".
+
+**Cloned TTS is a coverage story.** MeloTTS covers 4 of 21 languages; CosyVoice's frontend is
+zh/en/ja/ko. Conversion over a multilingual TTS covers the language range; cloned TTS does not.
+
+**CosyVoice 2 could not be measured.** Its flow encoder dies with **SIGFPE** — a signal, so
+Python cannot catch it — most often when the source is longer than the speaker prompt. Long
+reference, short reference, single-threaded BLAS, chunked restarts and a pre-CosyVoice3
+checkout all still crash within a few conversions; one process once completed 80.
+`tts/setup/run_cosyvoice_resumable.sh` grinds through restarts if it is ever worth retrying.
+
+**`phrases.jsonl` has 51 entries but only 49 distinct phrases** (`thanks for watching` and
+`thank you for watching` appear twice). The VC Writer originally keyed dedup on
+`(target, phrase)`, so systems calling `skip()` silently rendered fewer clips than those that
+did not. It now keys on the source clip path, and `score_vc.py` deduplicates so every system
+is scored on the same pairs.
+
+**The degenerate lexicon entries are in this phrase set too** — `त र`, `त ह`,
+`સ સ સ સ સ સ સ`. `score_vc.py` excludes them (3 phrases × 4 targets = 12 rows per system).
+They are the same entries that gave `bn` CER 22.9 in the TTS table below, which was *not*
+re-run with the filter — that column is still distorted.
+
 ## TTS selection, as measured
 
 48 lexicon phrases, 22 languages, identical text, ASR round-trip CER

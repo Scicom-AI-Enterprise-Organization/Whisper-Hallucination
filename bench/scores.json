@@ -1,4 +1,272 @@
 {
+  "Malaysian-whisper-large-v3-turbo-v3": {
+    "genuine": {
+      "n": 4694,
+      "loop_rate": 0.0094,
+      "max_run": 427,
+      "lexicon_rate": 0.0011,
+      "empty_rate": 0.0168,
+      "wer": 0.6067,
+      "cer": 0.3359
+    },
+    "genuine_isolated": {
+      "n": 88,
+      "loop_rate": 0.0,
+      "max_run": 2,
+      "lexicon_rate": 0.6591,
+      "empty_rate": 0.1136,
+      "wer": 0.4659,
+      "cer": 2.3503
+    },
+    "librispeech_test_clean": {
+      "n": 2620,
+      "loop_rate": 0.0008,
+      "max_run": 219,
+      "lexicon_rate": 0.0008,
+      "empty_rate": 0.0,
+      "wer": 0.1064,
+      "cer": 0.0591
+    },
+    "music": {
+      "n": 600,
+      "loop_rate": 0.095,
+      "max_run": 220,
+      "lexicon_rate": 0.03,
+      "empty_rate": 0.69,
+      "hallucination_rate_any_output": 0.3167,
+      "hallucination_rate": 0.31,
+      "top_hallucinations": [
+        {
+          "text": "Oh, oh, oh, oh, oh, oh, oh, oh, oh, oh, oh, oh, oh, oh, oh, oh, oh, oh, oh, oh, ",
+          "count": 10
+        },
+        {
+          "text": "Terima kasih kerana menonton!",
+          "count": 7
+        },
+        {
+          "text": "Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan ",
+          "count": 7
+        },
+        {
+          "text": "Terima kasih.",
+          "count": 5
+        },
+        {
+          "text": "... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ",
+          "count": 4
+        }
+      ]
+    },
+    "nonspeech": {
+      "n": 1168,
+      "loop_rate": 0.042,
+      "max_run": 440,
+      "lexicon_rate": 0.0154,
+      "empty_rate": 0.9067,
+      "hallucination_rate_any_output": 0.0942,
+      "hallucination_rate": 0.0933,
+      "top_hallucinations": [
+        {
+          "text": "I am I am I am I am I am I am I am I am I am I am I am I am I am I am I am I am ",
+          "count": 28
+        },
+        {
+          "text": "Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan Tuan ",
+          "count": 27
+        },
+        {
+          "text": "Terima kasih kerana menonton!",
+          "count": 17
+        },
+        {
+          "text": "Hai, hai, hai, hai, hai, hai, hai, hai, hai, hai, hai, hai, hai, hai, hai, hai, ",
+          "count": 4
+        },
+        {
+          "text": "Tidak, tidak, tidak, tidak, tidak, tidak, tidak, tidak, tidak, tidak, tidak, tid",
+          "count": 3
+        }
+      ]
+    },
+    "reduplication": {
+      "n": 1440,
+      "loop_rate": 0.3201,
+      "max_run": 440,
+      "lexicon_rate": 0.0104,
+      "empty_rate": 0.5799,
+      "overgen_p50": 0.0,
+      "overgen_p95": 73.333,
+      "overgen_max": 240.75,
+      "runaway_rate": 0.1451
+    },
+    "silence": {
+      "n": 42,
+      "loop_rate": 0.0,
+      "max_run": 1,
+      "lexicon_rate": 0.0,
+      "empty_rate": 0.8333,
+      "hallucination_rate_any_output": 0.1667,
+      "hallucination_rate": 0.1667,
+      "top_hallucinations": [
+        {
+          "text": "I watch I watch I watch I watch I am I am I am I am I am I am I am I am I am I a",
+          "count": 7
+        }
+      ]
+    },
+    "speech_in_noise": {
+      "n": 1200,
+      "loop_rate": 0.01,
+      "max_run": 220,
+      "lexicon_rate": 0.0008,
+      "empty_rate": 0.0217,
+      "wer": 0.5871,
+      "cer": 0.3652
+    }
+  },
+  "malaysian-whisper-large-v2": {
+    "genuine": {
+      "n": 4694,
+      "loop_rate": 0.0009,
+      "max_run": 220,
+      "lexicon_rate": 0.0092,
+      "empty_rate": 0.0,
+      "wer": 0.4233,
+      "cer": 0.2762
+    },
+    "genuine_isolated": {
+      "n": 88,
+      "loop_rate": 0.0,
+      "max_run": 1,
+      "lexicon_rate": 0.6932,
+      "empty_rate": 0.0,
+      "wer": 0.4205,
+      "cer": 0.7627
+    },
+    "librispeech_test_clean": {
+      "n": 2620,
+      "loop_rate": 0.0,
+      "max_run": 3,
+      "lexicon_rate": 0.0008,
+      "empty_rate": 0.0,
+      "wer": 0.0351,
+      "cer": 0.0143
+    },
+    "music": {
+      "n": 600,
+      "loop_rate": 0.0467,
+      "max_run": 440,
+      "lexicon_rate": 0.17,
+      "empty_rate": 0.3033,
+      "hallucination_rate_any_output": 0.73,
+      "hallucination_rate": 0.6967,
+      "top_hallucinations": [
+        {
+          "text": "¶¶",
+          "count": 62
+        },
+        {
+          "text": "Do it.",
+          "count": 16
+        },
+        {
+          "text": "Sir!",
+          "count": 12
+        },
+        {
+          "text": "'",
+          "count": 11
+        },
+        {
+          "text": "Thank you.",
+          "count": 11
+        }
+      ]
+    },
+    "nonspeech": {
+      "n": 1168,
+      "loop_rate": 0.0377,
+      "max_run": 440,
+      "lexicon_rate": 0.4563,
+      "empty_rate": 0.2397,
+      "hallucination_rate_any_output": 0.7783,
+      "hallucination_rate": 0.7603,
+      "top_hallucinations": [
+        {
+          "text": "Terima kasih kerana menonton!",
+          "count": 129
+        },
+        {
+          "text": "Sari kata oleh SDI Media",
+          "count": 122
+        },
+        {
+          "text": "Thank you.",
+          "count": 83
+        },
+        {
+          "text": "Thank you for watching!",
+          "count": 34
+        },
+        {
+          "text": "© BF-WATCH TV 2021",
+          "count": 23
+        }
+      ]
+    },
+    "reduplication": {
+      "n": 1440,
+      "loop_rate": 0.2938,
+      "max_run": 440,
+      "lexicon_rate": 0.0681,
+      "empty_rate": 0.1688,
+      "overgen_p50": 0.0,
+      "overgen_p95": 55.0,
+      "overgen_max": 351.4,
+      "runaway_rate": 0.1472
+    },
+    "silence": {
+      "n": 42,
+      "loop_rate": 0.0,
+      "max_run": 1,
+      "lexicon_rate": 0.1905,
+      "empty_rate": 0.6429,
+      "hallucination_rate_any_output": 0.6429,
+      "hallucination_rate": 0.3571,
+      "top_hallucinations": [
+        {
+          "text": ".",
+          "count": 12
+        },
+        {
+          "text": "I watch I watch I watch",
+          "count": 7
+        },
+        {
+          "text": "Okay.",
+          "count": 5
+        },
+        {
+          "text": "Terima kasih.",
+          "count": 1
+        },
+        {
+          "text": "Thank you.",
+          "count": 1
+        }
+      ]
+    },
+    "speech_in_noise": {
+      "n": 1200,
+      "loop_rate": 0.0008,
+      "max_run": 430,
+      "lexicon_rate": 0.015,
+      "empty_rate": 0.0,
+      "wer": 0.5111,
+      "cer": 0.3455
+    }
+  },
   "whisper-large-v2": {
     "genuine": {
       "n": 4694,

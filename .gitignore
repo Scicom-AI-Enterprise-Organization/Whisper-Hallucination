@@ -4,7 +4,13 @@ audio_train/
 corpus/
 build/
 tts/out/
+tts/vc_out/
+tts/vc_targets/
 emilia_raw/
+
+# Cloned VC/TTS candidate repos and their checkpoints — box only, rebuild with
+# tts/setup/install_vc.sh
+vc_repos/
 
 # Per-model venvs (their torch/torchao pins conflict; see CLAUDE.md)
 .venv*/

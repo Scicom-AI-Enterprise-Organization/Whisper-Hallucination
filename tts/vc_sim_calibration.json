@@ -1,0 +1,25 @@
+{
+  "match_seconds": 1.6,
+  "ceiling_same_speaker": {
+    "mean": 0.8531,
+    "p05": 0.7305,
+    "min": 0.6096,
+    "n": 264
+  },
+  "floor_diff_speaker_matched": {
+    "mean": 0.6048,
+    "p95": 0.8176,
+    "n": 216
+  },
+  "floor_source_vs_target": {
+    "mean": 0.6151,
+    "p95": 0.8725,
+    "max": 0.9117,
+    "n": 204
+  },
+  "floor_target_vs_target": {
+    "mean": 0.6786,
+    "max": 0.845,
+    "n": 6
+  }
+}
