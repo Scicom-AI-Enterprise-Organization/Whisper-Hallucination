@@ -41,6 +41,7 @@ SYSTEMS = [
     ('openvoice_longref', 'OpenVoice (20 s ref)',   'conversion', False),
     ('openvoice_clone',   'OpenVoice + MeloTTS',    'cloning',    False),
     ('higgs3_clone',      'Higgs Audio v3',         'cloning',    False),
+    ('omnivoice_clone',   'OmniVoice',              'cloning',    False),
     ('scicom_clone',      'Multilingual-Expressive\n(reference cloning)', 'cloning',    True),
     ('scicom_untargeted', 'Multilingual-Expressive\n(speaker name)',      'untargeted', True),
 ]

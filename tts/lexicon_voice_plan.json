@@ -1,0 +1,203 @@
+{
+  "default_for_unmeasured_languages": {
+    "engine": "omnivoice",
+    "why": "97/100 languages enumerable and Apache-2.0; Multilingual-Expressive's coverage is untagged, so it is only chosen where it was measured to win"
+  },
+  "speaker_mean_cer": {
+    "multilingual-tts_audio_Serena": 0.273,
+    "DisfluencySpeech": 0.2819,
+    "multilingual-tts_audio_Rahman": 0.3997,
+    "multilingual-tts_audio_Grace": 0.5039
+  },
+  "per_language": {
+    "ar": {
+      "engine": "multilingual-expressive",
+      "voice": "DisfluencySpeech",
+      "measured_cer": 0.0333,
+      "scicom_best": 0.0333,
+      "scicom_best_voice": "DisfluencySpeech",
+      "omnivoice": 0.075,
+      "reason": "lower CER"
+    },
+    "de": {
+      "engine": "omnivoice",
+      "voice": null,
+      "measured_cer": 0.0606,
+      "scicom_best": 0.1818,
+      "scicom_best_voice": "DisfluencySpeech",
+      "omnivoice": 0.0606,
+      "reason": "lower CER"
+    },
+    "el": {
+      "engine": "multilingual-expressive",
+      "voice": "multilingual-tts_audio_Grace",
+      "measured_cer": 0.0,
+      "scicom_best": 0.0,
+      "scicom_best_voice": "multilingual-tts_audio_Grace",
+      "omnivoice": 0.2778,
+      "reason": "lower CER"
+    },
+    "en": {
+      "engine": "multilingual-expressive",
+      "voice": "multilingual-tts_audio_Grace",
+      "measured_cer": 0.0,
+      "scicom_best": 0.0,
+      "scicom_best_voice": "multilingual-tts_audio_Grace",
+      "omnivoice": 0.6667,
+      "reason": "lower CER"
+    },
+    "es": {
+      "engine": "omnivoice",
+      "voice": null,
+      "measured_cer": 0.0159,
+      "scicom_best": 0.0159,
+      "scicom_best_voice": "multilingual-tts_audio_Grace",
+      "omnivoice": 0.0159,
+      "reason": "tie — Apache-2.0 preferred"
+    },
+    "fr": {
+      "engine": "multilingual-expressive",
+      "voice": "multilingual-tts_audio_Grace",
+      "measured_cer": 0.0556,
+      "scicom_best": 0.0556,
+      "scicom_best_voice": "multilingual-tts_audio_Grace",
+      "omnivoice": 0.9278,
+      "reason": "lower CER"
+    },
+    "he": {
+      "engine": "omnivoice",
+      "voice": null,
+      "measured_cer": 0.0,
+      "scicom_best": 0.0,
+      "scicom_best_voice": "multilingual-tts_audio_Grace",
+      "omnivoice": 0.0,
+      "reason": "tie — Apache-2.0 preferred"
+    },
+    "id": {
+      "engine": "omnivoice",
+      "voice": null,
+      "measured_cer": 0.0,
+      "scicom_best": 0.0,
+      "scicom_best_voice": "multilingual-tts_audio_Grace",
+      "omnivoice": 0.0,
+      "reason": "tie — Apache-2.0 preferred"
+    },
+    "km": {
+      "engine": "omnivoice",
+      "voice": null,
+      "measured_cer": 1.1875,
+      "scicom_best": 1.525,
+      "scicom_best_voice": "multilingual-tts_audio_Serena",
+      "omnivoice": 1.1875,
+      "reason": "lower CER"
+    },
+    "ko": {
+      "engine": "omnivoice",
+      "voice": null,
+      "measured_cer": 0.0,
+      "scicom_best": 0.0,
+      "scicom_best_voice": "multilingual-tts_audio_Grace",
+      "omnivoice": 0.0,
+      "reason": "tie — Apache-2.0 preferred"
+    },
+    "ms": {
+      "engine": "omnivoice",
+      "voice": null,
+      "measured_cer": 0.0,
+      "scicom_best": 0.0,
+      "scicom_best_voice": "multilingual-tts_audio_Grace",
+      "omnivoice": 0.0,
+      "reason": "tie — Apache-2.0 preferred"
+    },
+    "pl": {
+      "engine": "multilingual-expressive",
+      "voice": "multilingual-tts_audio_Rahman",
+      "measured_cer": 0.0,
+      "scicom_best": 0.0,
+      "scicom_best_voice": "multilingual-tts_audio_Rahman",
+      "omnivoice": 0.2619,
+      "reason": "lower CER"
+    },
+    "pt": {
+      "engine": "multilingual-expressive",
+      "voice": "multilingual-tts_audio_Serena",
+      "measured_cer": 0.2545,
+      "scicom_best": 0.2545,
+      "scicom_best_voice": "multilingual-tts_audio_Serena",
+      "omnivoice": 0.4081,
+      "reason": "lower CER"
+    },
+    "ru": {
+      "engine": "omnivoice",
+      "voice": null,
+      "measured_cer": 0.0,
+      "scicom_best": 0.0,
+      "scicom_best_voice": "multilingual-tts_audio_Grace",
+      "omnivoice": 0.0,
+      "reason": "tie — Apache-2.0 preferred"
+    },
+    "sw": {
+      "engine": "omnivoice",
+      "voice": null,
+      "measured_cer": 0.0,
+      "scicom_best": 0.0,
+      "scicom_best_voice": "multilingual-tts_audio_Grace",
+      "omnivoice": 0.0,
+      "reason": "tie — Apache-2.0 preferred"
+    },
+    "ta": {
+      "engine": "multilingual-expressive",
+      "voice": "multilingual-tts_audio_Rahman",
+      "measured_cer": 0.6667,
+      "scicom_best": 0.6667,
+      "scicom_best_voice": "multilingual-tts_audio_Rahman",
+      "omnivoice": 1.3704,
+      "reason": "lower CER"
+    },
+    "th": {
+      "engine": "omnivoice",
+      "voice": null,
+      "measured_cer": 0.1875,
+      "scicom_best": 0.1875,
+      "scicom_best_voice": "multilingual-tts_audio_Grace",
+      "omnivoice": 0.1875,
+      "reason": "tie — Apache-2.0 preferred"
+    },
+    "tr": {
+      "engine": "omnivoice",
+      "voice": null,
+      "measured_cer": 0.0,
+      "scicom_best": 0.0,
+      "scicom_best_voice": "multilingual-tts_audio_Rahman",
+      "omnivoice": 0.0,
+      "reason": "tie — Apache-2.0 preferred"
+    },
+    "ur": {
+      "engine": "multilingual-expressive",
+      "voice": "multilingual-tts_audio_Rahman",
+      "measured_cer": 0.0,
+      "scicom_best": 0.0,
+      "scicom_best_voice": "multilingual-tts_audio_Rahman",
+      "omnivoice": 0.0384,
+      "reason": "lower CER"
+    },
+    "vi": {
+      "engine": "multilingual-expressive",
+      "voice": "DisfluencySpeech",
+      "measured_cer": 0.1828,
+      "scicom_best": 0.1828,
+      "scicom_best_voice": "DisfluencySpeech",
+      "omnivoice": 0.2346,
+      "reason": "lower CER"
+    },
+    "zh": {
+      "engine": "omnivoice",
+      "voice": null,
+      "measured_cer": 0.2857,
+      "scicom_best": 0.5714,
+      "scicom_best_voice": "multilingual-tts_audio_Grace",
+      "omnivoice": 0.2857,
+      "reason": "lower CER"
+    }
+  }
+}

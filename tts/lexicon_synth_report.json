@@ -1,0 +1,721 @@
+{
+  "af": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 1
+    }
+  },
+  "ar": {
+    "n": 3,
+    "kept": 2,
+    "yield": 0.6667,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 1
+    }
+  },
+  "az": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0385,
+    "rejects": {}
+  },
+  "be": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0741,
+    "rejects": {}
+  },
+  "bg": {
+    "n": 150,
+    "kept": 31,
+    "yield": 0.2067,
+    "median_cer": 0.0813,
+    "rejects": {
+      "duration": 68,
+      "cer": 51
+    }
+  },
+  "bn": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 1
+    }
+  },
+  "br": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "bs": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "ca": {
+    "n": 3,
+    "kept": 2,
+    "yield": 0.6667,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 1
+    }
+  },
+  "cs": {
+    "n": 112,
+    "kept": 31,
+    "yield": 0.2768,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 48,
+      "cer": 33
+    }
+  },
+  "da": {
+    "n": 274,
+    "kept": 141,
+    "yield": 0.5146,
+    "median_cer": 0.0172,
+    "rejects": {
+      "cer": 73,
+      "duration": 60
+    }
+  },
+  "de": {
+    "n": 7,
+    "kept": 3,
+    "yield": 0.4286,
+    "median_cer": 0.0,
+    "rejects": {
+      "cer": 3,
+      "duration": 1
+    }
+  },
+  "el": {
+    "n": 35,
+    "kept": 5,
+    "yield": 0.1429,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 22,
+      "cer": 8
+    }
+  },
+  "en": {
+    "n": 7328,
+    "kept": 6182,
+    "yield": 0.8436,
+    "median_cer": 0.0,
+    "rejects": {
+      "cer": 620,
+      "duration": 526
+    }
+  },
+  "es": {
+    "n": 135,
+    "kept": 63,
+    "yield": 0.4667,
+    "median_cer": 0.0909,
+    "rejects": {
+      "duration": 26,
+      "cer": 46
+    }
+  },
+  "et": {
+    "n": 223,
+    "kept": 87,
+    "yield": 0.3901,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 80,
+      "cer": 56
+    }
+  },
+  "eu": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "fa": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 1
+    }
+  },
+  "fi": {
+    "n": 5,
+    "kept": 4,
+    "yield": 0.8,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 1
+    }
+  },
+  "fo": {
+    "n": 5,
+    "kept": 3,
+    "yield": 0.6,
+    "median_cer": 0.1,
+    "rejects": {
+      "cer": 2
+    }
+  },
+  "fr": {
+    "n": 144,
+    "kept": 48,
+    "yield": 0.3333,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 67,
+      "cer": 29
+    }
+  },
+  "gl": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.1667,
+    "rejects": {}
+  },
+  "gu": {
+    "n": 2,
+    "kept": 1,
+    "yield": 0.5,
+    "median_cer": 0.7019,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "ha": {
+    "n": 4,
+    "kept": 1,
+    "yield": 0.25,
+    "median_cer": 0.303,
+    "rejects": {
+      "cer": 3
+    }
+  },
+  "haw": {
+    "n": 4,
+    "kept": 3,
+    "yield": 0.75,
+    "median_cer": 0.0,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "he": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "hi": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "hr": {
+    "n": 81,
+    "kept": 38,
+    "yield": 0.4691,
+    "median_cer": 0.0,
+    "rejects": {
+      "cer": 19,
+      "duration": 24
+    }
+  },
+  "ht": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.4,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "hu": {
+    "n": 100,
+    "kept": 30,
+    "yield": 0.3,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 52,
+      "cer": 18
+    }
+  },
+  "id": {
+    "n": 2,
+    "kept": 2,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "it": {
+    "n": 9,
+    "kept": 6,
+    "yield": 0.6667,
+    "median_cer": 0.0,
+    "rejects": {
+      "cer": 2,
+      "duration": 1
+    }
+  },
+  "ja": {
+    "n": 2,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.0357,
+    "rejects": {
+      "duration": 2
+    }
+  },
+  "jw": {
+    "n": 2,
+    "kept": 1,
+    "yield": 0.5,
+    "median_cer": 1.4375,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "kk": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.125,
+    "rejects": {
+      "duration": 1
+    }
+  },
+  "km": {
+    "n": 3,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.4,
+    "rejects": {
+      "cer": 3
+    }
+  },
+  "kn": {
+    "n": 2,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.4167,
+    "rejects": {
+      "cer": 2
+    }
+  },
+  "ko": {
+    "n": 3,
+    "kept": 1,
+    "yield": 0.3333,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 2
+    }
+  },
+  "la": {
+    "n": 2,
+    "kept": 1,
+    "yield": 0.5,
+    "median_cer": 0.5,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "lb": {
+    "n": 3,
+    "kept": 3,
+    "yield": 1.0,
+    "median_cer": 0.24,
+    "rejects": {}
+  },
+  "ln": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "lo": {
+    "n": 6,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.6061,
+    "rejects": {
+      "cer": 6
+    }
+  },
+  "lt": {
+    "n": 340,
+    "kept": 64,
+    "yield": 0.1882,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 183,
+      "cer": 93
+    }
+  },
+  "lv": {
+    "n": 3,
+    "kept": 1,
+    "yield": 0.3333,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 1,
+      "cer": 1
+    }
+  },
+  "mg": {
+    "n": 3,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.4783,
+    "rejects": {
+      "cer": 3
+    }
+  },
+  "mi": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "mk": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.12,
+    "rejects": {}
+  },
+  "ml": {
+    "n": 2,
+    "kept": 2,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "mn": {
+    "n": 3,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.0,
+    "rejects": {
+      "cer": 3
+    }
+  },
+  "mr": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.4,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "ms": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "mt": {
+    "n": 131,
+    "kept": 29,
+    "yield": 0.2214,
+    "median_cer": 0.2,
+    "rejects": {
+      "duration": 52,
+      "cer": 50
+    }
+  },
+  "my": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 1
+    }
+  },
+  "ne": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "nl": {
+    "n": 5,
+    "kept": 4,
+    "yield": 0.8,
+    "median_cer": 0.0909,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "nn": {
+    "n": 3,
+    "kept": 1,
+    "yield": 0.3333,
+    "median_cer": 0.5,
+    "rejects": {
+      "cer": 2
+    }
+  },
+  "oc": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "pl": {
+    "n": 31,
+    "kept": 26,
+    "yield": 0.8387,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 5
+    }
+  },
+  "pt": {
+    "n": 51,
+    "kept": 24,
+    "yield": 0.4706,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 16,
+      "cer": 11
+    }
+  },
+  "ro": {
+    "n": 256,
+    "kept": 101,
+    "yield": 0.3945,
+    "median_cer": 0.0,
+    "rejects": {
+      "cer": 60,
+      "duration": 95
+    }
+  },
+  "ru": {
+    "n": 3,
+    "kept": 3,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "sa": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.75,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "sd": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "si": {
+    "n": 6,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.25,
+    "rejects": {
+      "cer": 6
+    }
+  },
+  "sk": {
+    "n": 66,
+    "kept": 25,
+    "yield": 0.3788,
+    "median_cer": 0.0955,
+    "rejects": {
+      "cer": 20,
+      "duration": 21
+    }
+  },
+  "sl": {
+    "n": 308,
+    "kept": 135,
+    "yield": 0.4383,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 124,
+      "cer": 49
+    }
+  },
+  "sn": {
+    "n": 4,
+    "kept": 3,
+    "yield": 0.75,
+    "median_cer": 0.0,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "sr": {
+    "n": 2,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.0,
+    "rejects": {
+      "cer": 2
+    }
+  },
+  "su": {
+    "n": 4,
+    "kept": 4,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "sv": {
+    "n": 152,
+    "kept": 76,
+    "yield": 0.5,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 50,
+      "cer": 26
+    }
+  },
+  "sw": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "ta": {
+    "n": 5,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.8889,
+    "rejects": {
+      "cer": 5
+    }
+  },
+  "tg": {
+    "n": 4,
+    "kept": 2,
+    "yield": 0.5,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 1,
+      "cer": 1
+    }
+  },
+  "th": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.1875,
+    "rejects": {}
+  },
+  "tk": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.9231,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "tr": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "tt": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.0,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "uk": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "ur": {
+    "n": 5,
+    "kept": 3,
+    "yield": 0.6,
+    "median_cer": 0.25,
+    "rejects": {
+      "cer": 2
+    }
+  },
+  "vi": {
+    "n": 14,
+    "kept": 9,
+    "yield": 0.6429,
+    "median_cer": 0.0156,
+    "rejects": {
+      "cer": 2,
+      "duration": 3
+    }
+  },
+  "yo": {
+    "n": 5,
+    "kept": 4,
+    "yield": 0.8,
+    "median_cer": 0.0,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "yue": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "rejects": {}
+  },
+  "zh": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.0,
+    "rejects": {
+      "duration": 1
+    }
+  }
+}

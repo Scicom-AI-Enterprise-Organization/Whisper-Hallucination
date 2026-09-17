@@ -171,20 +171,38 @@ models.
 ### Voice conversion and cloning candidates
 
 46 scorable phrases × 4 speaker slots = 184 clips per system (`tts/score_vc.py`, results in
-`tts/vc_scores_summary.json`):
+`tts/vc_scores_summary.json`).
+
+**OmniVoice is the source, so it is the baseline every other row is measured against.**
+Every converter is fed the same OmniVoice rendering of each phrase, so `ΔCER` is the
+degradation a system adds *on top of that clip* and `← source` is similarity to the
+OmniVoice voice it started from. Its own intelligibility is in the TTS table above.
+
+That makes it the zero point, but **not** ineligible as a candidate: OmniVoice also takes a
+reference clip (`generate(text=, ref_audio=, ref_text=)`), so it can aim at a target speaker
+exactly like Higgs v3 does. `tts/clone_omnivoice.py` runs that arm, and it now has a row —
+the interesting one, since OmniVoice is the generator the 100-language sweep runs on and the
+question was whether conditioning on a voice costs it intelligibility. It does: **+0.339 CER
+over its own auto-mode clip**, second worst in the table. What it buys is the strongest
+identity transfer measured here (**107%**, past the same-speaker ceiling, gap **+92**) under
+the only permissive licence in that bracket. (The one
+exception is `OpenVoice + MeloTTS`, where MeloTTS synthesises the audio and OpenVoice
+re-voices it, so its source is MeloTTS; that is also why its ΔCER is negative — MeloTTS is
+simply more intelligible than OmniVoice in the four languages it covers.)
 
 ![Voice conversion results](tts/vc_results.png)
 
 | | n | langs | CER | ΔCER | → target | ← source | gap | dur× | >2× | licence |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
 | **Multilingual-Expressive** *(speaker name)* | 184 | **21** | **0.365** | **+0.022** | n/a | 11% | — | 1.00 | 4% | ours |
-| kNN-VC | 184 | 20 | 0.441 | +0.099 | 68% | 59% | +9 | 0.99 | 0% | MIT |
+| kNN-VC | 184 | 20 | 0.443 | +0.101 | 68% | 59% | +9 | 0.99 | 0% | MIT |
 | OpenVoice v2 (20 s ref) | 184 | 19 | 0.457 | +0.115 | 62% | 56% | +6 | 0.99 | 0% | MIT |
-| OpenVoice v2 (6 s ref) | 184 | 20 | 0.467 | +0.125 | 61% | 53% | +8 | 0.99 | 0% | MIT |
+| OpenVoice v2 (6 s ref) | 184 | 20 | 0.466 | +0.124 | 61% | 53% | +8 | 0.99 | 0% | MIT |
 | seed-vc (6 s ref) | 184 | 20 | 0.472 | +0.129 | 68% | 49% | +19 | 0.99 | 0% | GPL-3.0 |
-| seed-vc (20 s ref) | 184 | **21** | 0.547 | +0.205 | 79% | 49% | +30 | 0.99 | 0% | GPL-3.0 |
-| Higgs Audio v3 *(cloning)* | 184 | 20 | 0.627 | +0.285 | 84% | 12% | +72 | 0.90 | 3% | non-commercial |
-| **Multilingual-Expressive** *(reference cloning)* | 184 | **21** | 1.740 | +1.397 | **103%** | 13% | **+90** | **3.27** | **68%** | ours |
+| seed-vc (20 s ref) | 184 | **21** | 0.549 | +0.206 | 79% | 49% | +29 | 0.99 | 0% | GPL-3.0 |
+| Higgs Audio v3 *(cloning)* | 184 | 20 | 0.653 | +0.311 | 84% | 12% | +72 | 0.90 | 3% | non-commercial |
+| **OmniVoice** *(cloning)* | 183 | **21** | 0.683 | +0.339 | **107%** | 15% | **+92** | 1.28 | 1% | **Apache-2.0** |
+| **Multilingual-Expressive** *(reference cloning)* | 184 | **21** | 1.740 | +1.397 | 103% | 13% | +90 | **3.27** | **68%** | ours |
 | OpenVoice + MeloTTS *(cloning)* | 40 | **4** | 0.077 | −0.434 | 69% | 19% | +50 | 1.13 | 0% | MIT |
 | CosyVoice 2 | **2** | — | — | — | — | — | — | — | — | Apache-2.0 |
 
@@ -218,8 +236,8 @@ with the systems that stop on time.
 
 **kNN-VC and OpenVoice barely convert.** Gaps of +6 to +9 mean the output sits almost equally
 close to the target and to the source. Their good ΔCER is partly explained by not changing
-much. seed-vc at +19 (+30 with a 20 s reference) is the best of the permissively-licensed
-converters, and reference length is a dial: +11 points of identity for 0.076 more CER.
+much. seed-vc at +19 (+29 with a 20 s reference) is the best of the permissively-licensed
+*converters*, and reference length is a dial: +10 points of identity for 0.077 more CER.
 
 **What to use:**
 
@@ -230,10 +248,15 @@ converters, and reference length is a dial: +11 points of identity for 0.076 mor
   match, but needs duration control first** — trimming to the phrase, or a stop condition.
   Out of the box, **Higgs Audio v3** is the best targeted cloner that terminates properly
   (84%, 0.90×), though its licence forbids using outputs to train non-Boson speech models.
-  Among permissive licences, **seed-vc (6 s ref)**.
+  Among permissive licences the choice is now a trade, not a compromise: **OmniVoice**
+  (Apache-2.0) buys the strongest identity in the table — 107%, gap +92, and it very nearly
+  terminates (1.28×, 1% over 2×) — for +0.339 ΔCER, while **seed-vc (6 s ref)** keeps
+  intelligibility (+0.129) and moves the voice far less (+19). Pick by which side of that
+  trade the positive pool needs.
 
-**Nobody else reaches the ceiling**, and the floor/ceiling distributions overlap heavily at
-1.6 s. **Cloned TTS is a coverage story**: MeloTTS covers 4 of 21 languages and CosyVoice's
+**OmniVoice reaches the ceiling too** — 107%, the only other system past it, and with the
+same caveat: it runs 1.28× long, so its x-vector gets more audio than the 1.6 s calibration
+assumed. The floor/ceiling distributions also overlap heavily at 1.6 s. **Cloned TTS is a coverage story**: MeloTTS covers 4 of 21 languages and CosyVoice's
 frontend is zh/en/ja/ko. **CosyVoice 2 could not be measured at all** — its flow encoder dies
 with SIGFPE, which no `except` can catch.
 
@@ -242,9 +265,11 @@ python tts/build_vc_targets.py --device cuda:6      # 4 target speakers, medoid-
 bash tts/setup/install_vc.sh seedvc                 # one venv per candidate
 python tts/vc_seedvc.py --device cuda:6 --ref short     # conversion candidates
 python tts/clone_higgs3.py --device cuda:7              # cloning candidates
+python tts/clone_omnivoice.py --device cuda:7           # OmniVoice, reference cloning
 python tts/clone_scicom.py --mode clone --device cuda:6 # Scicom, reference-audio cloning
 python tts/clone_scicom.py --mode named --device cuda:6 # Scicom, speaker-name conditioning
-python tts/score_vc.py --systems tts/vc_out/* --device cuda:6
+python tts/score_vc.py --systems tts/vc_out/* --device cuda:6   # ALL arms, one venv
+python tts/make_vc_summary.py                           # summary the figure reads
 python tts/calibrate_vc_sim.py --device cuda:6          # the % scale above
 python tts/plot_vc.py                                   # the figure above
 ```

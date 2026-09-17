@@ -184,22 +184,90 @@ New box paths — all added to `sync_excludes`, do that *before* generating anyt
 containing braces leaks the rest into the variable — `install_vc.sh knnvc` set `sys=knnvc}`
 and every system fell through to "unknown". No braces in `:?` messages.
 
+## Synthesising the lexicon at scale
+
+Pipeline: `tts/build_lexicon_queue.py` → `tts/synth_lexicon.py` → `tts/filter_lexicon_synth.py`,
+with `tts/qa_lexicon_synth.py` for a stratified spot-check and `tts/build_voice_plan.py` for
+per-language routing.
+
+**90% of the lexicon is not phrases.** Of 39,476 queued entries, **35,594 were observed
+exactly once**, and 27,974 of those run ≥5 words. They are raw ASR fragments, not things
+anyone says:
+
+    '0073a this vehicle s got 72 00 miles on it 3 5l v engine'
+    '1 188 and 1 792 for the'
+
+Digits split into separate tokens, no punctuation, truncated mid-sentence. Synthesising
+`0 1 0 4` yields "zero one zero four" and transcribes back as `0104`, so the round-trip fails
+by construction. On these, **both engines score CER ≈ 1.0 on English** (OmniVoice 0.651 mean,
+Multilingual-Expressive 0.712, neither over-generating) — when two independent engines fail
+identically the input is at fault. Synthesise `--min-count 2`: 3,882 entries across 85
+languages, median 2 words. The rest is debris that will fail QA anyway.
+
+**The queue is sorted by observation count, descending**, so the run degrades gracefully:
+stopping early leaves the most-hallucinated phrases done rather than a random sample. That is
+what made it safe to stop the English run at 7,424 of 30,608 — all 1,380 of its `count>=2`
+entries were already complete.
+
+**A voice plan built on short phrases does not generalise.** `lexicon_voice_plan.json` came
+from 2-3 high-frequency phrases per language (`thank you`), where Multilingual-Expressive
+scores 0.000 on several languages. On real lexicon phrases the same routing gives ta 1.49,
+el 1.37, ur 1.10 with duration ratios past 2× — the same runaway its cloning path shows.
+Re-measure routing on the phrases you will actually synthesise.
+
+**Batching is worth 4.7× and is safe.** Batch 32 with left padding plus length-sorted windows
+gives 8.53 clip/s across two GPUs against 1.17 at batch 8 one-at-a-time. A batch costs the
+LONGEST generation in it, so `--sort-window` sorts by phrase length inside 512-item priority
+windows; without it a 2-word phrase shares a budget with a 40-word one. `tts/check_batching.py`
+verifies batched against single generation directly — **median CER 0.000 both ways** (the mean
+differs by 0.036, which is sampling noise under `do_sample=True`). Worth re-running if the
+generation path changes.
+
+**`max_new_tokens` scales with the phrase**, ~22 tokens/word plus slack (NeuCodec is 50
+tokens/s, speech ~2.5 words/s). A flat 1024 spends 20 s of budget on a two-word phrase, which
+is both wasteful and exactly how the cloning path ran away.
+
+**Force the language in every scorer.** Whisper auto-detecting on a short non-Latin clip lands
+in the wrong language and returns CER > 1.0 that says nothing about the audio — it read `ar`
+at 1.47 until the QA was fixed to force the language and batch by it, as `score_tts.py` and
+`score_vc.py` already did.
+
+**Piping a long run through `| tail -N` hides it until it exits.** Both `head` and `tail`
+buffer, so progress lines never appear; `stdbuf -oL` on the producer and the filter, or no
+pager at all.
+
 ## VC selection, as measured
 
 46 scorable lexicon phrases × 4 speaker slots (2 Malaysian-Emilia + 2 LibriSpeech references
 for the targeted systems; 4 named speakers for the name path) = 184 clips per system.
+**OmniVoice is the source audio for every converter, so it is the baseline** — ΔCER is what a
+system adds on top of the OmniVoice clip, and `← source` is similarity to the OmniVoice voice.
+`OpenVoice + MeloTTS` is the exception: MeloTTS renders it, hence the negative ΔCER.
+Being the baseline does **not** make it ineligible as a candidate: OmniVoice takes
+`ref_audio`/`ref_text` too, so it clones to a target like Higgs v3 — `tts/clone_omnivoice.py`,
+scored 2026-09-17. Conditioning on a voice costs it **+0.339 CER** over its own auto-mode
+clip, and buys the strongest identity transfer in the table (107%, gap +92) at Apache-2.0.
+
+**Scoring environment matters and was not pinned.** `.venv_bench` (the original scorer venv)
+is gone from the box; re-scoring under `.venv_omni` (transformers 5.17.0, torch 2.11+cu128)
+reproduces WavLM similarity, duration and langs *bit-identically* but moves Whisper CER on
+one system — `higgs3_clone` 0.627 → 0.653, everything else within ±0.002. So **score every
+arm in one environment**: a row scored in a different venv is not comparable. All rows above
+were re-scored together on 2026-09-17; `tts/make_vc_summary.py` rebuilds the summary from
+`vc_scores.json` afterwards (it used to be hand-made).
 `tts/score_vc.py`, summary in `tts/vc_scores_summary.json`, figure from `tts/plot_vc.py`.
 
 | | n | langs | CER | ΔCER | → target | ← source | gap | dur× | >2× | licence |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
 | **Multilingual-Expressive** *(speaker name)* | 184 | **21** | **0.365** | **+0.022** | n/a | 11% | — | 1.00 | 4% | ours |
-| kNN-VC | 184 | 20 | 0.441 | +0.099 | 68% | 59% | +9 | 0.99 | 0% | MIT |
+| kNN-VC | 184 | 20 | 0.443 | +0.101 | 68% | 59% | +9 | 0.99 | 0% | MIT |
 | OpenVoice v2 (20 s ref) | 184 | 19 | 0.457 | +0.115 | 62% | 56% | +6 | 0.99 | 0% | MIT |
-| OpenVoice v2 (6 s ref) | 184 | 20 | 0.467 | +0.125 | 61% | 53% | +8 | 0.99 | 0% | MIT |
+| OpenVoice v2 (6 s ref) | 184 | 20 | 0.466 | +0.124 | 61% | 53% | +8 | 0.99 | 0% | MIT |
 | seed-vc (6 s ref) | 184 | 20 | 0.472 | +0.129 | 68% | 49% | +19 | 0.99 | 0% | GPL-3.0 |
-| seed-vc (20 s ref) | 184 | **21** | 0.547 | +0.205 | 79% | 49% | +30 | 0.99 | 0% | GPL-3.0 |
-| Higgs Audio v3 *(cloning)* | 184 | 20 | 0.627 | +0.285 | 84% | 12% | +72 | 0.90 | 3% | non-commercial |
-| **Multilingual-Expressive** *(reference cloning)* | 184 | **21** | 1.740 | +1.397 | **103%** | 13% | **+90** | **3.27** | **68%** | ours |
+| seed-vc (20 s ref) | 184 | **21** | 0.549 | +0.206 | 79% | 49% | +29 | 0.99 | 0% | GPL-3.0 |
+| Higgs Audio v3 *(cloning)* | 184 | 20 | 0.653 | +0.311 | 84% | 12% | +72 | 0.90 | 3% | non-commercial |
+| **OmniVoice** *(cloning)* | 183 | **21** | 0.683 | +0.339 | **107%** | 15% | **+92** | 1.28 | 1% | **Apache-2.0** |
+| **Multilingual-Expressive** *(reference cloning)* | 184 | **21** | 1.740 | +1.397 | 103% | 13% | +90 | **3.27** | **68%** | ours |
 | OpenVoice + MeloTTS *(cloning)* | 40 | **4** | 0.077 | −0.434 | 69% | 19% | +50 | 1.13 | 0% | MIT |
 | CosyVoice 2 | **2** | — | — | — | — | — | — | — | — | Apache-2.0 |
 
@@ -233,8 +301,8 @@ with the systems that stop on time.
 
 **kNN-VC and OpenVoice barely convert.** Gaps of +6 to +9 mean the output sits almost equally
 close to the target and to the source. Their good ΔCER is partly explained by not changing
-much. seed-vc at +19 (+30 with a 20 s reference) is the best of the permissively-licensed
-converters, and reference length is a dial: +11 points of identity for 0.076 more CER.
+much. seed-vc at +19 (+29 with a 20 s reference) is the best of the permissively-licensed
+*converters*, and reference length is a dial: +10 points of identity for 0.077 more CER.
 
 **What to use:**
 
@@ -245,10 +313,13 @@ converters, and reference length is a dial: +11 points of identity for 0.076 mor
   match, but needs duration control first** — trimming to the phrase, or a stop condition.
   Out of the box, **Higgs Audio v3** is the best targeted cloner that terminates properly
   (84%, 0.90×), though its licence forbids using outputs to train non-Boson speech models.
-  Among permissive licences, **seed-vc (6 s ref)**.
+  Among permissive licences it is a trade: **OmniVoice** (Apache-2.0) gives the strongest
+  identity in the table (107%, gap +92, 1.28×) for +0.339 ΔCER; **seed-vc (6 s ref)** keeps
+  intelligibility (+0.129) and barely moves the voice (+19).
 
-**Nobody else reaches the ceiling**, and the floor/ceiling distributions overlap heavily at
-1.6 s. **Cloned TTS is a coverage story**: MeloTTS covers 4 of 21 languages and CosyVoice's
+**OmniVoice reaches the ceiling too** (107%) — with the same caveat, since it runs 1.28×
+long and the calibration assumed 1.6 s. The floor/ceiling distributions also overlap heavily
+at 1.6 s. **Cloned TTS is a coverage story**: MeloTTS covers 4 of 21 languages and CosyVoice's
 frontend is zh/en/ja/ko. **CosyVoice 2 could not be measured at all** — its flow encoder dies
 with SIGFPE, which no `except` can catch.
 
