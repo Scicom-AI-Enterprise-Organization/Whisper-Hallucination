@@ -253,14 +253,18 @@ is gone from the box; re-scoring under `.venv_omni` (transformers 5.17.0, torch 
 reproduces WavLM similarity, duration and langs *bit-identically* but moves Whisper CER on
 one system — `higgs3_clone` 0.627 → 0.653, everything else within ±0.002. So **score every
 arm in one environment**: a row scored in a different venv is not comparable. All rows above
-were re-scored together on 2026-09-17; `tts/make_vc_summary.py` rebuilds the summary from
-`vc_scores.json` afterwards (it used to be hand-made).
+were re-scored together; `tts/make_vc_summary.py` rebuilds the summary from `vc_scores.json`
+afterwards (it used to be hand-made).
+
+Scoring is otherwise **deterministic** — re-running the same audio in the same venv reproduced
+11 of 12 systems bit-identically. The exception was `knnvc`, which moved 0.443 → 0.437 CER
+between two identical runs, so treat differences under ~0.01 CER as noise rather than signal.
 `tts/score_vc.py`, summary in `tts/vc_scores_summary.json`, figure from `tts/plot_vc.py`.
 
 | | n | langs | CER | ΔCER | → target | ← source | gap | dur× | >2× | licence |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| **Multilingual-Expressive** *(speaker name)* | 184 | **21** | **0.365** | **+0.022** | n/a | 11% | — | 1.00 | 4% | ours |
-| kNN-VC | 184 | 20 | 0.443 | +0.101 | 68% | 59% | +9 | 0.99 | 0% | MIT |
+| **Multilingual-Expressive** *(speaker name)* | 184 | **21** | **0.308** | **−0.035** | n/a | 13% | — | 1.03 | 3% | ours |
+| kNN-VC | 184 | 20 | 0.437 | +0.095 | 68% | 59% | +9 | 0.99 | 0% | MIT |
 | OpenVoice v2 (20 s ref) | 184 | 19 | 0.457 | +0.115 | 62% | 56% | +6 | 0.99 | 0% | MIT |
 | OpenVoice v2 (6 s ref) | 184 | 20 | 0.466 | +0.124 | 61% | 53% | +8 | 0.99 | 0% | MIT |
 | seed-vc (6 s ref) | 184 | 20 | 0.472 | +0.129 | 68% | 49% | +19 | 0.99 | 0% | GPL-3.0 |
@@ -282,9 +286,18 @@ as "a stranger" and 100% as "the target".
 **Multilingual-Expressive has two conditioning paths and they land at opposite extremes.**
 
 - *Speaker name* — a name token from the `ExpressiveSpeech` inventory — is the intelligibility
-  winner outright: **ΔCER +0.022**, four times better than the best converter, at the correct
-  duration and 11% source retention. It cannot aim at a named target, because a name is not a
-  reference you can score against.
+  winner outright: **ΔCER −0.035** — it is *more* intelligible than the OmniVoice clip it was
+  asked to re-voice, the only system to manage that across all 21 languages — at the correct
+  duration (1.03×) and 13% source retention. It cannot aim at a named target, because a name
+  is not a reference you can score against.
+
+  That row was wrong until 2026-09-18: one of its four speakers,
+  `multilingual-tts_audio_Rahman`, **is not in `ExpressiveSpeech`** (the only Rahman there is
+  `genshin-voice_audio_Rahman`, 46 rows of Japanese). An unknown name does not raise — it
+  conditions on a token the fine-tune never saw — so a quarter of the grid was effectively
+  unconditioned and the row read ΔCER +0.022 / CER 0.365. With a real name in that slot
+  (`multilingual-tts_audio_Ryan`) it is ΔCER −0.035 / CER 0.308. **Verify speaker names
+  against the dataset before trusting a named-mode number.**
 - *Reference cloning* — reference transcript plus NeuCodec tokens, per the
   [base model card](https://huggingface.co/Scicom-intl/Multilingual-TTS-1.7B-Base#voice-cloning)
   — produces the **best voice match measured**, 103% of the calibrated scale with a +90 gap.
@@ -306,9 +319,10 @@ much. seed-vc at +19 (+29 with a 20 s reference) is the best of the permissively
 
 **What to use:**
 
-- **Populating the positive pool → Multilingual-Expressive, speaker-name mode.** +0.022 ΔCER
-  at the right duration across 21 languages. When the requirement is "different, intelligible
-  voices" rather than "this specific speaker", nothing else is close.
+- **Populating the positive pool → Multilingual-Expressive, speaker-name mode.** −0.035 ΔCER
+  at the right duration across 21 languages: it *improves* on the source clip rather than
+  degrading it. When the requirement is "different, intelligible voices" rather than "this
+  specific speaker", nothing else is close.
 - **Hitting a named target → Multilingual-Expressive reference cloning is the best voice
   match, but needs duration control first** — trimming to the phrase, or a stop condition.
   Out of the box, **Higgs Audio v3** is the best targeted cloner that terminates properly

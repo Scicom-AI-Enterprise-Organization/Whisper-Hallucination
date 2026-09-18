@@ -43,10 +43,16 @@ def main():
     ap.add_argument("--codec-repo", default="Scicom-intl/neucodec")
     ap.add_argument("--system-name", default="")
     ap.add_argument("--speakers", nargs="+",
-                    default=["multilingual-tts_audio_Grace", "multilingual-tts_audio_Rahman",
+                    default=["multilingual-tts_audio_Grace", "multilingual-tts_audio_Ryan",
                              "DisfluencySpeech", "multilingual-tts_audio_Serena"],
-                    help="--mode named only; names verified against Scicom-intl/ExpressiveSpeech. "
-                         "Four of them so this grid matches the four reference targets.")
+                    help="--mode named only; names must exist VERBATIM in the `speaker` column of "
+                         "Scicom-intl/ExpressiveSpeech (config `data`) -- an unknown name is not an "
+                         "error, it just conditions on a token the fine-tune never saw. "
+                         "`multilingual-tts_audio_Rahman` was exactly that mistake: the only Rahman "
+                         "in the dataset is `genshin-voice_audio_Rahman` (46 rows of Japanese), so "
+                         "the slot is now Ryan -- male, Southeast Asian, 587 rows, same studio "
+                         "family as Grace/Serena. Four of them so this grid matches the four "
+                         "reference targets.")
     ap.add_argument("--device", default="cuda:6")
     ap.add_argument("--max-new-tokens", type=int, default=1024)
     ap.add_argument("--temperature", type=float, default=0.8)
