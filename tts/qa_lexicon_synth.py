@@ -30,6 +30,34 @@ from metrics import cer, normalise  # noqa: E402
 SR = 16000
 
 
+def expected_seconds(phrase: str) -> float:
+    """How long this phrase should take to say.
+
+    `words / 2.5` underestimates short utterances badly -- a one-word `Ačiū.` runs about
+    0.8 s with onset and decay, not 0.4 s, so correct clips were being flagged as 3x
+    over-generating. An affine fit is far closer at the short end, which is where this
+    corpus lives.
+    """
+    return 0.35 + 0.45 * max(1, len(phrase.split()))
+
+
+def recovered(ref: str, hyp: str, max_cer: float) -> bool:
+    """Did the ASR recover the phrase?
+
+    CER alone is unusable on very short references: `Pag` against `Pagrindiniai.` scores
+    3.00, and a single hallucinated token against a 5-character reference scores above 1.
+    For short phrases the question that matters is whether the phrase is THERE, so
+    containment stands in; the duration gate separately rejects a clip that buried the
+    phrase in seconds of invented speech.
+    """
+    r, h = normalise(ref), normalise(hyp)
+    if not r or not h:
+        return False
+    if cer(ref, hyp) <= max_cer:
+        return True
+    return len(r) <= 12 and r in h
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--synth", type=Path, default=ROOT / "audio" / "lexicon_synth")
@@ -90,7 +118,7 @@ def main():
         hyps = proc.batch_decode(gen, skip_special_tokens=True)
         for r, hyp in zip(chunk, hyps):
             k = (r["_engine"], r["lang"])
-            expected = max(0.4, len(r["phrase"].split()) / 2.5)
+            expected = expected_seconds(r["phrase"])
             per[k]["cer"].append(cer(r["phrase"], hyp.strip()))
             per[k]["dur_ratio"].append(float(r["duration_s"]) / expected)
             per[k]["empty"] += (not normalise(hyp))
@@ -110,9 +138,14 @@ def main():
     args.out.write_text(json.dumps(out, indent=2, ensure_ascii=False) + "\n")
 
     for engine, langs in out.items():
+        # Per-CLIP median, not the median of per-language means -- the latter lets two
+        # outliers in a language of ten clips set the headline number.
+        clips = [c for (e, _), v in per.items() if e == engine for c in v["cer"]]
         cers = [x["cer"] for x in langs.values()]
-        print(f"\n{engine}: {len(langs)} languages, mean CER {statistics.mean(cers):.3f}, "
-              f"median {statistics.median(cers):.3f}")
+        print(f"\n{engine}: {len(langs)} languages, {len(clips)} clips, "
+              f"per-clip median CER {statistics.median(clips):.3f}, "
+              f"recovered {sum(c <= 0.25 for c in clips)/len(clips):.1%}, "
+              f"mean of per-language means {statistics.mean(cers):.3f}")
         worst = sorted(langs.items(), key=lambda kv: -kv[1]["cer"])[:8]
         print("  worst languages:", [(l, v["cer"]) for l, v in worst])
         bad_dur = [(l, v["median_dur_ratio"]) for l, v in langs.items() if v["median_dur_ratio"] > 2]

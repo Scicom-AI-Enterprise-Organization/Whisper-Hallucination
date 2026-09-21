@@ -34,7 +34,7 @@ TOK = re.compile(r"<\|s_(\d+)\|>")
 SR_OUT = 16000
 SR_NEUCODEC = 24000
 FIELDS = ["idx", "lang", "phrase", "count", "engine", "voice", "audio_filepath",
-          "duration_s", "status", "error"]
+          "duration_s", "status", "error", "meta"]
 
 
 def tokens_for(phrase: str, floor: int = 120, per_word: int = 22, cap: int = 900) -> int:
@@ -71,12 +71,24 @@ class ShardWriter:
             self.w.writeheader(); self.fh.flush()
         self.ok = self.fail = 0
 
-    def add(self, item, rel="", dur=0.0, error=""):
+    def add(self, item, rel="", dur=0.0, error="", meta=None):
+        """`meta` is a JSON string: which model made this clip, in which voice, with which
+        parameters, and where the phrase itself came from. Without it a published corpus is
+        unreproducible -- you cannot tell a Grace clip from a Ryan one, or a translated
+        phrase from an observed one, after the fact."""
+        row_meta = dict(meta or {})
+        row_meta.setdefault("phrase_provenance", item.get("provenance", "observed"))
+        row_meta.setdefault("count_basis", item.get("count_basis", "observed"))
+        if item.get("source_phrase"):
+            row_meta.setdefault("source_phrase", item["source_phrase"])
+        if item.get("source"):
+            row_meta.setdefault("lexicon_source", item["source"])
         self.w.writerow({"idx": item["idx"], "lang": item["lang"], "phrase": item["phrase"],
                          "count": item["count"], "engine": item["engine"],
                          "voice": item.get("voice") or "", "audio_filepath": rel,
                          "duration_s": dur, "status": "ok" if rel else "fail",
-                         "error": error[:160]})
+                         "error": error[:160],
+                         "meta": json.dumps(row_meta, ensure_ascii=False, sort_keys=True)})
         self.fh.flush()
         self.done.add(item["idx"])
         self.ok += bool(rel); self.fail += (not rel)
@@ -128,7 +140,14 @@ def run_scicom(items, args, w):
                     wav = codec.decode_code(torch.tensor(codes)[None, None].to(args.device))
                 rel = f"wav/{c['lang']}_{c['idx']:06d}.flac"
                 dur = write_clip(w.dir / rel, wav[0, 0].float().cpu().numpy(), SR_NEUCODEC)
-                w.add(c, rel=rel, dur=dur)
+                w.add(c, rel=rel, dur=dur, meta={
+                    "tts_model": args.scicom_model, "codec": args.codec_repo,
+                    "conditioning": "speaker_name", "speaker": c.get("voice"),
+                    "sample_rate_model": SR_NEUCODEC, "sample_rate_out": SR_OUT,
+                    "do_sample": True, "temperature": args.temperature,
+                    "repetition_penalty": args.repetition_penalty,
+                    "max_new_tokens": budget, "seed": args.seed, "n_codes": len(codes),
+                })
             except Exception as e:
                 w.add(c, error=f"{type(e).__name__}: {e}")
 
@@ -179,7 +198,12 @@ def run_omnivoice(items, args, w):
                 if x.size < SR_OUT // 40:
                     w.add(c, error="output shorter than 25 ms"); continue
                 rel = f"wav/{c['lang']}_{c['idx']:06d}.flac"
-                w.add(c, rel=rel, dur=write_clip(w.dir / rel, x, sr_model))
+                w.add(c, rel=rel, dur=write_clip(w.dir / rel, x, sr_model), meta={
+                    "tts_model": args.omnivoice_model, "conditioning": "language_id",
+                    "language_id": alias.get(c["lang"], c["lang"]),
+                    "sample_rate_model": sr_model, "sample_rate_out": SR_OUT,
+                    "num_step": args.num_step, "seed": args.seed,
+                })
             except Exception as e:
                 w.add(c, error=f"{type(e).__name__}: {e}")
 

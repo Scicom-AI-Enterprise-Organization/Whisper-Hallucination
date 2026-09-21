@@ -76,11 +76,19 @@ configs:
   data_files:
   - split: train
     path: data/malaysian_sources/train-*.parquet
+- config_name: lexicon_synth
+  data_files:
+  - split: train
+    path: data/lexicon_synth/train-*.parquet
+  - split: test
+    path: data/lexicon_synth/test-*.parquet
 ---
 
 # Whisper Hallucination and Repetition Probes
 
-> **This is a BENCHMARK. Every audio config is `test` — do not fine-tune on it.**
+> **This is a BENCHMARK. Every *evaluation* config is `test` — do not fine-tune on it.**
+> (The one exception is `lexicon_synth`, which is synthetic training material and ships its
+> own `train`/`test` split. It is **not** one of the eight benchmark arms — see below.)
 > Training on these clips invalidates every number you would then report. Build training
 > data separately from the same source corpora, excluding the items listed in
 > [`benchmark/exclusions.json`](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/blob/main/benchmark/exclusions.json) in the project
@@ -209,6 +217,63 @@ row = next(iter(st))
 
 
 Audio is 16 kHz mono FLAC (lossless, 16-bit), peak-normalised to −3 dBFS.
+
+## `lexicon_synth` — synthetic positives, with a train split
+
+**Not a benchmark arm.** The eight audio configs above are evaluation-only. This one is
+material for *building* a mitigation: 16,922 synthesised clips of lexicon phrases, 8.6 hours,
+across 83 languages, shipped as `train` (13,203 clips) and `test` (3,719).
+
+| | train | test |
+|---|---:|---:|
+| clips | 13,203 | 3,719 |
+| hours | 6.74 | 1.84 |
+| distinct phrases | 10,413 | 2,883 |
+| languages | 75 | 83 |
+| languages with ≥10 clips | 72 | 70 |
+| non-English share | 86% | 85% |
+
+**The split is by PHRASE, not by clip.** Each phrase is rendered in several voices; splitting
+clips would put `terima kasih` in both halves and a model would then be evaluated on text it
+trained on. Assignment is a hash of (phrase, language) with a fixed salt, so it is
+reproducible without shipping a map and stable as the corpus grows.
+
+**306 phrases are forced into `test` because they appear in `phrases/targets.csv`**, which
+drives the `genuine_isolated` arm. Synthetic audio of a benchmark phrase contaminates the
+benchmark exactly as its real audio would, so those phrases can never enter `train`. The
+build re-verifies both properties — zero phrase overlap, zero benchmark phrases in train —
+and refuses to write a release if either fails.
+
+**How it was made.** Phrases come from three places, and `meta.phrase_provenance` says which
+for every clip:
+
+| provenance | count | what it is |
+|---|---|---|
+| `observed` | upstream lexicons | phrases Whisper was seen to hallucinate |
+| `mined` | our own runs | what these five checkpoints emitted on our non-speech arms |
+| `translated` | NLLB-200 | English hallucination phrases rendered into 80 languages |
+
+`translated` rows are **positives, not evidence**: a Tamil `thank you` is something people
+say, not something Whisper was observed to invent in Tamil. Do not feed them to
+`ban_candidates` — that would be circular.
+
+Audio is from `Scicom-intl/Multilingual-Expressive-TTS-1.7B` (speaker-name conditioned, 45
+verified voices) and `k2-fsa/OmniVoice`, routed per language by measured CER. Every clip's
+`meta` column is a JSON string carrying the TTS model, codec, conditioning mode, speaker,
+sample rates, decoding parameters and seed.
+
+**Every clip passed an ASR round-trip filter** — Whisper must recover the phrase, and the
+clip must be about as long as the phrase should take, which rejects a TTS that keeps talking
+past a two-word prompt. The gate is **per language, anchored to the judge's own floor**: we
+measured Whisper's CER on real FLEURS speech in 44 languages, and a language where the judge
+itself scores 0.88 (Burmese) or 1.23 (Amharic) cannot be held to a 0.25 gate. Nine such
+languages are excluded rather than scored, because their clips are unverifiable with this
+judge, not necessarily bad.
+
+```python
+train = load_dataset("Scicom-intl/Whisper-Hallucination", "lexicon_synth", split="train")
+test  = load_dataset("Scicom-intl/Whisper-Hallucination", "lexicon_synth", split="test")
+```
 
 ## Negative arms — what the model invents
 

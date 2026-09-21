@@ -1,0 +1,1223 @@
+{
+  "af": {
+    "n": 49,
+    "kept": 18,
+    "yield": 0.3673,
+    "median_cer": 0.0882,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 17,
+      "duration": 14
+    }
+  },
+  "am": {
+    "n": 51,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 5.6923,
+    "judge_floor": 1.2265,
+    "gate": 0.25,
+    "judge_cannot_read": true,
+    "rejects": {
+      "unvalidatable_language": 51
+    }
+  },
+  "ar": {
+    "n": 61,
+    "kept": 51,
+    "yield": 0.8361,
+    "median_cer": 0.0303,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 10
+    }
+  },
+  "az": {
+    "n": 52,
+    "kept": 52,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "judge_floor": 0.0419,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {}
+  },
+  "be": {
+    "n": 54,
+    "kept": 48,
+    "yield": 0.8889,
+    "median_cer": 0.1014,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 6
+    }
+  },
+  "bg": {
+    "n": 205,
+    "kept": 151,
+    "yield": 0.7366,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 53,
+      "duration": 1
+    }
+  },
+  "bn": {
+    "n": 56,
+    "kept": 23,
+    "yield": 0.4107,
+    "median_cer": 0.3009,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 33
+    }
+  },
+  "br": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.1429,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {}
+  },
+  "bs": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {}
+  },
+  "ca": {
+    "n": 56,
+    "kept": 42,
+    "yield": 0.75,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 8,
+      "duration": 6
+    }
+  },
+  "cs": {
+    "n": 165,
+    "kept": 132,
+    "yield": 0.8,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 33
+    }
+  },
+  "cy": {
+    "n": 52,
+    "kept": 36,
+    "yield": 0.6923,
+    "median_cer": 0.0286,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 5,
+      "duration": 11
+    }
+  },
+  "da": {
+    "n": 327,
+    "kept": 178,
+    "yield": 0.5443,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 80,
+      "duration": 69
+    }
+  },
+  "de": {
+    "n": 69,
+    "kept": 44,
+    "yield": 0.6377,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 10,
+      "duration": 15
+    }
+  },
+  "el": {
+    "n": 89,
+    "kept": 75,
+    "yield": 0.8427,
+    "median_cer": 0.0,
+    "judge_floor": 0.029,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 12,
+      "duration": 2
+    }
+  },
+  "en": {
+    "n": 1281,
+    "kept": 817,
+    "yield": 0.6378,
+    "median_cer": 0.0,
+    "judge_floor": 0.0094,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 164,
+      "duration": 300
+    }
+  },
+  "es": {
+    "n": 195,
+    "kept": 125,
+    "yield": 0.641,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 54,
+      "duration": 16
+    }
+  },
+  "et": {
+    "n": 275,
+    "kept": 206,
+    "yield": 0.7491,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 57,
+      "duration": 12
+    }
+  },
+  "eu": {
+    "n": 58,
+    "kept": 53,
+    "yield": 0.9138,
+    "median_cer": 0.043,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 5
+    }
+  },
+  "fa": {
+    "n": 56,
+    "kept": 52,
+    "yield": 0.9286,
+    "median_cer": 0.1156,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 4
+    }
+  },
+  "fi": {
+    "n": 64,
+    "kept": 58,
+    "yield": 0.9062,
+    "median_cer": 0.0,
+    "judge_floor": 0.0027,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 5,
+      "duration": 1
+    }
+  },
+  "fo": {
+    "n": 5,
+    "kept": 3,
+    "yield": 0.6,
+    "median_cer": 0.1538,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 2
+    }
+  },
+  "fr": {
+    "n": 197,
+    "kept": 141,
+    "yield": 0.7157,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 35,
+      "duration": 21
+    }
+  },
+  "ga": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": null,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": true,
+    "rejects": {
+      "no_judge_for_language": 1
+    }
+  },
+  "gl": {
+    "n": 57,
+    "kept": 44,
+    "yield": 0.7719,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 5,
+      "cer": 8
+    }
+  },
+  "gu": {
+    "n": 57,
+    "kept": 35,
+    "yield": 0.614,
+    "median_cer": 0.0938,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 21,
+      "duration": 1
+    }
+  },
+  "ha": {
+    "n": 49,
+    "kept": 23,
+    "yield": 0.4694,
+    "median_cer": 0.2222,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 19,
+      "duration": 7
+    }
+  },
+  "haw": {
+    "n": 3,
+    "kept": 3,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {}
+  },
+  "he": {
+    "n": 54,
+    "kept": 45,
+    "yield": 0.8333,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 8,
+      "duration": 1
+    }
+  },
+  "hi": {
+    "n": 57,
+    "kept": 53,
+    "yield": 0.9298,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 4
+    }
+  },
+  "hr": {
+    "n": 134,
+    "kept": 107,
+    "yield": 0.7985,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 25,
+      "duration": 2
+    }
+  },
+  "ht": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "hu": {
+    "n": 156,
+    "kept": 136,
+    "yield": 0.8718,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 20
+    }
+  },
+  "hy": {
+    "n": 52,
+    "kept": 39,
+    "yield": 0.75,
+    "median_cer": 0.1143,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 11,
+      "duration": 2
+    }
+  },
+  "id": {
+    "n": 68,
+    "kept": 67,
+    "yield": 0.9853,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "is": {
+    "n": 57,
+    "kept": 24,
+    "yield": 0.4211,
+    "median_cer": 0.0286,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 23,
+      "cer": 10
+    }
+  },
+  "it": {
+    "n": 65,
+    "kept": 55,
+    "yield": 0.8462,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 4,
+      "duration": 6
+    }
+  },
+  "ja": {
+    "n": 60,
+    "kept": 26,
+    "yield": 0.4333,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 5,
+      "duration": 29
+    }
+  },
+  "jw": {
+    "n": 54,
+    "kept": 49,
+    "yield": 0.9074,
+    "median_cer": 0.052,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 5
+    }
+  },
+  "ka": {
+    "n": 53,
+    "kept": 47,
+    "yield": 0.8868,
+    "median_cer": 0.0526,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 6
+    }
+  },
+  "kk": {
+    "n": 56,
+    "kept": 48,
+    "yield": 0.8571,
+    "median_cer": 0.0896,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 8
+    }
+  },
+  "km": {
+    "n": 58,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 3.5276,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 58
+    }
+  },
+  "kn": {
+    "n": 58,
+    "kept": 45,
+    "yield": 0.7759,
+    "median_cer": 0.1387,
+    "judge_floor": 0.2412,
+    "gate": 0.3618,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 1,
+      "cer": 12
+    }
+  },
+  "ko": {
+    "n": 57,
+    "kept": 53,
+    "yield": 0.9298,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 4
+    }
+  },
+  "la": {
+    "n": 2,
+    "kept": 1,
+    "yield": 0.5,
+    "median_cer": 0.1032,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 1
+    }
+  },
+  "lb": {
+    "n": 3,
+    "kept": 1,
+    "yield": 0.3333,
+    "median_cer": 0.0714,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 1,
+      "duration": 1
+    }
+  },
+  "ln": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {}
+  },
+  "lo": {
+    "n": 56,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.0,
+    "judge_floor": 1.0,
+    "gate": 0.25,
+    "judge_cannot_read": true,
+    "rejects": {
+      "unvalidatable_language": 56
+    }
+  },
+  "lt": {
+    "n": 384,
+    "kept": 283,
+    "yield": 0.737,
+    "median_cer": 0.0,
+    "judge_floor": 0.0568,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 1,
+      "cer": 100
+    }
+  },
+  "lv": {
+    "n": 55,
+    "kept": 49,
+    "yield": 0.8909,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 6
+    }
+  },
+  "mg": {
+    "n": 61,
+    "kept": 5,
+    "yield": 0.082,
+    "median_cer": 0.4783,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 56
+    }
+  },
+  "mi": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {}
+  },
+  "mk": {
+    "n": 53,
+    "kept": 46,
+    "yield": 0.8679,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 7
+    }
+  },
+  "ml": {
+    "n": 56,
+    "kept": 2,
+    "yield": 0.0357,
+    "median_cer": 1.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 54
+    }
+  },
+  "mn": {
+    "n": 55,
+    "kept": 13,
+    "yield": 0.2364,
+    "median_cer": 0.3662,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 42
+    }
+  },
+  "mr": {
+    "n": 55,
+    "kept": 41,
+    "yield": 0.7455,
+    "median_cer": 0.1667,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 2,
+      "cer": 12
+    }
+  },
+  "ms": {
+    "n": 54,
+    "kept": 49,
+    "yield": 0.9074,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 4,
+      "duration": 1
+    }
+  },
+  "mt": {
+    "n": 182,
+    "kept": 104,
+    "yield": 0.5714,
+    "median_cer": 0.2105,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 74,
+      "duration": 4
+    }
+  },
+  "my": {
+    "n": 52,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.0,
+    "judge_floor": 0.8773,
+    "gate": 0.25,
+    "judge_cannot_read": true,
+    "rejects": {
+      "unvalidatable_language": 52
+    }
+  },
+  "nb": {
+    "n": 2,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": null,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": true,
+    "rejects": {
+      "no_judge_for_language": 2
+    }
+  },
+  "ne": {
+    "n": 55,
+    "kept": 31,
+    "yield": 0.5636,
+    "median_cer": 0.2857,
+    "judge_floor": 0.1997,
+    "gate": 0.2995,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 1,
+      "cer": 23
+    }
+  },
+  "nl": {
+    "n": 63,
+    "kept": 34,
+    "yield": 0.5397,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 17,
+      "cer": 12
+    }
+  },
+  "nn": {
+    "n": 4,
+    "kept": 1,
+    "yield": 0.25,
+    "median_cer": 0.25,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 2,
+      "duration": 1
+    }
+  },
+  "no": {
+    "n": 58,
+    "kept": 29,
+    "yield": 0.5,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 20,
+      "cer": 9
+    }
+  },
+  "oc": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 1
+    }
+  },
+  "pa": {
+    "n": 54,
+    "kept": 8,
+    "yield": 0.1481,
+    "median_cer": 0.378,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 46
+    }
+  },
+  "pl": {
+    "n": 67,
+    "kept": 61,
+    "yield": 0.9104,
+    "median_cer": 0.0,
+    "judge_floor": 0.009,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 6
+    }
+  },
+  "ps": {
+    "n": 53,
+    "kept": 13,
+    "yield": 0.2453,
+    "median_cer": 0.3429,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 40
+    }
+  },
+  "pt": {
+    "n": 90,
+    "kept": 60,
+    "yield": 0.6667,
+    "median_cer": 0.0455,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 20,
+      "duration": 10
+    }
+  },
+  "ro": {
+    "n": 313,
+    "kept": 242,
+    "yield": 0.7732,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 65,
+      "duration": 6
+    }
+  },
+  "ru": {
+    "n": 64,
+    "kept": 47,
+    "yield": 0.7344,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 15,
+      "duration": 2
+    }
+  },
+  "sa": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "sd": {
+    "n": 55,
+    "kept": 1,
+    "yield": 0.0182,
+    "median_cer": 1.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 54
+    }
+  },
+  "si": {
+    "n": 60,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.9232,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 60
+    }
+  },
+  "sk": {
+    "n": 119,
+    "kept": 82,
+    "yield": 0.6891,
+    "median_cer": 0.0,
+    "judge_floor": 0.0244,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 27,
+      "duration": 10
+    }
+  },
+  "sl": {
+    "n": 354,
+    "kept": 286,
+    "yield": 0.8079,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 64,
+      "duration": 4
+    }
+  },
+  "sn": {
+    "n": 52,
+    "kept": 22,
+    "yield": 0.4231,
+    "median_cer": 0.8571,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 30
+    }
+  },
+  "so": {
+    "n": 54,
+    "kept": 41,
+    "yield": 0.7593,
+    "median_cer": 0.1491,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 9,
+      "duration": 4
+    }
+  },
+  "sq": {
+    "n": 54,
+    "kept": 32,
+    "yield": 0.5926,
+    "median_cer": 0.0829,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 16,
+      "cer": 6
+    }
+  },
+  "sr": {
+    "n": 56,
+    "kept": 9,
+    "yield": 0.1607,
+    "median_cer": 1.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 47
+    }
+  },
+  "su": {
+    "n": 56,
+    "kept": 47,
+    "yield": 0.8393,
+    "median_cer": 0.1,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 9
+    }
+  },
+  "sv": {
+    "n": 207,
+    "kept": 146,
+    "yield": 0.7053,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 28,
+      "duration": 33
+    }
+  },
+  "sw": {
+    "n": 48,
+    "kept": 44,
+    "yield": 0.9167,
+    "median_cer": 0.0132,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 4
+    }
+  },
+  "ta": {
+    "n": 62,
+    "kept": 48,
+    "yield": 0.7742,
+    "median_cer": 0.0667,
+    "judge_floor": 0.1105,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 14
+    }
+  },
+  "te": {
+    "n": 55,
+    "kept": 1,
+    "yield": 0.0182,
+    "median_cer": 1.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 54
+    }
+  },
+  "tg": {
+    "n": 57,
+    "kept": 43,
+    "yield": 0.7544,
+    "median_cer": 0.1613,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 13,
+      "duration": 1
+    }
+  },
+  "th": {
+    "n": 55,
+    "kept": 20,
+    "yield": 0.3636,
+    "median_cer": 0.0,
+    "judge_floor": 0.0617,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 31,
+      "cer": 4
+    }
+  },
+  "tk": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 0.3846,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "tl": {
+    "n": 48,
+    "kept": 45,
+    "yield": 0.9375,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 1,
+      "cer": 2
+    }
+  },
+  "tr": {
+    "n": 55,
+    "kept": 51,
+    "yield": 0.9273,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 4
+    }
+  },
+  "tt": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "uk": {
+    "n": 57,
+    "kept": 50,
+    "yield": 0.8772,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 3,
+      "cer": 4
+    }
+  },
+  "ur": {
+    "n": 57,
+    "kept": 53,
+    "yield": 0.9298,
+    "median_cer": 0.0,
+    "judge_floor": 0.0793,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 4
+    }
+  },
+  "uz": {
+    "n": 53,
+    "kept": 26,
+    "yield": 0.4906,
+    "median_cer": 0.25,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 26,
+      "duration": 1
+    }
+  },
+  "vi": {
+    "n": 60,
+    "kept": 13,
+    "yield": 0.2167,
+    "median_cer": 0.0,
+    "judge_floor": 0.0417,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 11,
+      "duration": 36
+    }
+  },
+  "yi": {
+    "n": 1,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 73.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 1
+    }
+  },
+  "yo": {
+    "n": 53,
+    "kept": 5,
+    "yield": 0.0943,
+    "median_cer": 0.6,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 47,
+      "duration": 1
+    }
+  },
+  "yue": {
+    "n": 1,
+    "kept": 1,
+    "yield": 1.0,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {}
+  },
+  "zh": {
+    "n": 54,
+    "kept": 18,
+    "yield": 0.3333,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 23,
+      "cer": 13
+    }
+  }
+}

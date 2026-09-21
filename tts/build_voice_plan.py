@@ -25,17 +25,34 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--scores", type=Path, default=ROOT / "tts" / "vc_scores.json")
     ap.add_argument("--system", default="scicom_untargeted", help="the speaker-name-mode run")
+    ap.add_argument("--speakers", type=Path, default=ROOT / "tts" / "expressive_speakers.json",
+                    help="verified names; anything else is dropped rather than trusted")
     ap.add_argument("--out", type=Path, default=ROOT / "tts" / "lexicon_voice_plan.json")
     args = ap.parse_args()
+
+    # An unknown speaker name does not raise in Multilingual-Expressive -- it conditions on a
+    # token the fine-tune never saw and silently returns unconditioned audio, which reads as a
+    # bad language rather than a bad name. `multilingual-tts_audio_Rahman` got into an earlier
+    # plan that way and took pl/ta/ur down with it. So the plan may only name verified speakers.
+    valid = set()
+    if args.speakers.exists():
+        spk = json.loads(args.speakers.read_text())
+        valid = set(spk.get("all_speakers", {})) or set(spk.get("multilingual_tts", {}))
 
     d = json.loads(args.scores.read_text())
     rows = [r for r in d[args.system]["details"] if r.get("status") == "ok"]
 
     by_lang_spk, src_by_lang = defaultdict(lambda: defaultdict(list)), defaultdict(list)
+    dropped = set()
     for r in rows:
+        if valid and r["target"] not in valid:
+            dropped.add(r["target"]); continue
         by_lang_spk[r["lang"]][r["target"]].append(r["cer"])
         if r.get("src_cer") is not None:
             src_by_lang[r["lang"]].append(r["src_cer"])
+
+    if dropped:
+        print(f"[drop] speakers not in {args.speakers.name}: {sorted(dropped)}")
 
     plan, wins = {}, defaultdict(int)
     for lang in sorted(by_lang_spk):
@@ -59,6 +76,8 @@ def main():
                                                for c in l.get(s, [])]), 4)
                      for s in {s for l in by_lang_spk.values() for s in l}}
     out = {
+        "verified_speakers_only": bool(valid),
+        "dropped_unverified": sorted(dropped),
         "default_for_unmeasured_languages": {
             "engine": "omnivoice",
             "why": "97/100 languages enumerable and Apache-2.0; Multilingual-Expressive's "

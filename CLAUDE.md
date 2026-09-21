@@ -38,7 +38,11 @@ Config is `claude-ping.json` (box 1023, key at `../scicom/dataset/scicom` — ou
 repo, don't move it). `claude-ping up` once, then `exec` / `sync` / `run`.
 
 **`sync` is `rsync --delete` and WILL destroy anything not in `sync_excludes`.** It has
-already eaten `.env`, `.venv_bench`, and a synth manifest mid-session. Current excludes
+already eaten `.env`, `.venv_bench`, a synth manifest mid-session, and (2026-09-18)
+`lexicon/mined_lexicon.csv` + `lexicon/translated_lexicon.csv` — 15 minutes of NLLB
+translation — because they were generated **on the box inside a tracked directory**. Anything
+produced remotely that belongs in git must be pulled to the laptop *before* the next sync, not
+left on the box to be reconciled later. Current excludes
 cover `.venv*`, `.env`, `audio`, `audio_train`, `corpus`, `tts/out`, `bench/scores.json`.
 **Add to that list before generating anything new on the box.** Restore secrets with
 `claude-ping env-sync`, never by hand.
@@ -83,6 +87,15 @@ no-speech filter runs first. The scorer reports `hallucination_rate` (word conte
 `hallucination_rate_any_output` (a bare `"."` counts) — on silence those are 61.9% and
 100.0% for large-v3. Always say which you mean. vLLM's `verbose_json` doesn't return
 `no_speech_prob` at all, so the filtered variant is a research number only.
+
+**`loop_rate` (run ≥ 6) is confounded on the reduplication arm.** A correct transcript of
+six repeats is itself a run of six, so the metric fires on right answers: large-v3 goes
+1.7% → 37.9% between `n_repeats` 5 and 6 with no change in behaviour. On that arm read
+`runaway_rate` (emitted/true > 1.5) and `empty_rate`; keep `loop_rate` for the speech arms.
+`bench/reduplication_profile.py` slices the arm by its four stimulus knobs (on the box, it
+needs `bench/results/`), `bench/plot_reduplication.py` draws it. Findings: laughter is the
+trigger (fine-tunes 51–56%, clicks 0%), more repeats → more runaway for every model, and
+trailing silence does not raise it.
 
 **The lexicon contains degenerate entries.** `સ સ સ સ સ સ સ`, `त र` — Whisper loop artefacts
 captured as phrases. They wreck CER comparisons (one gave CER 22.9). Filter them:

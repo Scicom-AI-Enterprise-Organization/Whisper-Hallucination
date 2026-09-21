@@ -14,7 +14,7 @@ Three decisions, all of which matter at this scale:
 
     python tts/build_lexicon_queue.py --out tts/lexicon_queue.jsonl
 """
-import argparse, csv, json
+import argparse, csv, hashlib, json
 from collections import Counter
 from pathlib import Path
 
@@ -33,6 +33,12 @@ def main():
     ap.add_argument("--out", type=Path, default=ROOT / "tts" / "lexicon_queue.jsonl")
     ap.add_argument("--max-chars", type=int, default=200)
     ap.add_argument("--max-words", type=int, default=40)
+    ap.add_argument("--voices-per-phrase", type=int, default=1,
+                    help="render each speaker-name-conditioned phrase in N distinct verified "
+                         "voices. The positive pool's known weakness is that it is one "
+                         "synthetic voice (CLAUDE.md), and the filter drops any voice that "
+                         "does not work for a language, so extra voices cost little.")
+    ap.add_argument("--speakers", type=Path, default=ROOT / "tts" / "expressive_speakers.json")
     ap.add_argument("--per-lang-cap", type=int, default=0,
                     help="keep only the N most-observed phrases per language (0 = all)")
     args = ap.parse_args()
@@ -40,6 +46,14 @@ def main():
     plan = json.loads(args.plan.read_text())
     per_lang = plan["per_language"]
     default_engine = plan["default_for_unmeasured_languages"]["engine"]
+
+    # Extra voices come from the VERIFIED pool only -- an unknown name silently produces
+    # unconditioned audio rather than raising (CLAUDE.md).
+    pool = []
+    if args.voices_per_phrase > 1 and args.speakers.exists():
+        spk = json.loads(args.speakers.read_text())
+        pool = sorted(spk.get("multilingual_tts", {}))
+        print(f"voice pool: {len(pool)} verified speakers")
 
     rows = list(csv.DictReader(args.lexicon.open(encoding="utf-8")))
     seen, kept, drops = set(), [], Counter()
@@ -57,13 +71,33 @@ def main():
             drops["duplicate"] += 1; continue
         seen.add(key)
         spec = per_lang.get(lang)
-        kept.append({
-            "phrase": phrase, "lang": lang,
-            "count": int(r.get("count") or 0),
-            "source": r.get("source", ""),
-            "engine": spec["engine"] if spec else default_engine,
-            "voice": (spec or {}).get("voice"),
-        })
+        engine = spec["engine"] if spec else default_engine
+        best_voice = (spec or {}).get("voice")
+
+        # The measured best voice goes first so a 1-voice run is unchanged; the rest are
+        # drawn deterministically from the pool, offset by the phrase so different phrases
+        # get different extra voices rather than the same two every time.
+        voices = [best_voice]
+        if engine == "multilingual-expressive" and args.voices_per_phrase > 1 and pool:
+            off = int(hashlib.sha256(key[0].encode()).hexdigest()[:8], 16)
+            for j in range(args.voices_per_phrase - 1):
+                cand = pool[(off + j) % len(pool)]
+                if cand not in voices:
+                    voices.append(cand)
+
+        for voice in voices:
+            kept.append({
+                "phrase": phrase, "lang": lang,
+                "count": int(r.get("count") or 0),
+                "source": r.get("source", ""),
+                # Carried so every clip can say where its TEXT came from: an observed
+                # hallucination, one we mined, or a translated English phrase.
+                "provenance": r.get("provenance", "observed"),
+                "count_basis": r.get("count_basis", "observed"),
+                "source_phrase": r.get("source_phrase", ""),
+                "engine": engine,
+                "voice": voice,
+            })
 
     kept.sort(key=lambda x: -x["count"])
 

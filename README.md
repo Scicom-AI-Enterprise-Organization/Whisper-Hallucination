@@ -83,6 +83,28 @@ that keeps `Malaysian-turbo-v3` quiet on noise makes it emit **nothing at all on
 clips that do contain repeated speech**. On non-speech that silence is the right answer; on
 the reduplication arm it is a deletion. The empty-output habit is not free.
 
+The arm is a factorial grid — 4 unit patterns × 6 repeat counts × 4 rates × 3 tail
+silences — so the corpus means above can be sliced by what the audio actually did:
+
+![What triggers the runaway](bench/reduplication_profile.png)
+
+*Regenerate with `python bench/reduplication_profile.py` on the box (per-clip results), then
+`python bench/plot_reduplication.py`.*
+
+**The runaway is driven by the speech, not the silence after it.** Laughter is the trigger:
+the fine-tunes run away on 51–56% of laugh clips and on 0% of clicks, with base turbo at
+29%. Every model runs away more the more times the unit is repeated (3 → 12 repeats takes the
+fine-tunes from ~5% to ~23%). Trailing silence, the usual suspect, does *not* raise it — for
+the base checkpoints 8 s of silence *lowers* runaway (turbo 8.5% → 2.7%). The deletion
+habit has its own shape: `malaysian-v2` is silent on 96% of clicks (arguably right — a
+click is not speech) and almost never on syllables or laughter, while `Malaysian-turbo-v3`
+is silent on 46–75% of everything and increasingly so the faster the repeats come.
+
+One caveat the slicing exposes: `run ≥ 6 tokens` is not a clean loop signal on *this* arm,
+because a correct transcript of six repeats is itself a run of six — large-v3's loop rate
+jumps from 1.7% at five repeats to 37.9% at six. Read `runaway >1.5×` and `emits nothing`
+here; `run ≥ 6` is for the speech arms.
+
 ### Word error rate — what a mitigation must not break
 
 | arm | n | large-v2 | large-v3 | large-v3-turbo | malaysian-v2 | Malaysian-turbo-v3 |
