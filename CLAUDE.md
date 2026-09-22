@@ -166,7 +166,9 @@ plus a modeling file — with `trust_remote_code=True`. Needs `torchaudio`.
 - There is no `.generate()`. Use `generate_speech(text, tokenizer, ...)` — **text first** —
   which returns a mono 24 kHz waveform.
 
-**`.venv_omni`** — OmniVoice (Apache-2.0, 646 languages, ~9× faster than the others).
+**`.venv_omni`** — OmniVoice (646 languages, ~9× faster than the others). **Its code is
+Apache-2.0 but the released weights are CC-BY-NC**, "due to constraints from its training data
+(e.g. Emilia)" — the model card says so plainly and this repo said Apache-2.0 for months.
 - Language ids are ISO-639-3 (`arb`, `npi`, `fil`), not the lexicon's `ar`/`ne`/`tl`. An
   unmapped code does **not** error — it silently drops to language-agnostic mode. Resolve
   with `tts/omnivoice_langmap.py`; `la`, `fo`, `su` genuinely aren't supported.
@@ -364,7 +366,7 @@ between two identical runs, so treat differences under ~0.01 CER as noise rather
 | seed-vc (6 s ref) | 184 | 20 | 0.472 | +0.129 | 68% | 49% | +19 | 0.99 | 0% | GPL-3.0 |
 | seed-vc (20 s ref) | 184 | **21** | 0.549 | +0.206 | 79% | 49% | +29 | 0.99 | 0% | GPL-3.0 |
 | Higgs Audio v3 *(cloning)* | 184 | 20 | 0.653 | +0.311 | 84% | 12% | +72 | 0.90 | 3% | non-commercial |
-| **OmniVoice** *(cloning)* | 183 | **21** | 0.683 | +0.339 | **107%** | 15% | **+92** | 1.28 | 1% | **Apache-2.0** |
+| **OmniVoice** *(cloning)* | 183 | **21** | 0.683 | +0.339 | **107%** | 15% | **+92** | 1.28 | 1% | code Apache-2.0, weights CC-BY-NC |
 | **Multilingual-Expressive** *(reference cloning)* | 184 | **21** | 1.740 | +1.397 | 103% | 13% | +90 | **3.27** | **68%** | ours |
 | OpenVoice + MeloTTS *(cloning)* | 40 | **4** | 0.077 | −0.434 | 69% | 19% | +50 | 1.13 | 0% | MIT |
 | CosyVoice 2 | **2** | — | — | — | — | — | — | — | — | Apache-2.0 |
@@ -421,7 +423,8 @@ much. seed-vc at +19 (+29 with a 20 s reference) is the best of the permissively
   match, but needs duration control first** — trimming to the phrase, or a stop condition.
   Out of the box, **Higgs Audio v3** is the best targeted cloner that terminates properly
   (84%, 0.90×), though its licence forbids using outputs to train non-Boson speech models.
-  Among permissive licences it is a trade: **OmniVoice** (Apache-2.0) gives the strongest
+  Among the openly-released options it is a trade: **OmniVoice** (code Apache-2.0, weights
+  CC-BY-NC) gives the strongest
   identity in the table (107%, gap +92, 1.28×) for +0.339 ΔCER; **seed-vc (6 s ref)** keeps
   intelligibility (+0.129) and barely moves the voice (+19).
 
@@ -445,12 +448,12 @@ deduplicates so every system is scored on the same pairs, and the degenerate ent
 | | mean | median | wins | licence | coverage |
 |---|---:|---:|---:|---|---|
 | Multilingual-Expressive-TTS-1.7B | **0.221** | **0.000** | **18** | ours | untagged |
-| OmniVoice | 0.349 | 0.018 | 3 | **Apache-2.0** | **97/100 langs** |
+| OmniVoice | 0.349 | 0.018 | 3 | code Apache-2.0, **weights CC-BY-NC** | **97/100 langs** |
 | Higgs v3 | 1.230 | 0.484 | 1 | non-commercial | 82/100 |
 | Higgs v2 | 1.089 | 0.713 | 0 | non-commercial | — |
 
-Use **OmniVoice** for the 100-language sweep (coverage is enumerable and the licence is
-clean) and **Multilingual-Expressive** for ms/en/zh/ta. Higgs is out on both counts — its
+Use **OmniVoice** for the 100-language sweep (coverage is enumerable and it is the fastest
+by far; note the weights are CC-BY-NC even though the code is Apache-2.0) and **Multilingual-Expressive** for ms/en/zh/ta. Higgs is out on both counts — its
 licence independently forbids using outputs to train non-Boson speech models.
 
 **The Rahman mistake reaches this table too.** One of the three speaker names in the grid

@@ -28,10 +28,12 @@ ROOT = Path(__file__).resolve().parent.parent
 #  MODELS  (row order — key in the summary → display name, whether it is ours)
 # ══════════════════════════════════════════════════════════════════════════════
 MODELS = [
-    ('scicom',    'Multilingual-Expressive-TTS-1.7B', True),
-    ('omnivoice', 'OmniVoice',                        False),
-    ('higgs3',    'Higgs Audio v3',                   False),
-    ('higgs',     'Higgs Audio v2',                   False),
+    ('scicom',             'Multilingual-Expressive-TTS-1.7B', True),
+    ('omnivoice',          'OmniVoice (auto)',                 False),
+    ('omnivoice_instruct', 'OmniVoice (voice design)',         False),
+    ('toucan',             'ToucanTTS',                        False),
+    ('higgs3',             'Higgs Audio v3',                   False),
+    ('higgs',              'Higgs Audio v2',                   False),
 ]
 
 # ══════════════════════════════════════════════════════════════════════════════
