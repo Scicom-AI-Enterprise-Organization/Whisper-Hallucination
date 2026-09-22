@@ -140,14 +140,33 @@ large-v2 emits Welsh on silence and a Khmer loop on music.
 
 ![TTS selection](tts/tts_results.png)
 
-| | mean CER | median | wins | languages | licence |
-|---|---:|---:|---:|---|---|
-| Multilingual-Expressive-TTS-1.7B | **0.221** | **0.000** | **18** | untagged | ours |
-| OmniVoice | 0.349 | 0.018 | 3 | **646** | code Apache-2.0, weights CC-BY-NC |
-| Higgs Audio v2 | 1.089 | 0.713 | 0 | — | non-commercial |
-| Higgs Audio v3 | 1.230 | 0.483 | 1 | 82/100 | non-commercial |
+| | mean CER | median | wins | languages | voices | licence |
+|---|---:|---:|---:|---|---|---|
+| Multilingual-Expressive-TTS-1.7B | **0.221** | **0.000** | **16** | untagged | 45 named | ours |
+| OmniVoice (auto) | 0.349 | 0.018 | 2 | **646** | **1 per language** | code Apache-2.0, weights CC-BY-NC |
+| OmniVoice (voice design) | 0.589 | 0.062 | 3 | **646** | 48 tags | code Apache-2.0, weights CC-BY-NC |
+| ToucanTTS | 0.830 | 0.586 | 0 | **7,233** | sampled from a GAN | Apache-2.0 |
+| Higgs Audio v2 | 1.089 | 0.713 | 0 | — | cloning | non-commercial |
+| Higgs Audio v3 | 1.230 | 0.483 | 1 | 82/100 | cloning | non-commercial |
 
 OmniVoice drives the 100-language sweep. Multilingual-Expressive handles ms/en/zh/ta.
+
+**ToucanTTS covers 7,233 languages and loses on quality.** CER 0.830, no language won. Its
+WGAN-sampled speaker embeddings also barely separate — different-voice cosine 0.738 against a
+0.605 stranger floor. Breadth, not fidelity.
+
+**OmniVoice voice design is the cheapest way to get distinct voices.** `instruct` is a 48-tag
+controlled vocabulary (gender, age, pitch, accent, whisper), not free text. Three personas
+give a different-voice cosine of **0.453** — below the stranger floor, the widest separation
+measured here — for +0.240 CER over auto mode. Reference cloning costs +0.339 and separates
+less (0.68–0.72).
+
+| route | CER cost vs auto | different-voice cosine |
+|---|---:|---:|
+| **OmniVoice voice design** | **+0.240** | **0.453** |
+| OmniVoice reference cloning | +0.339 | 0.68–0.72 |
+| ToucanTTS (GAN voices) | +0.481 | 0.738 |
+| *floor for two strangers* | — | *0.605* |
 
 A third of the Multilingual-Expressive clips used a speaker name that is not in
 `ExpressiveSpeech` (`multilingual-tts_audio_Rahman`). Unknown names do not raise — they

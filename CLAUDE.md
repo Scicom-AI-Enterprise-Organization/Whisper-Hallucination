@@ -452,6 +452,29 @@ deduplicates so every system is scored on the same pairs, and the degenerate ent
 | Higgs v3 | 1.230 | 0.484 | 1 | non-commercial | 82/100 |
 | Higgs v2 | 1.089 | 0.713 | 0 | non-commercial | — |
 
+**Two more candidates, measured 2026-09-22 in one scoring run with the other four.**
+
+| | mean CER | wins | languages | different-voice cosine |
+|---|---:|---:|---:|---:|
+| OmniVoice (voice design, `instruct`) | 0.589 | 3 | 646 | **0.453** |
+| ToucanTTS | 0.830 | 0 | **7,233** | 0.738 |
+
+`instruct` is a **controlled vocabulary of 48 tags**, not prose — gender, age, pitch, accent,
+whisper, plus Chinese dialects, in mutually exclusive groups (`_INSTRUCT_MUTUALLY_EXCLUSIVE`
+in `omnivoice/models/omnivoice.py`). Free text raises `ValueError`. Use
+`"female, young adult, high pitch"`, not a sentence. It is the **best diversity-per-CER trade
+measured**: 0.453 different-voice cosine (below the 0.605 stranger floor) for +0.240 CER over
+auto mode, against reference cloning's +0.339 for 0.68–0.72. Worth revisiting for the next
+top-up instead of the named-speaker route.
+
+**ToucanTTS is breadth without fidelity.** 7,233 languages via articulatory features, and it
+wins nothing: CER 0.830, and its WGAN-sampled speaker embeddings sit at 0.738, barely apart.
+Install notes: `.venv_toucan` (its own uv venv), requirements pins (torch 2.4 / numpy 1.23 /
+librosa 0.9) all have to be dropped, `sounddevice` is imported at module level for playback
+and needs PortAudio the box lacks — stub the module rather than fixing apt — and `phonepiece`
+imports `pip`, so install `pip` into the venv. `ControllableInterface.read()` returns
+`(sr, wav, figure_path)`, three values, not two.
+
 Use **OmniVoice** for the 100-language sweep (coverage is enumerable and it is the fastest
 by far; note the weights are CC-BY-NC even though the code is Apache-2.0) and **Multilingual-Expressive** for ms/en/zh/ta. Higgs is out on both counts — its
 licence independently forbids using outputs to train non-Boson speech models.

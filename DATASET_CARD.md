@@ -86,143 +86,102 @@ configs:
 
 # Whisper Hallucination and Repetition Probes
 
-> **This is a BENCHMARK. Every *evaluation* config is `test` — do not fine-tune on it.**
-> (The one exception is `lexicon_synth`, which is synthetic training material and ships its
-> own `train`/`test` split. It is **not** one of the eight benchmark arms — see below.)
-> Training on these clips invalidates every number you would then report. Build training
-> data separately from the same source corpora, excluding the items listed in
-> [`benchmark/exclusions.json`](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/blob/main/benchmark/exclusions.json) in the project
-> repo (546 FMA tracks, 1,168 FSD50K ids,
-> 2,620 LibriSpeech utterances, and the Malay/Lingua Libre stems).
+> **This is a benchmark. Every evaluation config is `test` — do not fine-tune on it.**
+> `lexicon_synth` is the exception: synthetic training material with its own `train`/`test`
+> split, and not one of the eight benchmark arms.
 >
-> Structural disjointness is easy here: the benchmark draws FSD50K's **eval** split and FMA
-> **shards 0-1**, so training can use FSD50K **dev** (35,676 voice-free clips) and FMA
-> **shards 2-12** and never overlap. Malaysian-Emilia (3,727 h, 17,290 genuine
-> `terima kasih`) is untouched by this benchmark and is the natural positive pool.
+> To build training data, exclude the items in
+> [`benchmark/exclusions.json`](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/blob/main/benchmark/exclusions.json)
+> (546 FMA tracks, 1,168 FSD50K ids, 2,620 LibriSpeech utterances, the Malay stems). The
+> benchmark draws FSD50K **eval** and FMA **shards 0–1**, so training can use FSD50K **dev**
+> and FMA **shards 2–12** with no overlap.
 
-Audio probes and phrase lexicons for measuring the two failure modes of `whisper-large-v3`:
+Audio probes and phrase lexicons for two Whisper failure modes:
 
-- **hallucination** — text with no phonetic basis in the audio (`Terima kasih.` over silence)
-- **repetition / looping** — the decoder emits a unit far more times than it was spoken
+- **hallucination** — text with no sound behind it (`Terima kasih.` over silence)
+- **repetition** — one unit emitted far more times than it was spoken
 
-**Code, build scripts and design notes:** [github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination)
-— arm builders, the benchmark harness, `benchmark/exclusions.json`, the ablation grid and the
-training-corpus tooling all live there.
+**Code and build scripts:** [github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination)
 
-## The problem this is built around
+## The problem
 
-Every high-frequency Whisper hallucination is also a phrase people genuinely say.
-`terima kasih` is the most common Malay hallucination **and** the most common thing a
-Malaysian call-centre agent says. You cannot fix this with a text blocklist without
-deleting real transcriptions.
+Every common Whisper hallucination is also a phrase people say. `terima kasih` is the most
+common Malay hallucination and the most common thing a call-centre agent says. A text
+blocklist deletes both.
 
-And silence is not the only trigger. **Music and noise hallucinate at least as readily** —
-Calm-Whisper measured large-v3 producing text on 99.97% of UrbanSound8K clips, none of
-which contain speech. Energy in the signal is not evidence for words.
+| audio | model says | correct action |
+|---|---|---|
+| silence | `Terima kasih.` | drop |
+| music / noise | `Terima kasih.` | drop |
+| speech in noise | part real, part invented | the hard case |
+| someone says it | `Terima kasih.` | **keep** |
 
-So the dataset is **contrastive**, across a spectrum rather than a binary:
+Silence is not the only trigger. Calm-Whisper measured large-v3 producing text on 99.97% of
+UrbanSound8K clips, none of which contain speech. Energy is not evidence for words.
 
-| state | audio | Whisper says | correct action |
-|---|---|---|---|
-| **silence** | room tone, no speech | `Terima kasih.` | drop — 100% invented |
-| **music / noise** | a track, no voice | `Terima kasih.` | drop — energy, no evidence |
-| **speech in noise** | real speech at low SNR | part real, part invented | the hard case |
-| **clean speech** | someone says it | `Terima kasih.` | keep — correct |
+## Baselines
 
-A detector that only reads the text cannot tell these apart. That is the point.
+Five checkpoints, 11,852 clips each, greedy decoding, no forced language, no temperature
+fallback. 2026-09-16/17 on 2× H20.
 
-## Baseline scores
+![Trade-off](https://raw.githubusercontent.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/main/bench/tradeoff.png)
 
-Five checkpoints × 8 arms × 11,852 clips per model, measured 2026-09-16/17 on 2× NVIDIA H20
-with greedy decoding and no temperature fallback: `large-v2`, `large-v3`, `large-v3-turbo`,
-and the two Malaysian fine-tunes `mesolitica/malaysian-whisper-large-v2` and
-`mesolitica/Malaysian-whisper-large-v3-turbo-v3`.
+No checkpoint is both quiet on noise and accurate on speech. They sit on a line (r = +0.68).
 
-**Full tables — hallucination rates, repetition runaway, WER, and what each model actually
-emits on silence and music — are in the project repo:
-[README → Measured baselines](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination#measured-baselines).** Raw numbers: `bench/scores.json`.
+| | large-v2 | large-v3 | turbo | malaysian-v2 | M-turbo-v3 |
+|---|---:|---:|---:|---:|---:|
+| hallucinates on `nonspeech` | 98.8% | 89.9% | 80.7% | 76.0% | **9.3%** |
+| emits *anything* on `silence` | 100% | 100% | 100% | 64.3% | **16.7%** |
+| runaway on `reduplication` | 0.5% | 2.9% | 5.8% | 14.7% | 14.5% |
+| emits nothing on `reduplication` | 0.0% | 0.1% | 5.2% | 16.9% | **58.0%** |
+| recovers a phrase that IS spoken | 63.6% | **69.8%** | 68.0% | 31.3% | 41.1% |
+| `librispeech` WER | 4.5% | 3.5% | 3.5% | 3.5% | 10.6% |
 
-Headline: on non-speech, hallucination runs 9.3-98.8% depending on model and arm. For the
-three **OpenAI** checkpoints it is **100.0% everywhere** once a bare `"."` counts as output —
-every clip produces something. The Malaysian fine-tunes break that: `Malaysian-turbo-v3`
-returns a genuinely empty string on 90.6% of voice-free clips. It pays for that on the other
-axis, running away on 14.5% of `reduplication` clips against 5.8% for the checkpoint it came
-from, and emitting nothing on 58% of them. LibriSpeech test-clean sits at 3.5% for `large-v3`,
-matching the published figure — the check that the harness is wired correctly.
+Ranked on hallucination alone, `Malaysian-turbo-v3` wins by a distance. Ranked on recovering
+real speech it comes last. Measuring both on the same clips is the point.
 
-Measuring both failure modes on the same clips is the point: ranked on hallucination alone
-`Malaysian-turbo-v3` wins by a distance; ranked on raw WER it looks unusable, and ~1% of
-looping clips account for most of that gap.
-
-The benchmark harness ([`bench/`](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/tree/main/bench)) ships with this dataset and in the repo.
+Full tables: [README](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination#results).
+Raw numbers: `bench/scores.json`. Harness: [`bench/`](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/tree/main/bench).
 
 ## Configs
 
 | config | rows | hours | content | ground truth |
 |---|---:|---:|---|---|
-| `reduplication` | 1,440 | 1.9 | repeated units — CV syllables, vowels, laughter, clicks | exactly `n_repeats` repeats |
-| `silence` | 42 | 0.4 | silence / near-silence, 6 floors × 7 durations | empty string |
-| `music` | 600 | 4.5 | **real produced music** — Free Music Archive excerpts | empty string |
-| `nonspeech` | 1,168 | 2.8 | FSD50K music + environmental noise, label-verified voice-free | empty string |
-| `speech_in_noise` | 1,200 | 3.1 | genuine speech mixed with music/noise at 5 SNRs | the real transcript |
-| `genuine` | 4,694 | 12.4 | real Malaysian speech, permissively licensed | human transcript |
-| `genuine_isolated` | 88 | 0.05 | native speakers saying one phrase, nothing else | the phrase |
-| `librispeech_test_clean` | 2,620 | 5.4 | English WER regression guard | human transcript |
+| `reduplication` | 1,440 | 1.9 | repeated units — syllables, vowels, laughter, clicks | exactly `n_repeats` repeats |
+| `silence` | 42 | 0.4 | 6 noise floors × 7 durations | empty string |
+| `music` | 600 | 4.5 | real Free Music Archive excerpts | empty string |
+| `nonspeech` | 1,168 | 2.8 | FSD50K, label-verified voice-free | empty string |
+| `speech_in_noise` | 1,200 | 3.1 | genuine speech + background, 5 SNRs | the real transcript |
+| `genuine` | 4,694 | 12.4 | real Malaysian speech | human transcript |
+| `genuine_isolated` | 88 | 0.05 | one phrase spoken alone | the phrase |
+| `librispeech_test_clean` | 2,620 | 5.4 | English WER guard | human transcript |
+| **`lexicon_synth`** | **29,112** | **15.8** | synthetic positives, 83 languages | the phrase |
 | `lexicon` | 40,891 | — | known hallucination phrases, 100 languages | — |
-| `ban_candidates` | 40,891 | — | every lexicon phrase, classified safe/unsafe to blocklist | — |
-| `targets` | 463 | — | high-risk phrases: hallucinated *and* genuinely said | — |
+| `ban_candidates` | 40,891 | — | each phrase classified safe/unsafe to blocklist | — |
+| `targets` | 463 | — | phrases both hallucinated and genuinely said | — |
 | `malaysian_sources` | 24 | — | survey of public Malaysian speech datasets | — |
 
-```python
-from datasets import load_dataset
+Audio is 16 kHz mono FLAC, peak-normalised to −3 dBFS.
 
-# Audio arms are test-only.
-red = load_dataset("Scicom-intl/Whisper-Hallucination", "reduplication",   split="test")
-sil = load_dataset("Scicom-intl/Whisper-Hallucination", "silence",         split="test")
-mus = load_dataset("Scicom-intl/Whisper-Hallucination", "music",           split="test")
-sin = load_dataset("Scicom-intl/Whisper-Hallucination", "speech_in_noise", split="test")
-gen = load_dataset("Scicom-intl/Whisper-Hallucination", "genuine",         split="test")
+### Loading
 
-# Lookup tables (not splits).
-lex = load_dataset("Scicom-intl/Whisper-Hallucination", "lexicon",         split="train")
-ban = load_dataset("Scicom-intl/Whisper-Hallucination", "ban_candidates",  split="train")
-```
-
-### Decoding the audio
-
-`datasets >= 5.0` raises `ImportError: To support decoding audio data, please install
-'torchcodec'` the moment you touch an audio column. Either install it, or skip it entirely
-— the payload is 16 kHz mono FLAC that `soundfile` reads directly:
+`datasets >= 5.0` demands `torchcodec` to touch an audio column. Skip it:
 
 ```python
 import io, soundfile as sf
 from datasets import load_dataset, Audio
 
 ds = load_dataset("Scicom-intl/Whisper-Hallucination", "reduplication", split="test")
-ds = ds.cast_column("audio", Audio(decode=False))          # hand back raw bytes
-
-row = ds[0]
-x, sr = sf.read(io.BytesIO(row["audio"]["bytes"]), dtype="float32")   # 16 kHz mono
-print(row["id"], row["n_repeats"], row["reference_text"], len(x) / sr)
+ds = ds.cast_column("audio", Audio(decode=False))      # hand back raw bytes
+x, sr = sf.read(io.BytesIO(ds[0]["audio"]["bytes"]), dtype="float32")
 ```
 
-`streaming=True` works the same way, if you would rather not pull 2 GB to look at a few
-clips:
+`streaming=True` works the same way. Lookup tables (`lexicon`, `ban_candidates`, `targets`,
+`malaysian_sources`) load with `split="train"`.
 
-```python
-st = load_dataset("Scicom-intl/Whisper-Hallucination", "silence", split="test", streaming=True)
-st = st.cast_column("audio", Audio(decode=False))
-row = next(iter(st))
-```
+## `lexicon_synth` — synthetic positives
 
-
-Audio is 16 kHz mono FLAC (lossless, 16-bit), peak-normalised to −3 dBFS.
-
-## `lexicon_synth` — synthetic positives, with a train split
-
-**Not a benchmark arm.** The eight audio configs above are evaluation-only. This one is
-material for *building* a mitigation: 29,112 synthesised clips of lexicon phrases, 15.8 hours,
-across 83 languages, shipped as `train` (22,845 clips) and `test` (6,267).
+Not a benchmark arm. Training material: 29,112 clips of lexicon phrases being spoken.
 
 | | train | test |
 |---|---:|---:|
@@ -230,165 +189,136 @@ across 83 languages, shipped as `train` (22,845 clips) and `test` (6,267).
 | hours | 12.49 | 3.32 |
 | distinct phrases | 11,018 | 3,054 |
 | languages | 75 | 83 |
-| languages with ≥10 clips | 72 | 70 |
 | non-English share | 92% | 91% |
-| distinct named voices | 45 | 45 |
+| named voices | 45 | 45 |
 
-**The split is by PHRASE, not by clip.** Each phrase is rendered in several voices; splitting
-clips would put `terima kasih` in both halves and a model would then be evaluated on text it
-trained on. Assignment is a hash of (phrase, language) with a fixed salt, so it is
-reproducible without shipping a map and stable as the corpus grows.
+**Split by phrase, not by clip.** Each phrase is rendered in several voices. Splitting clips
+would put `terima kasih` in both halves. Assignment is a hash of (phrase, language) with a
+fixed salt.
 
-**306 phrases are forced into `test` because they appear in `phrases/targets.csv`**, which
-drives the `genuine_isolated` arm. Synthetic audio of a benchmark phrase contaminates the
-benchmark exactly as its real audio would, so those phrases can never enter `train`. The
-build re-verifies both properties — zero phrase overlap, zero benchmark phrases in train —
-and refuses to write a release if either fails.
+**306 phrases are forced into `test`** because they appear in `targets` and drive the
+`genuine_isolated` arm. The build verifies zero phrase overlap and zero benchmark phrases in
+train, and refuses to write a release otherwise.
 
-**How it was made.** Phrases come from three places, and `meta.phrase_provenance` says which
-for every clip:
+Phrases come from three places; `meta.phrase_provenance` says which:
 
-| provenance | count | what it is |
-|---|---|---|
-| `observed` | upstream lexicons | phrases Whisper was seen to hallucinate |
-| `mined` | our own runs | what these five checkpoints emitted on our non-speech arms |
-| `translated` | NLLB-200 | English hallucination phrases rendered into 80 languages |
+| provenance | what it is |
+|---|---|
+| `observed` | phrases Whisper was seen to hallucinate (upstream lexicons) |
+| `mined` | what these five checkpoints emitted on our non-speech arms |
+| `translated` | English hallucination phrases rendered into 80 languages by NLLB-200 |
 
-`translated` rows are **positives, not evidence**: a Tamil `thank you` is something people
-say, not something Whisper was observed to invent in Tamil. Do not feed them to
-`ban_candidates` — that would be circular.
+`translated` rows are **positives, not evidence**. A Tamil `thank you` is something people
+say, not something Whisper was observed to invent in Tamil. Do not feed them back into
+`ban_candidates`.
 
-Audio is from `Scicom-intl/Multilingual-Expressive-TTS-1.7B` (speaker-name conditioned, 45
-verified voices) and `k2-fsa/OmniVoice`, routed per language by measured CER. Every clip's
-`meta` column is a JSON string carrying the TTS model, codec, conditioning mode, speaker,
-sample rates, decoding parameters and seed.
+Audio comes from `Scicom-intl/Multilingual-Expressive-TTS-1.7B` (speaker-name conditioned)
+and `k2-fsa/OmniVoice`, routed per language by measured CER. `meta` is a JSON string per clip
+with model, codec, conditioning mode, speaker, sample rates, decoding parameters and seed.
 
-**How many voices this really contains, measured rather than counted.** A `voice` column is a
-label; whether two clips are actually different speakers is a measurement. Using WavLM-sv
-x-vectors on a calibrated scale — at 1.6 s the judge scores ≈0.61 between clips of different
-speakers and ≈0.85 between two clips of one — OmniVoice's clips came out at a median pairwise
-cosine of **0.73 across its 74 languages, with 33 of them at 0.75 or worse**: it accepts no
-speaker argument, so it renders essentially one voice per language. The
+### How many voices it really has
+
+`voice` is a label, not a measurement.
+
+![Voice diversity](https://raw.githubusercontent.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/main/tts/voice_diversity.png)
+
+OmniVoice takes no speaker argument, so its clips carry `voice=""`. Measured with WavLM-sv
+x-vectors on a calibrated scale (0.61 = different speakers, 0.85 = same speaker, both at
+1.6 s), **33 of its 74 languages sat at 0.75 or worse** — one voice per language. The
 `Multilingual-Expressive` clips measured 0.63, with same-name pairs at 0.83 and different-name
-pairs at 0.60 — real, distinct speakers.
+pairs at 0.60.
 
-So 26 of those languages were **topped up**, not replaced: each phrase was re-rendered in
-three additional named voices and the original auto-mode clip kept. 12,190 of 15,675 new clips
-(77.8%) passed the same round-trip filter. `meta.phrase_provenance` is unchanged by this;
-`meta.conditioning` distinguishes `speaker_name` from `language_id`. Seven languages were left
-alone — `am`, `ml`, `my`, `sd`, `si`, `te`, `sr` — because the judge cannot read them well
-enough to validate any voice, which is a judge-coverage limit, not a quality claim.
+So 26 languages were **topped up, not replaced**: three extra named voices per phrase, the
+auto-mode clip kept. 12,190 of 15,675 new clips passed the filter (77.8%), and the median
+collapsed language moved 0.81 → 0.63. `meta.conditioning` distinguishes `speaker_name` from
+`language_id`.
 
-**Every clip passed an ASR round-trip filter** — Whisper must recover the phrase, and the
-clip must be about as long as the phrase should take, which rejects a TTS that keeps talking
-past a two-word prompt. The gate is **per language, anchored to the judge's own floor**: we
-measured Whisper's CER on real FLEURS speech in 44 languages, and a language where the judge
+Seven languages were skipped (`am ml my sd si te sr`): the ASR judge cannot read them well
+enough to validate any voice. That is a judge-coverage limit, not a quality claim.
+
+### Filtering
+
+Every clip passed an ASR round-trip: Whisper must recover the phrase, and the clip must be
+about as long as the phrase should take. The gate is **per language, anchored to the judge's
+own floor** — Whisper's CER on real FLEURS speech in 44 languages. A language where the judge
 itself scores 0.88 (Burmese) or 1.23 (Amharic) cannot be held to a 0.25 gate. Nine such
-languages are excluded rather than scored, because their clips are unverifiable with this
-judge, not necessarily bad.
+languages are excluded rather than scored.
 
-```python
-train = load_dataset("Scicom-intl/Whisper-Hallucination", "lexicon_synth", split="train")
-test  = load_dataset("Scicom-intl/Whisper-Hallucination", "lexicon_synth", split="test")
-```
-
-## Negative arms — what the model invents
+## Negative arms
 
 ### `reduplication`
 
-Motivated by an observed failure: a recording of the syllable `tu` repeated **four**
-times decoded as `tu` repeated until the token limit. Once inside a repeated-token
-region, Whisper's decoder has no signal for how many repeats remain.
+A recording of `tu` repeated four times decoded as `tu` repeated until the token limit.
+Inside a repeated-token region the decoder has no signal for how many repeats remain.
 
 | field | values |
 |---|---|
 | `pattern` | `cv` (720), `vowel` (360), `laugh` (216), `click` (144) |
 | `unit` | `tu ta ka pa da la na bi ko me` / `a i u e o` / `ha he hi` / `tick beep` |
 | `n_repeats` | 3, 4, 5, 6, 8, 12 |
-| `rate_hz` | 3, 5, 7, 9 units/sec |
+| `rate_hz` | 3, 5, 7, 9 |
 | `tail_silence_s` | 0, 2, 8 |
 
-`click` contains no speech at all, which separates **repetition** from **speech** as the
-trigger. Nothing in this config is tied to a language.
+`click` contains no speech, which separates repetition from speech as the trigger. Nothing
+here is tied to a language.
 
-Score with `n_hyp / n_repeats`: `1.0` correct, `>1` a runaway, `<1` a mitigation that
-deleted genuine repetition.
+Score with `n_hyp / n_repeats`: `1.0` correct, `>1` runaway, `<1` a mitigation that deleted
+genuine repetition.
+
+![What triggers the runaway](https://raw.githubusercontent.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/main/bench/reduplication_profile.png)
+
+Laughter is the trigger (fine-tunes run away on 51–56% of laugh clips, 0% of clicks). More
+repeats means more runaway. Trailing silence does not cause it.
 
 ### `silence`
 
-The cleanest arm to read: the reference is the empty string, so *any* output is a
-hallucination. `floor` covers `digital_zero`, `dither`, `hiss_-60db`, `hiss_-45db`,
-`hum_50hz`, `roomtone` — true digital zero behaves differently from a realistic quiet
-mic. Durations straddle the 30 s window boundary (1, 5, 10, 29, 31, 60, 120 s).
+Reference is the empty string, so any output is a hallucination. `floor` covers
+`digital_zero`, `dither`, `hiss_-60db`, `hiss_-45db`, `hum_50hz`, `roomtone`. Durations
+straddle the 30 s window: 1, 5, 10, 29, 31, 60, 120 s.
 
-### `music` — 600 excerpts, 4.5 h
+### `music`
 
-**Real produced music**, not sound effects: Free Music Archive tracks (commercial-licence
-subset, CC BY 4.0, already 16 kHz mono), excerpted at 10 / 30 / 45 s from inside the track
-so intros are skipped. This is what actually plays under a call — hold music, a YouTube
-backing bed — and it is a different acoustic distribution from isolated instrument samples.
+Real produced music, not sound effects: Free Music Archive tracks (commercial subset,
+CC BY 4.0), excerpted at 10 / 30 / 45 s so intros are skipped. This is what plays under a
+call — hold music, a backing bed.
 
-Reference is the empty string: music is not speech, so a transcript is a hallucination.
+FMA ships no vocal tag, so some tracks contain singing and `vocals` records `unknown`. If you
+need provably zero words, use `nonspeech`.
 
-**Vocals caveat.** FMA ships no instrumental/vocal tag, so some tracks contain singing.
-The `vocals` column records `unknown` rather than a guess. Those rows still carry an empty
-reference, because the target behaviour for a music bed is to emit nothing — but if you
-need *provably* zero words in the audio, use `nonspeech`, where every clip is
-label-verified voice-free.
+### `nonspeech`
 
-### `nonspeech` — 1,168 clips, 2.8 h
+FSD50K clips with no voice label of any kind — 583 music, 585 environmental and mechanical
+noise. Anything labelled `Speech`, `Singing`, `Human_voice`, `Chatter`, `Laughter` or 20-odd
+relatives was excluded, so the empty reference is verified by annotation.
 
-FSD50K clips (CC BY 4.0) carrying **no voice label of any kind** — 583 music /
-musical-instrument, 585 environmental and mechanical noise. Any clip labelled `Speech`,
-`Singing`, `Human_voice`, `Chatter`, `Laughter` and 20-odd relatives was excluded, so the
-empty reference is verified by annotation, not assumed.
+### `speech_in_noise`
 
-This is the strict-ground-truth non-speech arm; `music` is the realistic one.
+Genuine speech with a background bed, where transcription degrades into fabrication as
+evidence weakens. 240 clips from `genuine` mixed with voice-free FSD50K at SNR +20, +10, +5,
+0, −5 dB. Reference is the real transcript. 295 of 1,200 carry a target phrase.
 
-### `speech_in_noise` — 1,200 clips, 3.1 h
+## Positive arms
 
-The case the pure arms cannot reach: **genuine speech with a background bed**, where
-transcription degrades into fabrication as evidence weakens rather than appearing from
-nothing. 240 clips from `genuine` (preferring those carrying a high-risk phrase) mixed
-with voice-free FSD50K music or noise at **SNR = +20, +10, +5, 0, −5 dB**.
-
-Reference is the **real transcript**, so this measures WER degradation and hallucination
-onset on the same axis. 295 of the 1,200 carry a target phrase — those are where a
-hallucinated `terima kasih` and a real one become genuinely confusable.
-
-## Positive arms — what a mitigation must not destroy
-
-Without these, "hallucination rate fell" is unfalsifiable: a decoder that outputs nothing
+Without these, "hallucination rate fell" is unfalsifiable — a decoder that outputs nothing
 scores perfectly on the negative arms.
 
-### `genuine` — 4,694 clips, 12.4 h
+### `genuine`
 
 | source | clips | licence | register |
 |---|---:|---|---|
-| `SaLTUNIMAS/sarawak-malay-asr` | 1,164 | CC BY 4.0 | Sarawak Malay interviews, human transcripts |
-| `emhaihsan/Synth-Manglish` | 2,457 | CC BY 4.0 | Manglish code-switching (**synthetic TTS voice**) |
+| `SaLTUNIMAS/sarawak-malay-asr` | 1,164 | CC BY 4.0 | Sarawak Malay interviews |
+| `emhaihsan/Synth-Manglish` | 2,457 | CC BY 4.0 | Manglish code-switching (**synthetic TTS**) |
 | `google/fleurs` `ms_my` | 1,073 | CC BY 4.0 | human-read Wikipedia prose |
 
-**59 clips carry a high-risk phrase** (`has_target_phrase = true`) — these are the real
-minimal pairs against the negative arms:
+59 clips carry a high-risk phrase (`has_target_phrase = true`): `sama-sama` ×41,
+`terima kasih` ×16, `selamat tinggal` ×2, `terima kasih banyak banyak` ×1. The rest are the
+regression guard.
 
-| phrase | clips |
-|---|---:|
-| `sama-sama` | 41 |
-| `terima kasih` | 16 |
-| `selamat tinggal` | 2 |
-| `terima kasih banyak banyak` | 1 |
+### `librispeech_test_clean`
 
-The rest are the **regression guard**: ordinary speech whose WER must not move when a
-mitigation is applied.
+LibriSpeech test-clean (CC BY 4.0), the split the mitigation literature reports its cost on.
 
-### `librispeech_test_clean` — 2,620 clips, 5.4 h
-
-LibriSpeech test-clean (CC BY 4.0), the split the hallucination-mitigation literature
-reports its cost on. Included so a WER figure measured here lands on the same axis as
-published results rather than only on our Malaysian arms.
-
-Reference point — hallucination-space projection on large-v3 (arXiv:2609.04561):
+Hallucination-space projection on large-v3 (arXiv:2609.04561):
 
 | variant | ESC-50 HR | LibriSpeech WER clean / other |
 |---|---:|---:|
@@ -396,32 +326,28 @@ Reference point — hallucination-space projection on large-v3 (arXiv:2609.04561
 | gated projection | 8.38% | 6.17% / 6.57% |
 | always-on projection | 1.50% | **12.95% / 13.13%** |
 
-Suppressing hallucination is not free: always-on nearly eliminates it and **triples clean
-WER**. That exchange rate is the reason the positive arms exist.
+Suppressing hallucination triples clean WER. That exchange rate is why the positive arms
+exist.
 
-### `genuine_isolated` — 88 clips
+### `genuine_isolated`
 
-Native speakers from Lingua Libre (via Wikimedia Commons) saying **one phrase and nothing
-else**, across ms / id / en / zh / ta — 3 bare `terima kasih`, plus `thanks`, `okay`,
-`please`, `sorry`, `bye`, `好`, `sama-sama`, `maaf`, `selamat`, `baik`, `tidak`, `ya`.
-Small, but the closest possible match to the hallucination's acoustic shape: a
-hallucination surfaces as a bare `Terima kasih.`, and so does one of these clips. In
-`genuine` the phrase sits mid-sentence, which is the easier case.
+Native speakers from Lingua Libre saying one phrase and nothing else, across ms / id / en /
+zh / ta. 88 clips. A hallucination surfaces as a bare `Terima kasih.`, and so does one of
+these. In `genuine` the phrase sits mid-sentence, which is easier.
 
-Licences vary per speaker (CC0 ×43, CC BY-SA 4.0 ×42, CC BY 4.0 ×3), so **every row carries
-its own `license`, `author` and `source_url`**. Filter `license != "CC BY-SA 4.0"` if you
-need to avoid copyleft.
+Licences vary per speaker (CC0 ×43, CC BY-SA 4.0 ×42, CC BY 4.0 ×3), so every row carries its
+own `license`, `author` and `source_url`. Filter `license != "CC BY-SA 4.0"` to avoid
+copyleft.
 
-## `ban_candidates` — which phrases you can actually blocklist
+## `ban_candidates`
 
-The founding problem, answered with measurement instead of intuition. Every lexicon phrase
-is crossed against all 7,402 genuine transcripts here (17.8 h) and classified:
+Every lexicon phrase crossed against all 7,402 genuine transcripts here (17.8 h):
 
 | verdict | phrases | meaning |
 |---|---:|---|
-| `safe_candidate` | 871 | never observed in genuine speech, multi-word, frequently hallucinated |
+| `safe_candidate` | 871 | never in genuine speech, multi-word, frequently hallucinated |
 | `unsafe` | 389 | occurs in genuine speech — banning it destroys real transcripts |
-| `weak_evidence` | 39,631 | never observed, but too rare or too short to be confident |
+| `weak_evidence` | 39,631 | never observed, but too rare or short to be confident |
 
 | phrase | verdict | hallucinated | genuine exact / substring |
 |---|---|---:|---|
@@ -429,80 +355,68 @@ is crossed against all 7,402 genuine transcripts here (17.8 h) and classified:
 | `thank you` | **unsafe** | 31,353 | 0 / 13 |
 | `terima kasih` | **unsafe** | 1 | **3** / **19** |
 
-Use it in EXACT mode — drop an output only when the whole transcript equals the phrase,
-which is the shape a hallucination takes. `genuine_substring` shows what a more aggressive
-contains-match would additionally cost.
+Use it in exact mode — drop an output only when the whole transcript equals the phrase.
 
-**Caveat, and it is the important one:** every `ms` / `zh` / `ta` phrase falls into
-`weak_evidence`, because the *hallucination counts* come from public lexicons that barely
-cover those languages (6 Malay phrases in total). The classifier is sound — English
-demonstrates it — but the Malaysian side needs hallucination counts measured locally, which
-this dataset's probe arms exist to produce.
+**Caveat:** every ms / zh / ta phrase lands in `weak_evidence`, because the hallucination
+counts come from public lexicons that barely cover those languages (6 Malay phrases total).
+The classifier works — English demonstrates it — but the Malaysian side needs counts measured
+locally.
 
 ## `lexicon`
 
-Four public sources merged, normalised (NFC, casefold, punctuation-stripped) and
-deduplicated on `(phrase, lang)`:
+Four public sources merged, normalised (NFC, casefold, punctuation-stripped), deduplicated on
+`(phrase, lang)`:
 
-| source key | rows in | origin | licence |
+| source key | rows | origin | licence |
 |---|---:|---|---|
 | `agh_boh` | 294 | AGH DSP "Bag of Hallucinations", ICASSP 2025 | MIT |
 | `agh_full` | 30,407 | same paper, full non-speech tally | MIT |
 | `hf_noise` | 7,889 | [`sachaarbonel/whisper-hallucinations`](https://huggingface.co/datasets/sachaarbonel/whisper-hallucinations) | MIT |
-| `granary` | 3,028 / 23 langs | **NVIDIA NeMo SDP**, Granary pipeline | Apache-2.0 |
+| `granary` | 3,028 | NVIDIA NeMo SDP, Granary pipeline | Apache-2.0 |
 
 Top English entries: `thank you` (31,353), `thanks for watching` (25,053),
-`thank you for watching` (6,264). The NVIDIA lists ship alongside a working
-`DetectWhisperHallucinationFeatures` processor, vendored at `lexicon_raw/granary/`.
+`thank you for watching` (6,264).
 
-**Coverage is extremely uneven.** English has 30,443 phrases; Malay has **6**. That gap is
-why this dataset exists — the Malaysian side is not downloadable, it has to be measured.
+**Coverage is uneven.** English has 30,443 phrases. Malay has **6**. That gap is why this
+dataset exists.
 
-## A note on comparing hallucination rates
+## Comparing hallucination rates
 
-Published HRs for the same model on the same corpus differ by more than 10x — Calm-Whisper
-reports **99.97%** on UrbanSound8K for large-v3, arXiv:2609.04561 reports **76.08%**. The
-gap is methodological: the latter counts only output *surviving Whisper's own no-speech
-filter* (`no_speech_threshold = 0.6`), the former counts raw output. Always state which you
-mean.
+Published rates for the same model on the same corpus differ by more than 10×. Calm-Whisper
+reports **99.97%** on UrbanSound8K for large-v3; arXiv:2609.04561 reports **76.08%**. The
+difference is methodological: the latter counts only output surviving Whisper's own no-speech
+filter (`no_speech_threshold = 0.6`). Always state which you mean.
 
-It also matters what is in the corpus. arXiv:2609.04561 filtered FSD50K down to clips
-labelled neither speech, vocal **nor music** (HR 21.35%). Our `nonspeech` arm deliberately
-**keeps** music — filter `kind == "noise"` to approximate their setup, or use the whole arm
-plus `music` for the harder, more realistic condition.
+Corpus composition matters too. arXiv:2609.04561 filtered FSD50K to clips labelled neither
+speech, vocal nor music (HR 21.35%). Our `nonspeech` keeps music — filter `kind == "noise"` to
+approximate their setup.
 
 ## Known limitations
 
-- **The positive arms are small relative to the negative ones**, and the phrase-matched
-  subset is 147 clips (59 + 88). That is what genuinely exists under a redistributable
-  licence. The larger Malaysian conversational corpora are CC BY-NC and were excluded on
-  purpose so this dataset stays shareable.
-- **`Synth-Manglish` is TTS, not human speech.** It is a little over half of `genuine`.
-  Filter on `source` if that matters for your claim.
-- **`genuine` clips are long** (median 9.6 s) while hallucinations happen on short,
-  low-evidence audio. The isolated arm is the short-clip counterpart.
-- **`music` may contain singing.** See the vocals caveat above; `nonspeech` is the
-  label-verified alternative.
-- **`speech_in_noise` is synthetic mixing**, not natively recorded noisy speech. SNR is
-  exact and controllable, which is the point, but channel effects and Lombard speech
-  (people talk differently in noise) are absent.
-- **No ablation results here.** See the design notes in the project repo:
-  [`ABLATION.md`](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/blob/main/ABLATION.md), [`TRAINING.md`](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/blob/main/TRAINING.md).
-- FLEURS is human-read Wikipedia prose, so it contributes almost no conversational
-  closers — 3,740 utterances yielded one `terima kasih`. Register matters more than size.
+- The positive arms are small relative to the negative ones; the phrase-matched subset is 147
+  clips. Larger Malaysian conversational corpora are CC BY-NC and were excluded so this stays
+  shareable.
+- `Synth-Manglish` is TTS, not human speech, and is over half of `genuine`. Filter on `source`.
+- `genuine` clips are long (median 9.6 s) while hallucinations happen on short audio.
+  `genuine_isolated` is the short counterpart.
+- `music` may contain singing. `nonspeech` is the label-verified alternative.
+- `speech_in_noise` is synthetic mixing. SNR is exact, but channel effects and Lombard speech
+  are absent.
+- `lexicon_synth` is synthetic audio. It is training material, not evidence about what models
+  hallucinate.
+- No ablation results here. See
+  [`ABLATION.md`](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination/blob/main/ABLATION.md).
 
 ## Files beyond the configs
 
 ```
 lexicon_raw/            vendored upstream lexicons, unmodified (MIT / Apache-2.0)
-  granary/<lang>.txt    NVIDIA NeMo per-language phrase lists, 23 languages
-external/               HALAS (CC BY 4.0) — 3,611 Earnings-22 clips with human
+external/               HALAS (CC BY 4.0) — 3,611 Earnings-22 clips, human-annotated
                         hallucination / looping spans across 9 ASR models
 licenses/               upstream licence texts + NOTICE.md
 ```
 
-HALAS per-model "hallucination or looping" counts out of 3,611. Note that
-**`large-v3-turbo` hallucinates more than `large-v3`**:
+HALAS flagged counts out of 3,611. `large-v3-turbo` hallucinates more than `large-v3`:
 
 | model | flagged |
 |---|---:|
@@ -518,39 +432,42 @@ HALAS per-model "hallucination or looping" counts out of 3,611. Note that
 
 ## Provenance and licensing
 
-Mixed, all permitting redistribution with attribution. Per component:
+All components permit redistribution with attribution.
 
 | component | licence | attribution |
 |---|---|---|
-| `reduplication`, `silence` audio | CC BY 4.0 | this dataset (synthesised, no recorded human speech) |
-| `music` | CC BY 4.0 | Free Music Archive (commercial subset); per-row `artist` / `source_url` |
+| `reduplication`, `silence` | CC BY 4.0 | this dataset (synthesised, no recorded human speech) |
+| `music` | CC BY 4.0 | Free Music Archive; per-row `artist` / `source_url` |
 | `nonspeech` | CC BY 4.0 | FSD50K (`Fhrozen/FSD50k`) |
-| `speech_in_noise` | CC BY 4.0 | derived: `genuine` speech × FSD50K backgrounds |
+| `speech_in_noise` | CC BY 4.0 | derived: `genuine` × FSD50K backgrounds |
 | `librispeech_test_clean` | CC BY 4.0 | LibriSpeech (`openslr/librispeech_asr`) |
 | `genuine` | CC BY 4.0 | per-row `author` / `source_url` |
-| `genuine_isolated` | CC0 / CC BY 4.0 / CC BY-SA 4.0, **per row** | per-row `author` / `source_url`; Lingua Libre via Wikimedia Commons |
-| `lexicon` (merged), `targets`, `malaysian_sources` | CC BY 4.0 | this dataset |
+| `genuine_isolated` | CC0 / CC BY 4.0 / CC BY-SA 4.0, per row | per-row `author` / `source_url` |
+| `lexicon_synth` | CC BY 4.0 | synthesised by Multilingual-Expressive-TTS-1.7B and OmniVoice |
+| `lexicon`, `targets`, `malaysian_sources` | CC BY 4.0 | this dataset |
 | `lexicon_raw/agh_*` | MIT | AGH Signal Processing Group |
 | `lexicon_raw/hf_whisper_hallucinations_phrases.csv` | MIT | Sacha Arbonel |
 | `lexicon_raw/granary/*` | Apache-2.0 | NVIDIA, NeMo-speech-data-processor |
 | `external/halas_*` | CC BY 4.0 | HALAS authors (AGH DSP) |
 
-The synthetic audio contains **no recorded human speech** — source-filter synthesis and
-generated noise — so it carries no speaker-consent or PII obligations. The `genuine` and
-`genuine_isolated` arms are redistributed from public corpora under their own licences;
+The synthetic audio contains no recorded human speech, so it carries no speaker-consent or
+PII obligations. `genuine` and `genuine_isolated` are redistributed under their own licences;
 see `licenses/NOTICE.md`.
+
+Note on generators: OmniVoice's code is Apache-2.0 but its released weights are CC-BY-NC.
+`Multilingual-Expressive-TTS-1.7B` is ours.
 
 ## Content warning
 
 The lexicon records what an ASR model wrongly generates on audio containing no speech. Of
-40,891 phrases, roughly 586 contain profanity and 583 violence-related terms
-(`oh shit`, `i m not sure if i can get the gun`); 8 are sexual; none contain URLs. These
-are **model errors, not anything a person said**, and the upstream sources carry the same
-warning. They are kept because removing them would misrepresent the failure mode.
+40,891 phrases, roughly 586 contain profanity and 583 violence-related terms; 8 are sexual.
+These are **model errors, not anything a person said**. They are kept because removing them
+would misrepresent the failure mode.
 
 ## Citation
 
-Dataset: `Scicom-intl/Whisper-Hallucination`. Code: https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination
+Dataset: `Scicom-intl/Whisper-Hallucination`. Code:
+https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination
 
 Built on:
 

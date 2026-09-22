@@ -22,6 +22,8 @@ def main() -> int:
     ap.add_argument("--repo", default=REPO)
     ap.add_argument("--card", default=str(ROOT / "DATASET_CARD.md"))
     ap.add_argument("--message", default="Update dataset card")
+    ap.add_argument("--repo-type", default="dataset", choices=["dataset", "model"],
+                    help="model cards push the same way; only the repo type differs")
     ap.add_argument("--dry-run", action="store_true", help="diff against the live card, upload nothing")
     a = ap.parse_args()
 
@@ -37,7 +39,7 @@ def main() -> int:
 
     local = card.read_text()
     try:
-        live = Path(hf_hub_download(a.repo, "README.md", repo_type="dataset", token=token)).read_text()
+        live = Path(hf_hub_download(a.repo, "README.md", repo_type=a.repo_type, token=token)).read_text()
     except Exception as e:                       # first push, or no read access
         live = None
         print(f"could not fetch the live card ({type(e).__name__}); treating as new")
@@ -59,7 +61,7 @@ def main() -> int:
         return 0
 
     url = api.upload_file(path_or_fileobj=str(card), path_in_repo="README.md",
-                          repo_id=a.repo, repo_type="dataset", commit_message=a.message)
+                          repo_id=a.repo, repo_type=a.repo_type, commit_message=a.message)
     print(f"\npushed -> {url}")
     return 0
 
