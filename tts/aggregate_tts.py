@@ -73,24 +73,31 @@ def main():
         for lang, v in out[name]["per_lang_cer"].items():
             per_lang_all[lang][name] = v
 
-    # wins: one per language, ties broken by the systems' order — the same convention
-    # score_tts.py prints, so the counts still sum to the language count.
-    wins = defaultdict(int)
-    order = list(raw)
+    # Wins, counted two ways, because on this phrase set many systems reach CER 0.000 in a
+    # language and a single-winner count then just rewards whoever sorts first. That is not a
+    # hypothetical: scoring the same audio with the systems in alphabetical order handed
+    # Chatterbox 10 "wins" and Multilingual-Expressive 1, purely from tie-breaking.
+    #   wins        outright: strictly better than every other system in that language
+    #   wins_tied   best or equal-best, so a shared 0.000 counts for everyone who reached it
+    wins, wins_tied = defaultdict(int), defaultdict(int)
     for lang, vals in per_lang_all.items():
         best = min(vals.values())
-        winner = next(n for n in order if vals.get(n) == best)
-        wins[winner] += 1
+        at_best = [n for n, v in vals.items() if v == best]
+        for n in at_best:
+            wins_tied[n] += 1
+        if len(at_best) == 1:
+            wins[at_best[0]] += 1
     for name in out:
         out[name]["wins"] = wins[name]
+        out[name]["wins_tied"] = wins_tied[name]
 
     args.out.write_text(json.dumps(out, indent=2, ensure_ascii=False) + "\n")
 
-    hdr = f"{'system':<12}{'n':>5}{'mean':>9}{'median':>9}{'wins':>6}{'langs':>7}"
+    hdr = f"{'system':<20}{'n':>5}{'mean':>9}{'median':>9}{'wins':>6}{'tied':>6}{'langs':>7}"
     print(hdr); print("-" * len(hdr))
     for name, r in sorted(out.items(), key=lambda kv: kv[1]["mean_cer"]):
-        print(f"{name:<12}{r['n']:>5}{r['mean_cer']:>9.3f}{r['median_cer']:>9.3f}"
-              f"{r['wins']:>6}{len(r['per_lang_cer']):>7}")
+        print(f"{name:<20}{r['n']:>5}{r['mean_cer']:>9.3f}{r['median_cer']:>9.3f}"
+              f"{r['wins']:>6}{r['wins_tied']:>6}{len(r['per_lang_cer']):>7}")
     print(f"\nexcluded {out[list(out)[0]]['n_degenerate_excluded']} degenerate phrases per system")
     if dropped:
         print(f"excluded {len(dropped)} phrases voiced by an unverified speaker name")

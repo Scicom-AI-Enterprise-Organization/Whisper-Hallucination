@@ -31,6 +31,12 @@ XTTS_LANGS = {"en", "es", "fr", "de", "it", "pt", "pl", "tr", "ru", "nl", "cs", 
 
 
 def load_xtts(device):
+    # XTTS is CPML-licensed and the loader asks you to agree ON STDIN before it will download.
+    # In a detached job there is no stdin, so it hangs forever with an empty model cache and
+    # no error -- 22 minutes of nothing before this was spotted. The env var is the documented
+    # non-interactive consent.
+    import os
+    os.environ.setdefault("COQUI_TOS_AGREED", "1")
     from TTS.api import TTS
     return TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 
@@ -141,17 +147,30 @@ def load_moss(device):
 
 
 def synth_moss(model, phrase, lang, device):
+    """MOSS `generate` returns CODEC TOKENS, not audio: a list of (scalar, [frames, 33])
+    int64 tensors. The waveform only exists after `processor.decode(...)`, whose messages
+    carry it in `audio_codes_list[0]`. Walking the raw output for a tensor finds the token
+    grid instead and yields a 25 ms sliver."""
     import torch as _t
     proc, m = model["proc"], model["model"]
     conv = [proc.build_user_message(text=phrase, reference=[str(REF)])]
     batch = proc([conv], mode="generation")
-    batch = {k: (v.to(device) if hasattr(v, "to") else v) for k, v in batch.items()}
     with _t.no_grad():
-        out = m.generate(**batch)
-    wav = out[0] if isinstance(out, (list, tuple)) else out
-    if hasattr(wav, "cpu"):
-        wav = wav.cpu().float().numpy()
-    return np.asarray(wav, dtype="float32").squeeze(), 24000
+        out = m.generate(input_ids=batch["input_ids"].to(device),
+                         attention_mask=batch["attention_mask"].to(device),
+                         max_new_tokens=4096)
+    wav = None
+    for message in proc.decode(out):
+        codes = getattr(message, "audio_codes_list", None)
+        if codes:
+            wav = codes[0]
+            break
+    if wav is None:
+        raise RuntimeError("processor.decode returned no audio")
+    if hasattr(wav, "detach"):
+        wav = wav.detach().float().cpu().numpy()
+    sr = int(getattr(getattr(proc, "model_config", None), "sampling_rate", 0) or 24000)
+    return np.asarray(wav, dtype="float32").squeeze(), sr
 
 
 ENGINES = {

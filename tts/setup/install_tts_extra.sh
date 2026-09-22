@@ -9,8 +9,12 @@ case "$sys" in
     uv venv .venv_xtts --python 3.11
     # coqui-tts imports `isin_mps_friendly`, removed in transformers 5, and from torch 2.9
     # it does audio IO through torchcodec. Both are hard requirements, not preferences.
+    # pypinyin/cutlet are per-language G2P deps coqui does not pull in: without them zh and
+    # ja raise "Chinese requires: pypinyin" at synthesis time, not at import.
     VIRTUAL_ENV=$PWD/.venv_xtts uv pip install -q coqui-tts "transformers<5" torch torchaudio \
-        torchcodec soundfile librosa
+        torchcodec pypinyin cutlet soundfile librosa
+    # XTTS is CPML-licensed and asks for agreement on STDIN; export COQUI_TOS_AGREED=1 or a
+    # detached run hangs forever with an empty model cache.
     ;;
   chatterbox)
     uv venv .venv_chatterbox --python 3.11
