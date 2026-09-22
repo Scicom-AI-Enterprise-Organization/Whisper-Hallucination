@@ -113,8 +113,12 @@ def run_scicom(items, args, w):
     codec = load_neucodec.load(args.codec_repo, token=os.environ.get("HF_TOKEN")).eval().to(args.device)
 
     t0 = time.time()
+    # Cloned and auto-mode items cannot share a batch, so they are run as two passes.
+    items = sorted(items, key=lambda c: bool(c.get("ref_audio")))
     for start in range(0, len(items), args.batch_size):
         chunk = items[start:start + args.batch_size]
+        if len({bool(c.get("ref_audio")) for c in chunk}) > 1:
+            chunk = [c for c in chunk if not c.get("ref_audio")] or chunk
         prompts = [f"<|im_start|>{c['voice']}: {c['phrase']}<|speech_start|>" for c in chunk]
         budget = max(tokens_for(c["phrase"]) for c in chunk)
         try:
@@ -171,14 +175,32 @@ def run_omnivoice(items, args, w):
                    or getattr(getattr(model, "config", None), "sample_rate", 0) or 24000)
 
     def gen(batch):
+        # A queue item may carry a reference clip (`ref_audio`/`ref_text`), which switches
+        # OmniVoice from auto mode to cloning. Auto mode takes no speaker argument at all, so
+        # it renders one voice per language -- measured at a median pairwise cosine of 0.73
+        # across 74 languages, with 33 of them at 0.75+, i.e. effectively a single speaker
+        # (tts/voice_diversity.py). A reference is the only way to make that half of the
+        # corpus speaker-diverse. Mixed batches are not passed through: the reference list has
+        # to line up with the text list, so a batch either clones or it does not.
+        refs = [c.get("ref_audio") for c in batch]
+        kw = {}
+        if all(refs):
+            kw["ref_audio"] = refs
+            texts = [(c.get("ref_text") or "").strip() for c in batch]
+            if all(texts):
+                kw["ref_text"] = texts
         with torch.no_grad():
             return model.generate(text=[c["phrase"] for c in batch],
                                   language=[alias.get(c["lang"], c["lang"]) for c in batch],
-                                  generation_config=gcfg)
+                                  generation_config=gcfg, **kw)
 
     t0 = time.time()
+    # Cloned and auto-mode items cannot share a batch, so they are run as two passes.
+    items = sorted(items, key=lambda c: bool(c.get("ref_audio")))
     for start in range(0, len(items), args.batch_size):
         chunk = items[start:start + args.batch_size]
+        if len({bool(c.get("ref_audio")) for c in chunk}) > 1:
+            chunk = [c for c in chunk if not c.get("ref_audio")] or chunk
         try:
             waves = list(gen(chunk))
         except Exception:
@@ -198,12 +220,18 @@ def run_omnivoice(items, args, w):
                 if x.size < SR_OUT // 40:
                     w.add(c, error="output shorter than 25 ms"); continue
                 rel = f"wav/{c['lang']}_{c['idx']:06d}.flac"
-                w.add(c, rel=rel, dur=write_clip(w.dir / rel, x, sr_model), meta={
-                    "tts_model": args.omnivoice_model, "conditioning": "language_id",
+                meta = {
+                    "tts_model": args.omnivoice_model,
+                    "conditioning": "reference_clone" if c.get("ref_audio") else "language_id",
                     "language_id": alias.get(c["lang"], c["lang"]),
                     "sample_rate_model": sr_model, "sample_rate_out": SR_OUT,
                     "num_step": args.num_step, "seed": args.seed,
-                })
+                }
+                if c.get("ref_audio"):
+                    meta["reference_speaker"] = c.get("voice")
+                    meta["reference_audio"] = Path(c["ref_audio"]).name
+                    meta["reference_text"] = (c.get("ref_text") or "")[:200]
+                w.add(c, rel=rel, dur=write_clip(w.dir / rel, x, sr_model), meta=meta)
             except Exception as e:
                 w.add(c, error=f"{type(e).__name__}: {e}")
 

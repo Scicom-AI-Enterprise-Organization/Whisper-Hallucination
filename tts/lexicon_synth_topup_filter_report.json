@@ -1,0 +1,339 @@
+{
+  "af": {
+    "n": 516,
+    "kept": 376,
+    "yield": 0.7287,
+    "median_cer": 0.0857,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 84,
+      "duration": 56
+    }
+  },
+  "az": {
+    "n": 546,
+    "kept": 491,
+    "yield": 0.8993,
+    "median_cer": 0.0,
+    "judge_floor": 0.0419,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 54,
+      "duration": 1
+    }
+  },
+  "ca": {
+    "n": 582,
+    "kept": 502,
+    "yield": 0.8625,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 64,
+      "duration": 16
+    }
+  },
+  "cs": {
+    "n": 906,
+    "kept": 694,
+    "yield": 0.766,
+    "median_cer": 0.0476,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 199,
+      "duration": 13
+    }
+  },
+  "de": {
+    "n": 636,
+    "kept": 489,
+    "yield": 0.7689,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 112,
+      "cer": 35
+    }
+  },
+  "eu": {
+    "n": 570,
+    "kept": 508,
+    "yield": 0.8912,
+    "median_cer": 0.0656,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 49,
+      "duration": 13
+    }
+  },
+  "fa": {
+    "n": 573,
+    "kept": 452,
+    "yield": 0.7888,
+    "median_cer": 0.1569,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 118,
+      "duration": 3
+    }
+  },
+  "fo": {
+    "n": 15,
+    "kept": 5,
+    "yield": 0.3333,
+    "median_cer": 0.3571,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 10
+    }
+  },
+  "gu": {
+    "n": 609,
+    "kept": 410,
+    "yield": 0.6732,
+    "median_cer": 0.1765,
+    "judge_floor": 0.3296,
+    "gate": 0.4944,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 196,
+      "duration": 3
+    }
+  },
+  "he": {
+    "n": 561,
+    "kept": 447,
+    "yield": 0.7968,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 101,
+      "duration": 13
+    }
+  },
+  "hi": {
+    "n": 594,
+    "kept": 465,
+    "yield": 0.7828,
+    "median_cer": 0.05,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 90,
+      "duration": 39
+    }
+  },
+  "is": {
+    "n": 603,
+    "kept": 307,
+    "yield": 0.5091,
+    "median_cer": 0.2286,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 266,
+      "duration": 30
+    }
+  },
+  "it": {
+    "n": 624,
+    "kept": 527,
+    "yield": 0.8446,
+    "median_cer": 0.0,
+    "judge_floor": 0.0,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 65,
+      "duration": 32
+    }
+  },
+  "jw": {
+    "n": 558,
+    "kept": 480,
+    "yield": 0.8602,
+    "median_cer": 0.0909,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 75,
+      "duration": 3
+    }
+  },
+  "ka": {
+    "n": 579,
+    "kept": 545,
+    "yield": 0.9413,
+    "median_cer": 0.1,
+    "judge_floor": 0.4039,
+    "gate": 0.6058,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 31,
+      "duration": 3
+    }
+  },
+  "ko": {
+    "n": 543,
+    "kept": 462,
+    "yield": 0.8508,
+    "median_cer": 0.0,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 73,
+      "duration": 8
+    }
+  },
+  "mk": {
+    "n": 561,
+    "kept": 507,
+    "yield": 0.9037,
+    "median_cer": 0.075,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 47,
+      "duration": 7
+    }
+  },
+  "mt": {
+    "n": 945,
+    "kept": 457,
+    "yield": 0.4836,
+    "median_cer": 0.2609,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 481,
+      "duration": 7
+    }
+  },
+  "nn": {
+    "n": 12,
+    "kept": 4,
+    "yield": 0.3333,
+    "median_cer": 0.2812,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 6,
+      "duration": 2
+    }
+  },
+  "ps": {
+    "n": 579,
+    "kept": 474,
+    "yield": 0.8187,
+    "median_cer": 0.3333,
+    "judge_floor": 0.3549,
+    "gate": 0.5323,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 82,
+      "duration": 23
+    }
+  },
+  "sk": {
+    "n": 765,
+    "kept": 546,
+    "yield": 0.7137,
+    "median_cer": 0.1111,
+    "judge_floor": 0.0244,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 204,
+      "duration": 15
+    }
+  },
+  "sl": {
+    "n": 1488,
+    "kept": 1188,
+    "yield": 0.7984,
+    "median_cer": 0.0833,
+    "judge_floor": 0.0544,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "duration": 25,
+      "cer": 275
+    }
+  },
+  "sq": {
+    "n": 585,
+    "kept": 414,
+    "yield": 0.7077,
+    "median_cer": 0.1538,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 147,
+      "duration": 24
+    }
+  },
+  "tg": {
+    "n": 582,
+    "kept": 436,
+    "yield": 0.7491,
+    "median_cer": 0.1538,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 145,
+      "duration": 1
+    }
+  },
+  "tr": {
+    "n": 573,
+    "kept": 532,
+    "yield": 0.9284,
+    "median_cer": 0.0,
+    "judge_floor": 0.008,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 36,
+      "duration": 5
+    }
+  },
+  "uz": {
+    "n": 570,
+    "kept": 472,
+    "yield": 0.8281,
+    "median_cer": 0.1269,
+    "judge_floor": 0.2401,
+    "gate": 0.3602,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 93,
+      "duration": 5
+    }
+  }
+}

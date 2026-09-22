@@ -1,0 +1,53 @@
+{
+  "gu": {
+    "n": 96,
+    "kept": 77,
+    "yield": 0.8021,
+    "median_cer": 0.1724,
+    "judge_floor": 0.3296,
+    "gate": 0.4944,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 17,
+      "duration": 2
+    }
+  },
+  "it": {
+    "n": 96,
+    "kept": 76,
+    "yield": 0.7917,
+    "median_cer": 0.0,
+    "judge_floor": 0.0,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 17,
+      "duration": 3
+    }
+  },
+  "mk": {
+    "n": 96,
+    "kept": 83,
+    "yield": 0.8646,
+    "median_cer": 0.0714,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 10,
+      "duration": 3
+    }
+  },
+  "si": {
+    "n": 96,
+    "kept": 0,
+    "yield": 0.0,
+    "median_cer": 1.165,
+    "judge_floor": null,
+    "gate": 0.25,
+    "judge_cannot_read": false,
+    "rejects": {
+      "cer": 96
+    }
+  }
+}

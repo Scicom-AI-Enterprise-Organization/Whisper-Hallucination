@@ -1,0 +1,54 @@
+{
+ "match_seconds": 1.6,
+ "per_lang": 24,
+ "engines": {
+  "scicom": {
+   "n_clips": 384,
+   "distinct_voice_labels": 4,
+   "langs": {
+    "gu": {
+     "n_clips": 24,
+     "n_pairs": 276,
+     "median_cosine": 0.7111,
+     "p05": 0.3401,
+     "p95": 0.9292,
+     "median_same_name": 0.855,
+     "median_diff_name": 0.6375,
+     "n_same_name_pairs": 67
+    },
+    "it": {
+     "n_clips": 24,
+     "n_pairs": 276,
+     "median_cosine": 0.6393,
+     "p05": 0.2891,
+     "p95": 0.9067,
+     "median_same_name": 0.832,
+     "median_diff_name": 0.5778,
+     "n_same_name_pairs": 61
+    },
+    "mk": {
+     "n_clips": 24,
+     "n_pairs": 276,
+     "median_cosine": 0.698,
+     "p05": 0.3618,
+     "p95": 0.9128,
+     "median_same_name": 0.8622,
+     "median_diff_name": 0.6524,
+     "n_same_name_pairs": 70
+    },
+    "si": {
+     "n_clips": 24,
+     "n_pairs": 276,
+     "median_cosine": 0.7291,
+     "p05": 0.4024,
+     "p95": 0.9312,
+     "median_same_name": 0.8929,
+     "median_diff_name": 0.6731,
+     "n_same_name_pairs": 72
+    }
+   },
+   "median_over_languages": 0.7046,
+   "languages_near_single_voice": []
+  }
+ }
+}

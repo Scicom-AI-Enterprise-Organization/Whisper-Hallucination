@@ -164,6 +164,60 @@ python bench/score_benchmark.py --results bench/results --lexicon lexicon/combin
 `bench/run_benchmark.py` (inference), `bench/score_benchmark.py` (metrics), `bench/metrics.py`
 (metric definitions), `bench/scores.json` (these numbers).
 
+### The false-positive side — when the phrase is really spoken
+
+The three non-speech arms measure what a model invents. They cannot tell you what a
+mitigation would cost, because none of those clips contain speech. `lexicon_synth`'s `test`
+split is the other half of that contrast: **6,267 clips, 83 languages, of the hallucination
+phrases actually being said**. Emitting the phrase here is the correct answer, and every miss
+is a real transcription a filter would delete.
+
+Production audio is not a bare 0.9 s clip, so each clip is run three ways — and the middle
+condition is a control, because **Whisper zero-pads every input to a 30 s window anyway**:
+a 0.9 s clip already sits in ~29 s of digital zeros, so trailing zeros cannot change anything
+and leading zeros only shift where the speech starts. Room tone is a different signal
+entirely, and it is drawn from the `silence` arm itself.
+
+![lexicon_synth results](bench/lexicon_synth_results.png)
+
+*Regenerate with `python bench/run_benchmark.py --arms lexicon_synth [--pad-lead 2 --pad-tail 2
+--pad-kind roomtone --pad-tag __tone2]`, then `python bench/score_lexicon_synth.py` and
+`python bench/plot_lexicon_synth.py`.*
+
+| model | recovered (bare → tone) | median CER (bare → tone) | mean CER (bare → tone) | >2× output | emits nothing |
+|---|---|---|---|---|---|
+| whisper-large-v2 | 63.6% → 63.4% | 0.125 → 0.125 | 0.378 → 0.384 | 0.6% → 0.7% | 0.0% |
+| **whisper-large-v3** | **69.8% → 68.5%** | **0.089 → 0.091** | **0.288 → 0.302** | 0.2% → 0.4% | 0.0% |
+| whisper-large-v3-turbo | 68.0% → 67.0% | 0.087 → 0.091 | 0.348 → 0.382 | 0.7% → 0.9% | 0.0% |
+| malaysian-whisper-v2 | 31.3% → 29.6% | 0.800 → 0.826 | 0.770 → **1.151** | 2.6% → 3.7% | 0.0% |
+| Malaysian-turbo-v3 | 41.1% → 35.4% | 0.385 → 0.529 | 1.508 → **3.749** | 3.0% → 5.7% | 2.8% → 1.1% |
+
+**The ranking inverts.** On the negative arms `Malaysian-turbo-v3` is the best checkpoint by a
+distance — it stays silent on 90.6% of voice-free audio where every OpenAI model emits
+something on 100%. Here it recovers the phrase on **35–41%** of clips against large-v3's
+**68–70%**. The quiet is not selective; it is a prior against emitting text, and it costs
+real transcriptions. The same trade shows in `malaysian-whisper-v2` at 30%.
+
+**Room tone is the expensive condition, and only for the fine-tunes.** The base checkpoints
+barely move (large-v3 +0.014 mean CER, recovery −1.3 points). `malaysian-whisper-v2` gains
+**+0.38 mean CER** and `Malaysian-turbo-v3` **+2.24** from nothing but a noise floor around
+the same speech. The zeros control moves far less in every case, so this is the noise floor
+rather than the position shift — and it is exactly the condition a VAD chunk delivers.
+
+It costs throughput too, for the same reason: over the identical 6,267 clips, the base
+checkpoints are flat under padding (±4%) while `malaysian-whisper-v2` goes 496 s → 627 s
+(+26%) and `Malaysian-turbo-v3` 452 s → 516 s. More tokens, more time.
+
+**The median clip is fine; a tail does the damage.** Median CER moves by hundredths while mean
+CER triples, because 3–6% of clips run past 2× the phrase length. That is the same runaway
+the `reduplication` arm isolates, reappearing on ordinary speech once silence surrounds it.
+
+One caveat stated plainly: the corpus was filtered by `whisper-large-v3` with the language
+forced, so v3 is scored partly on clips selected by its own agreement, and its lead over
+large-v2 and turbo should be read with that in mind. The gap to the Malaysian fine-tunes is
+far too large to be explained by it. Decoding here is auto-language, as everywhere in this
+harness, which is why absolute recovery tops out near 70%.
+
 ## Generating positives: TTS and voice conversion
 
 The benchmark's weakest arm is its positives — 52% of `genuine` is synthetic Manglish in a
@@ -189,6 +243,26 @@ leaving them in puts `bn` at CER 22.9 and swamps every mean):
 clean — and **Multilingual-Expressive** handles ms/en/zh/ta, where it wins outright. Higgs is
 out on both counts; its licence independently forbids using outputs to train non-Boson speech
 models.
+
+**A third of the Multilingual-Expressive clips in that table used an unverified speaker
+name.** The grid assigned one of three names per phrase, and one of them —
+`multilingual-tts_audio_Rahman` — is not in `ExpressiveSpeech`, the same mistake that
+invalidated the voice-conversion named-mode row. An unknown name does not raise; it
+conditions on a token the fine-tune never saw. Split by name, over the 16 non-degenerate
+phrases each:
+
+| speaker | in inventory | mean CER | median |
+|---|---|---:|---:|
+| `multilingual-tts_audio_Grace` | yes | 0.130 | 0.000 |
+| `DisfluencySpeech` | yes | 0.254 | 0.083 |
+| `multilingual-tts_audio_Rahman` | **no** | 0.280 | 0.000 |
+
+Dropping those phrases **for every system** (`python tts/aggregate_tts.py
+--valid-speakers-only`) leaves 32 clips over 20 languages and does not change the ranking —
+it widens it: Multilingual-Expressive **0.192** (17 wins), OmniVoice 0.450 (2), Higgs v2
+1.158 (0), Higgs v3 1.583 (1). So the published **0.221 understates it**, and the table above
+is kept as the headline because it is the full 22-language grid. Verify speaker names against
+`tts/expressive_speakers.json` before trusting any named-mode number.
 
 ### Voice conversion and cloning candidates
 
@@ -304,6 +378,60 @@ python tts/score_vc.py --systems tts/vc_out/* --device cuda:6   # ALL arms, one 
 python tts/make_vc_summary.py                           # summary the figure reads
 python tts/calibrate_vc_sim.py --device cuda:6          # the % scale above
 python tts/plot_vc.py                                   # the figure above
+```
+
+### Synthesising the positive pool — and how many voices it really has
+
+The TTS and VC tables above pick the generators; `tts/build_lexicon_queue.py` →
+`tts/synth_lexicon.py` → `tts/filter_lexicon_synth.py` runs them over the lexicon, and the
+result ships as the `lexicon_synth` config: **29,112 clips, 15.8 hours, 83 languages**, split
+`train` (22,845) / `test` (6,267) by phrase, with benchmark phrases forced into `test`.
+
+**A `voice` column is a label, not a measurement.** OmniVoice takes no speaker argument at
+all, so every clip it renders carries `voice=""` — and measuring them with the same WavLM-sv
+judge and calibrated scale as the VC table (0.605 between different speakers, 0.853 between
+two clips of one, both at 1.6 s) showed **33 of its 74 languages at a median pairwise cosine
+of 0.75 or worse**: one voice per language. The `Multilingual-Expressive` half measured 0.63,
+with same-name pairs at 0.826 and different-name pairs at 0.601 — genuinely distinct speakers,
+and proof the name conditioning lands.
+
+![Voice diversity](tts/voice_diversity.png)
+
+*Regenerate with `python tts/voice_diversity.py` on the box, then `python
+tts/plot_voice_diversity.py`.*
+
+Two ways to fix it, probed on the same 4 collapsed languages × 24 phrases × 4 voices and
+scored in one venv:
+
+| route | yield mk / gu / it | median CER | different-voice cosine |
+|---|---|---:|---|
+| **Multilingual-Expressive, speaker name** | **86% / 80% / 79%** | 0.07 / 0.17 / 0.00 | **0.652 / 0.638 / 0.578** |
+| OmniVoice, reference cloning | 46% / 68% / 53% | 0.32 / 0.25 / 0.26 | 0.684 / 0.722 / 0.687 |
+| *auto mode, for reference* | 89% / 73% / 83% | 0.02 / 0.11 / 0.00 | collapsed: 0.91 / 0.81 / 0.77 |
+
+Cloning pays the VC table's +0.339 ΔCER as filter rejections — about half the yield on `mk`
+and `it` — **and separates the voices less well**. Named mode holds the yield and lands
+different-name pairs on the stranger floor, including in languages the TTS ablation never
+covered (`mk`, `gu`). So 26 languages were **topped up rather than replaced**: three
+additional named voices per phrase, the auto-mode clip kept. 12,190 of 15,675 new clips
+(77.8%) passed the filter, and the median collapsed language went **0.81 → 0.63**, with only
+`ps` and `sq` still above 0.75.
+
+Seven languages were left alone — `am`, `ml`, `my`, `sd`, `si`, `te`, `sr`. Those fail for a
+different reason: FLEURS has no config for Sinhala, so there is no judge floor, the flat 0.25
+gate applies, and `si` accepts **0.5%** of its clips whatever voice they are in. Re-voicing
+does not help (named mode: 0%). They need a floor measured from a non-FLEURS corpus.
+
+```bash
+python tts/build_lexicon_queue.py --min-count 2      # 90% of the lexicon is not phrases
+python tts/synth_lexicon.py --engine scicom --device cuda:6
+python tts/filter_lexicon_synth.py --device cuda:6   # ASR round-trip, per-language gate
+python tts/voice_diversity.py --langs all --device cuda:6          # are these real voices?
+python tts/build_diversity_probe.py && python tts/build_diversity_topup.py
+python scripts/split_lexicon_synth.py --accepted ... --audio-root ...
+python scripts/build_lexicon_synth_release.py --synth audio/lexicon_synth_v4 \
+    --primary-root audio/lexicon_synth_v3
+python scripts/push_lexicon_synth.py                 # HF_TOKEN from the box's .env
 ```
 
 ## Layout

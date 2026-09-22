@@ -221,17 +221,18 @@ Audio is 16 kHz mono FLAC (lossless, 16-bit), peak-normalised to −3 dBFS.
 ## `lexicon_synth` — synthetic positives, with a train split
 
 **Not a benchmark arm.** The eight audio configs above are evaluation-only. This one is
-material for *building* a mitigation: 16,922 synthesised clips of lexicon phrases, 8.6 hours,
-across 83 languages, shipped as `train` (13,203 clips) and `test` (3,719).
+material for *building* a mitigation: 29,112 synthesised clips of lexicon phrases, 15.8 hours,
+across 83 languages, shipped as `train` (22,845 clips) and `test` (6,267).
 
 | | train | test |
 |---|---:|---:|
-| clips | 13,203 | 3,719 |
-| hours | 6.74 | 1.84 |
-| distinct phrases | 10,413 | 2,883 |
+| clips | 22,845 | 6,267 |
+| hours | 12.49 | 3.32 |
+| distinct phrases | 11,018 | 3,054 |
 | languages | 75 | 83 |
 | languages with ≥10 clips | 72 | 70 |
-| non-English share | 86% | 85% |
+| non-English share | 92% | 91% |
+| distinct named voices | 45 | 45 |
 
 **The split is by PHRASE, not by clip.** Each phrase is rendered in several voices; splitting
 clips would put `terima kasih` in both halves and a model would then be evaluated on text it
@@ -261,6 +262,22 @@ Audio is from `Scicom-intl/Multilingual-Expressive-TTS-1.7B` (speaker-name condi
 verified voices) and `k2-fsa/OmniVoice`, routed per language by measured CER. Every clip's
 `meta` column is a JSON string carrying the TTS model, codec, conditioning mode, speaker,
 sample rates, decoding parameters and seed.
+
+**How many voices this really contains, measured rather than counted.** A `voice` column is a
+label; whether two clips are actually different speakers is a measurement. Using WavLM-sv
+x-vectors on a calibrated scale — at 1.6 s the judge scores ≈0.61 between clips of different
+speakers and ≈0.85 between two clips of one — OmniVoice's clips came out at a median pairwise
+cosine of **0.73 across its 74 languages, with 33 of them at 0.75 or worse**: it accepts no
+speaker argument, so it renders essentially one voice per language. The
+`Multilingual-Expressive` clips measured 0.63, with same-name pairs at 0.83 and different-name
+pairs at 0.60 — real, distinct speakers.
+
+So 26 of those languages were **topped up**, not replaced: each phrase was re-rendered in
+three additional named voices and the original auto-mode clip kept. 12,190 of 15,675 new clips
+(77.8%) passed the same round-trip filter. `meta.phrase_provenance` is unchanged by this;
+`meta.conditioning` distinguishes `speaker_name` from `language_id`. Seven languages were left
+alone — `am`, `ml`, `my`, `sd`, `si`, `te`, `sr` — because the judge cannot read them well
+enough to validate any voice, which is a judge-coverage limit, not a quality claim.
 
 **Every clip passed an ASR round-trip filter** — Whisper must recover the phrase, and the
 clip must be about as long as the phrase should take, which rejects a TTS that keeps talking

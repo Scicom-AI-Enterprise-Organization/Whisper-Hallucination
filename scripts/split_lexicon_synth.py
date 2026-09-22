@@ -39,6 +39,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--accepted", type=Path, nargs="+",
                     default=[ROOT / "audio" / "lexicon_synth_v2" / "accepted.csv"])
+    ap.add_argument("--audio-root", type=Path, nargs="*", default=None,
+                    help="where each --accepted file's clips actually live, in the same order. "
+                         "Defaults to each file's own directory, which is WRONG whenever the "
+                         "filter wrote its report somewhere other than the synthesis root -- "
+                         "the v3 run filtered into lexicon_synth_v3_{sconly,omonly} while the "
+                         "audio stayed in lexicon_synth_v3.")
     ap.add_argument("--targets", type=Path, default=ROOT / "phrases" / "targets.csv")
     ap.add_argument("--out-dir", type=Path, default=ROOT / "audio" / "lexicon_synth_v2")
     ap.add_argument("--test-frac", type=float, default=0.2)
@@ -55,12 +61,23 @@ def main():
             protected.add((norm(r["phrase"]), ""))        # match regardless of language tag
     print(f"benchmark phrases protected from train: {len(protected)//2}")
 
+    roots = args.audio_root or [p.parent for p in args.accepted]
+    if len(roots) != len(args.accepted):
+        raise SystemExit(f"--audio-root has {len(roots)} entries for "
+                         f"{len(args.accepted)} --accepted files")
+
     rows = []
-    for path in args.accepted:
+    for path, audio_root in zip(args.accepted, roots):
         for r in csv.DictReader(path.open(encoding="utf-8")):
-            r["_src"] = str(path)
+            # Which corpus root the clip's audio lives under. Kept as a real column (not an
+            # underscore-prefixed scratch field) because the release builder needs it: clips
+            # now come from more than one synthesis root -- the original run plus the
+            # speaker-diversity top-up -- and `audio_filepath` is relative to its own root.
+            r["corpus_root"] = str(audio_root)
             rows.append(r)
     print(f"{len(rows)} accepted clips from {len(args.accepted)} manifest(s)")
+    for root, n in Counter(r["corpus_root"] for r in rows).most_common():
+        print(f"    {n:>7} from {root}")
 
     # Group clips by phrase: the unit of assignment is the phrase, not the clip.
     by_phrase = defaultdict(list)
@@ -86,11 +103,18 @@ def main():
             r["split"] = assign[key]
             out_rows[assign[key]].append(r)
 
-    fields = list(out_rows["train"][0]) if out_rows["train"] else list(out_rows["test"][0])
+    # Roots can disagree on columns if one was filtered by an older version; take the union
+    # so no row silently loses a field on write.
+    fields, seen_f = [], set()
+    for items in out_rows.values():
+        for r in items:
+            for k in r:
+                if k not in seen_f:
+                    seen_f.add(k); fields.append(k)
     for split, items in out_rows.items():
         path = args.out_dir / f"{split}.csv"
         with path.open("w", newline="", encoding="utf-8") as fh:
-            w = csv.DictWriter(fh, fieldnames=fields)
+            w = csv.DictWriter(fh, fieldnames=fields, restval="")
             w.writeheader(); w.writerows(items)
         print(f"  {split}: {len(items)} clips -> {path.name}")
 
@@ -107,6 +131,9 @@ def main():
         "phrase_overlap_train_test": len(overlap),
         "benchmark_phrases_in_train": len(leaked),
         "assignment_reasons": dict(reasons),
+        "clips_by_corpus_root": {k: v for k, v in
+                                 Counter(r["corpus_root"] for items in out_rows.values()
+                                         for r in items).most_common()},
         "languages": {
             "train": len({r["lang"] for r in out_rows["train"]}),
             "test": len({r["lang"] for r in out_rows["test"]}),

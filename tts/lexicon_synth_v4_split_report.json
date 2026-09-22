@@ -1,0 +1,28 @@
+{
+  "salt": "whisper-halluc-lexicon-v1",
+  "test_frac": 0.2,
+  "clips": {
+    "test": 6267,
+    "train": 22845
+  },
+  "phrases": {
+    "train": 11018,
+    "test": 3054
+  },
+  "phrase_overlap_train_test": 0,
+  "benchmark_phrases_in_train": 0,
+  "assignment_reasons": {
+    "hashed": 13736,
+    "benchmark_phrase": 335,
+    "language_too_small_for_test": 1
+  },
+  "clips_by_corpus_root": {
+    "audio/lexicon_synth_v3": 16922,
+    "audio/lexicon_synth_v3_topup": 12190
+  },
+  "languages": {
+    "train": 75,
+    "test": 83,
+    "in_both": 74
+  }
+}

@@ -34,6 +34,11 @@ def main():
     total = sum(f.stat().st_size for f in files) / 1e6
     for f in files:
         print(f"  {f.name:<34} {f.stat().st_size/1e6:>8.1f} MB")
+    biggest = max(f.stat().st_size for f in files)
+    if biggest > 300e6:
+        print(f"!! largest file is {biggest/1e6:.0f} MB; the dataset viewer refuses to scan "
+              f"past 300 MB. Rebuild with a smaller --rows-per-file.", file=sys.stderr)
+        return 1
     print(f"  total {total:.1f} MB -> {args.repo}:data/{args.config_name}/")
 
     if args.dry_run:
@@ -45,6 +50,11 @@ def main():
         folder_path=str(args.build),
         repo_id=args.repo, repo_type="dataset",
         allow_patterns=[f"data/{args.config_name}/*"],   # never touch the benchmark arms
+        # Shard counts change between builds (`train-00000-of-00001` -> `-of-00006`), and the
+        # config's data_files is a `train-*.parquet` glob: leaving the old file in place would
+        # load BOTH and silently double the split. delete_patterns is scoped to this config's
+        # directory for the same reason allow_patterns is.
+        delete_patterns=[f"data/{args.config_name}/*.parquet"],
         commit_message=args.message,
     )
     print(f"pushed -> {url}")
