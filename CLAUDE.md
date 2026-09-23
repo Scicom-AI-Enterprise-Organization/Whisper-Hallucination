@@ -502,9 +502,26 @@ headline; the plain run still reproduces it exactly (0.221 / 0.349 / 1.089 / 1.2
 labels needed). `bench/run_wild_baseline.py` runs checkpoints over it, `bench/score_wild.py`
 joins the outputs back to the manifests. Published as the `wild` config.
 
-**Mine spontaneous audio, not curated corpora.** Yield per 8,000 clips heard: AMI meetings
-235, Earnings-22 31, VoxPopuli 4, People's Speech 1. Read speech recorded for a dataset almost
-never triggers this; multi-party audio with real silence between turns does.
+**Mine NOISY audio. Yield tracks recording quality, and the spread is five thousandfold.**
+Per 8,000 clips heard:
+
+| corpus | what it is | kept |
+|---|---|---:|
+| AudioSet | YouTube, heavy background noise, mostly non-speech | **4,376 (54.7%)** |
+| AMI | spontaneous meetings, far-field | 235 (2.9%) |
+| Earnings-22 | conference calls | 31 (0.4%) |
+| GigaSpeech xs | podcast/YouTube, but speech-aligned segments | 33 (0.4%) |
+| VoxPopuli | parliament | 4 (0.05%) |
+| People's Speech *clean* | curated read speech | 1 (0.01%) |
+
+The first sweep used curated corpora and got curated-corpus answers. Real-world YouTube audio
+hallucinates on more than half of clips: `so` ×909, `¶¶` ×664, `Thank you.` ×70,
+`Продолжение следует...` ×67 -- the shipped lexicon, appearing unprompted on real audio.
+
+**A speech-aligned corpus hides the failure even when the audio is rough.** GigaSpeech is
+podcasts and YouTube, exactly the right material, and it yields 0.4% because its segments are
+cut to speech. The hallucinations live in what segmentation throws away: the music beds, the
+crosstalk, the gaps. Mine unsegmented audio, or mine the gaps.
 
 **Two labels are free, the third is not.** A token run ≥ 6 and "words over VAD-confirmed
 silence" need no annotator. `lexicon_hit` on its own is worthless — every meeting is full of

@@ -12,6 +12,12 @@ because two of the three failure signatures are self-evident:
                   output over voice-free audio is invented; no reference needed.
   lexicon_hit     the transcript is exactly a known hallucination phrase AND the VAD found no
                   speech. On its own this reason is useless -- see below.
+  insertion       the corpus ships a reference and the model emitted much MORE than it, with
+                  the surplus containing a lexicon phrase. This is the podcast failure: not
+                  silence filled with text, but real speech over a music bed or crosstalk that
+                  the model pads with `thanks for watching`. GigaSpeech and People's Speech
+                  both carry transcripts, so the signal is free there; AMI-style blank clips
+                  never fire it.
 
 Nothing here calls a clip a hallucination because the transcript disagrees with a reference;
 that just finds ordinary ASR errors.
@@ -47,7 +53,21 @@ SR = 16000
 #   espnet/yodas2                          script-based loader, unsupported by datasets>=3
 #   malaysia-ai/malaysian-podcast-youtube  split ZIP64, the Malaysian-Emilia problem again
 #   malaysia-ai/malaysian-youtube          demands torchcodec even with decode=False
+# Yield is a function of how rough the audio is. Measured per 8,000 clips heard: AMI
+# meetings 235, Earnings-22 31, VoxPopuli 4, People's Speech CLEAN 1. Curated read speech
+# recorded for a dataset barely fails; podcasts, YouTube and noisy crowd-sourced audio are
+# where hallucinations actually happen, so those are the sources that matter here.
 SOURCES = {
+    "gigaspeech":     dict(repo="speechcolab/gigaspeech", config="l", split="train",
+                           note="podcasts + YouTube, the noisy real-world case"),
+    "gigaspeech_xs":  dict(repo="speechcolab/gigaspeech", config="xs", split="train",
+                           note="same, small config for a quick pass"),
+    "peoples_dirty":  dict(repo="MLCommons/peoples_speech", config="dirty", split="train",
+                           note="the NOISY subset -- `clean` yields ~0.01%"),
+    "peoples_dirty_sa": dict(repo="MLCommons/peoples_speech", config="dirty_sa", split="train",
+                             note="noisy, self-attributed licence subset"),
+    "audioset":       dict(repo="agkphysics/AudioSet", config=None, split="train",
+                           note="YouTube audio, mostly environmental -- the classic trigger"),
     "peoples_speech": dict(repo="MLCommons/peoples_speech", config="clean", split="train",
                            note="30k h CC-BY / CC-BY-SA, read + spontaneous"),
     "ami":            dict(repo="edinburghcstr/ami", config="ihm", split="train",
@@ -102,6 +122,9 @@ def main():
                     help="Silero needs roughly 250 ms of audio to judge; below that a real "
                          "backchannel reads as speech_frac 0.0. A 0.2 s AMI clip at -28 dBFS "
                          "is a starved VAD, not silence, so short clips cannot claim `blank`")
+    ap.add_argument("--min-insertion-ratio", type=float, default=1.6,
+                    help="hypothesis/reference character ratio above which the surplus is "
+                         "checked for a lexicon phrase")
     ap.add_argument("--max-speech-frac", type=float, default=0.02,
                     help="a clip with less than this fraction of VAD speech counts as "
                          "voice-free. Not a loudness threshold -- see the docstring")
@@ -158,6 +181,13 @@ def main():
             # Only meaningful together with blank: a meeting is full of genuine "Yeah."
             if norm and blank and norm in lex:
                 reasons.append("lexicon_hit")
+            # Insertion: real speech, but the model added text that is not in the reference
+            # and the addition is a known hallucination phrase.
+            ref = normalise(b.get("ref") or "")
+            if ref and norm and len(norm) > args.min_insertion_ratio * len(ref):
+                extra = norm.replace(ref, " ").strip()
+                if extra and any(pz in extra for pz in lex if len(pz) >= 8):
+                    reasons.append("insertion")
             if not reasons:
                 continue
             rel = f"wav/{args.source}_{b['idx']:07d}.flac"
@@ -165,7 +195,8 @@ def main():
             rows.append({"id": f"{args.source}_{b['idx']:07d}", "audio_filepath": rel,
                          "source": spec["repo"], "config": cfg or "", "hyp": hyp[:300],
                          "reasons": "|".join(reasons), "max_token_run": run,
-                         "duration_s": round(b["dur"], 3), **vad,
+                         "duration_s": round(b["dur"], 3),
+                         "reference_text": (b.get("ref") or "")[:300], **vad,
                          "source_id": str(b["src_id"])[:120]})
             kept += 1
 
@@ -187,6 +218,8 @@ def main():
             continue
         seen += 1
         batch.append({"x": x, "dur": dur, "idx": i, "vad": speech_report(x),
+                      "ref": row.get("text") or row.get("transcription")
+                             or row.get("raw_text") or row.get("sentence") or "",
                       "src_id": row.get("id") or a.get("path") or i})
         if len(batch) >= args.batch_size:
             flush(batch); batch = []
@@ -202,8 +235,8 @@ def main():
             w.writeheader(); w.writerows(rows)
     summary = {"source": spec["repo"], "config": cfg, "heard": seen, "kept": kept,
                "model": args.model,
-               "by_reason": {r: sum(r in x["reasons"] for x in rows)
-                             for r in ("loop", "blank_speech", "lexicon_hit")}}
+               "by_reason": {r: sum(r in x["reasons"].split("|") for x in rows)
+                             for r in ("loop", "blank_speech", "lexicon_hit", "insertion")}}
     (out_dir / "mine_report.json").write_text(json.dumps(summary, indent=2))
     print(f"[wild] heard {seen}, kept {kept} -> {man}")
     print(json.dumps(summary["by_reason"], indent=1))
