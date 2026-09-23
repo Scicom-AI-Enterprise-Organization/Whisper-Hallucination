@@ -307,6 +307,13 @@ other root is tagged, because `idx` restarts at 0 in each one and would collide.
 `voice_diversity.py --pool-engines` measures a language across engines and roots, which is
 what the shipped corpus actually is.
 
+**`sync --delete` ate `bench/wild_results/` WHILE the job was writing to it.** The baseline
+transcribed all 3,607 HALAS clips at 10.9 clip/s and then died on
+`FileNotFoundError: bench/wild_results/whisper-large-v2.summary.json` -- the directory was
+created at startup and removed by a `sync` fired minutes later for an unrelated file. A
+running job's output directory is exactly as vulnerable as a finished one. Excludes now cover
+`audio_wild`, `bench/wild_results`, `.venv_wild`.
+
 **`sync --delete` ate `tts/voice_diversity_after.json` mid-session** — a 7-minute GPU scan,
 written on the box inside a tracked directory, deleted by the next `sync` before it was
 pulled. That is the third time. The excludes now carry `tts/voice_diversity*.json` and
@@ -487,6 +494,43 @@ systems have to be compared on the same text — leaving 32 clips over 20 langua
 Multilingual-Expressive **0.192** / 17 wins, OmniVoice 0.450 / 2, Higgs v2 1.158, Higgs v3
 1.583. The ranking is unchanged and the gap widens, so the 22-language table stays the
 headline; the plain run still reproduces it exactly (0.221 / 0.349 / 1.089 / 1.230, 18 wins).
+
+## Wild audio — where the real failures are
+
+`audio_wild/` holds real recordings that made a model fail, built by
+`scripts/build_halas_arm.py` (human labels) and `scripts/mine_wild_hallucinations.py` (no
+labels needed). `bench/run_wild_baseline.py` runs checkpoints over it, `bench/score_wild.py`
+joins the outputs back to the manifests. Published as the `wild` config.
+
+**Mine spontaneous audio, not curated corpora.** Yield per 8,000 clips heard: AMI meetings
+235, Earnings-22 31, VoxPopuli 4, People's Speech 1. Read speech recorded for a dataset almost
+never triggers this; multi-party audio with real silence between turns does.
+
+**Two labels are free, the third is not.** A token run ≥ 6 and "words over VAD-confirmed
+silence" need no annotator. `lexicon_hit` on its own is worthless — every meeting is full of
+genuine "Yeah." — so it only counts alongside a blank verdict.
+
+**An RMS threshold is not a silence test.** At −45 dBFS it flagged 2,920 of 6,000 AMI clips:
+AMI headset mics record at −45 to −51 dBFS while containing perfectly good speech. Silero VAD
+replaced it, and hit rate fell 49% → 2.9%. **And a starved VAD is not silence either**: below
+~250 ms Silero returns `speech_frac 0.0` regardless, so `blank_speech` requires ≥ 0.4 s.
+
+**HALAS joins on `{segment_id}_{file_id}.wav`**, the pair distil-whisper/earnings22's `chunked`
+parquets carry as two columns. 3,607 of 3,611 matched, and the per-model flag counts reproduce
+the published table (v2 1578 vs 1581, phi4 1096 vs 1096, large-v3 857 vs 858) — that agreement
+is the check that the join is right. Count flags with exact membership, not `in` on the joined
+string: "canary" is a prefix of "canary_flash" and "whisper_large_v3" of "..._turbo", which
+inflated canary to 1,651.
+
+**What the wild arm measured.** On 263 VAD-confirmed voice-free clips every OpenAI checkpoint
+emits words on 100%, `Malaysian-turbo-v3` on 8.0% — the synthetic non-speech result, harder.
+Against HALAS human labels, CER separates flagged from clean by +0.22 (large-v3) while the
+lexicon rate separates them by 3.8 points, which is the measured case against a text blocklist.
+Aphasia is the worst trigger: `Malaysian-turbo-v3` loops on 25.1% and emits nothing on 59.9%.
+
+**The aphasia clips are never re-hosted.** Clinical speech from a membership-gated corpus;
+`build_wild_release.py` only reads `audio_wild/`, and they live under `audio/`, so exclusion is
+structural rather than a flag someone can forget.
 
 ## Upstream data caveats
 

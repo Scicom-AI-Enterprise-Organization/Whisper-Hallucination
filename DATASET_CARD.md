@@ -82,6 +82,10 @@ configs:
     path: data/lexicon_synth/train-*.parquet
   - split: test
     path: data/lexicon_synth/test-*.parquet
+- config_name: wild
+  data_files:
+  - split: test
+    path: data/wild/test-*.parquet
 ---
 
 # Whisper Hallucination and Repetition Probes
@@ -156,6 +160,7 @@ Raw numbers: `bench/scores.json`. Harness: [`bench/`](https://github.com/Scicom-
 | `genuine_isolated` | 88 | 0.05 | one phrase spoken alone | the phrase |
 | `librispeech_test_clean` | 2,620 | 5.4 | English WER guard | human transcript |
 | **`lexicon_synth`** | **29,112** | **15.8** | synthetic positives, 83 languages | the phrase |
+| **`wild`** | **3,878** | **3.1** | real audio that triggered hallucination or looping | see below |
 | `lexicon` | 40,891 | — | known hallucination phrases, 100 languages | — |
 | `ban_candidates` | 40,891 | — | each phrase classified safe/unsafe to blocklist | — |
 | `targets` | 463 | — | phrases both hallucinated and genuinely said | — |
@@ -243,6 +248,50 @@ about as long as the phrase should take. The gate is **per language, anchored to
 own floor** — Whisper's CER on real FLEURS speech in 44 languages. A language where the judge
 itself scores 0.88 (Burmese) or 1.23 (Amharic) cannot be held to a 0.25 gate. Nine such
 languages are excluded rather than scored.
+
+## `wild` — real audio that actually failed
+
+Every other audio config is a built stimulus. This one is not constructed at all: 3,878 clips
+of real recordings where an ASR model hallucinated or looped.
+
+| collection | clips | how it was labelled |
+|---|---:|---|
+| `halas` | 3,607 | **human span annotations** for 9 ASR systems, on Earnings-22 calls |
+| `ami` | 235 | mined: Silero VAD found no speech, yet the model emitted words |
+| `earnings22` | 31 | mined, same rule |
+| `voxpopuli` | 4 | mined: token run ≥ 6 |
+| `peoples_speech` | 1 | mined: token run ≥ 6 |
+
+`reasons` says which rule caught the clip. `models_flagged` and `n_models_flagged` carry the
+HALAS human verdicts. `reference_text` is the human-corrected transcript where one exists.
+
+**No human labelling was needed for the mined clips**, because two failure signatures are
+self-evident: a token run ≥ 6 (a correct transcript essentially never repeats one token six
+times), and words emitted where a VAD finds no speech. Clips are never called hallucinations
+merely because a transcript disagrees with a reference — that finds ordinary ASR errors.
+
+Mining yield says where these failures live:
+
+| corpus | heard | kept | rate |
+|---|---:|---:|---:|
+| AMI — spontaneous meetings, far-field | 8,000 | 235 | **2.9%** |
+| Earnings-22 — conference calls | 8,000 | 31 | 0.4% |
+| VoxPopuli — parliament | 8,000 | 4 | 0.05% |
+| People's Speech — curated read speech | 8,000 | 1 | **0.01%** |
+
+Curated read corpora barely trigger it. Spontaneous multi-party audio with real silence
+between turns does — which is what production audio sounds like.
+
+**Baselines on this arm are in the project repo
+[README](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination#the-wild-arm).**
+The short version: on the 263 voice-free clips every OpenAI checkpoint emits words on 100% of
+them while `Malaysian-turbo-v3` emits on 8%; and on clips humans marked as hallucinated,
+large-v3 emits a known lexicon phrase 21.8% of the time against 18.0% on clean clips — a
+3.8-point gap, which is why a text blocklist cannot do this job.
+
+Not included: the 187 Koenecke aphasia clips. That is clinical speech from a membership-gated
+corpus, so consent rather than licence keeps it out; `scripts/fetch_audio.py aphasia` gets it
+for local measurement.
 
 ## Negative arms
 

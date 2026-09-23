@@ -106,8 +106,13 @@ def main():
             w.writeheader(); w.writerows(rows)
     report = {"annotated": len(labels), "scanned": seen, "matched": matched,
               "by_reason": dict(Counter(r["reasons"] for r in rows)),
-              "flagged_per_model": {m: sum(m in r["models_flagged"] for r in rows)
-                                    for m in MODEL_COLS}}
+              # Exact membership, not substring: "canary" is a prefix of "canary_flash" and
+              # "whisper_large_v3" of "whisper_large_v3_turbo", so `in` on the joined string
+              # inflated both (canary read 1,651 against HALAS's published 1,213).
+              "flagged_per_model": {
+                  m: sum(m in (r["models_flagged"].split("|") if r["models_flagged"] else [])
+                         for r in rows)
+                  for m in MODEL_COLS}}
     (args.out / "halas_report.json").write_text(json.dumps(report, indent=2))
     print(f"[halas] matched {matched}/{len(labels)} -> {man}")
     print(json.dumps(report["by_reason"], indent=1))

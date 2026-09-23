@@ -121,6 +121,78 @@ Caveat: the corpus was filtered by `whisper-large-v3` with the language forced, 
 scored partly on clips it agreed with. That flatters v3 against v2 and turbo. It does not
 explain a 30-point gap to the fine-tunes.
 
+### The wild arm
+
+Everything above is a built stimulus. `wild` is 3,878 clips of real audio that actually made
+a model fail: 3,607 Earnings-22 segments with **human span annotations** (HALAS, 9 systems),
+plus 271 mined from streamed corpora, plus 187 aphasia clips held locally.
+
+Mining needs no annotator, because two signatures are self-evident: a token run ≥ 6, and words
+emitted where a VAD finds no speech. Where those failures live:
+
+| corpus | heard | kept | rate |
+|---|---:|---:|---:|
+| AMI — spontaneous meetings | 8,000 | 235 | **2.9%** |
+| Earnings-22 — conference calls | 8,000 | 31 | 0.4% |
+| VoxPopuli — parliament | 8,000 | 4 | 0.05% |
+| People's Speech — curated read | 8,000 | 1 | **0.01%** |
+
+Curated read corpora barely fail. Spontaneous multi-party audio does.
+
+**On 263 voice-free clips** (VAD confirmed no speech, so any output is invented):
+
+| model | emits something | on HALAS speech clips |
+|---|---:|---:|
+| whisper-large-v2 | 100% | 100% |
+| whisper-large-v3 | 100% | 100% |
+| whisper-large-v3-turbo | 100% | 100% |
+| malaysian-whisper-v2 | 99.2% | 100% |
+| **Malaysian-turbo-v3** | **8.0%** | 53.8% |
+
+The synthetic `silence`/`music`/`nonspeech` result holds on real audio, and harder:
+`Malaysian-turbo-v3` stays quiet on 92% of genuinely voice-free wild clips — and deletes 46%
+of clips that do contain speech.
+
+**Against human labels** (HALAS, CER on the corrected reference):
+
+| model | CER on flagged | CER on clean | gap | lexicon rate flagged / clean |
+|---|---:|---:|---:|---|
+| whisper-large-v2 | 0.655 | 0.381 | +0.274 | 33.1% / 23.9% |
+| **whisper-large-v3** | **0.549** | **0.328** | +0.221 | 21.8% / 18.0% |
+| whisper-large-v3-turbo | 0.611 | 0.332 | +0.279 | 24.7% / 18.3% |
+| malaysian-whisper-v2 | 1.594 | 0.481 | +1.113 | 19.2% / 16.0% |
+| Malaysian-turbo-v3 | 2.651 | 1.488 | +1.163 | 2.4% / 2.1% |
+
+**A blocklist cannot do this job, measured.** large-v3 emits a known hallucination phrase on
+21.8% of clips humans marked as hallucinated — and on 18.0% of clips humans marked clean. A
+3.8-point separation is not a detector. Error rate separates the same clips by 22 points.
+
+The blocklist only works once you know the audio has no speech: on the voice-free clips,
+70–75% of outputs are lexicon phrases against 18% on speech clips. That is an audio decision,
+not a text one.
+
+**Disordered speech is the hardest trigger.** On 187 aphasia clips (Koenecke et al., confirmed
+triggers):
+
+| model | loops | emits nothing | top output |
+|---|---:|---:|---|
+| whisper-large-v2 | 12.8% | 0% | `អូនានានានានានានា` |
+| whisper-large-v3 | 7.5% | 0% | `um` |
+| whisper-large-v3-turbo | 7.0% | 0% | `thank you` |
+| malaysian-whisper-v2 | 16.6% | 31.6% | `i m sorry i m sorry i m…` |
+| **Malaysian-turbo-v3** | **25.1%** | **59.9%** | — |
+
+Loops also transfer: on clips mined because *one* model looped, large-v3 loops on 87.5%,
+turbo on 37.5%, large-v2 on 12.5%.
+
+```bash
+python scripts/fetch_audio.py halas aphasia
+python scripts/build_halas_arm.py                    # join human labels to audio
+python scripts/mine_wild_hallucinations.py --source ami --device cuda:7
+python bench/run_wild_baseline.py --model MODEL --device cuda:7
+python bench/score_wild.py
+```
+
 ### What the models actually say
 
 | model | on `silence` | on `music` |
@@ -254,6 +326,7 @@ x, sr = sf.read(io.BytesIO(ds[0]["audio"]["bytes"]), dtype="float32")
 | `genuine_isolated` | 88 | one phrase spoken alone |
 | `librispeech_test_clean` | 2,620 | English WER guard |
 | **`lexicon_synth`** | **29,112** | synthetic positives, 83 languages, train + test |
+| **`wild`** | **3,878** | real audio that triggered hallucination or looping |
 | `lexicon` / `ban_candidates` / `targets` / `malaysian_sources` | — | lookup tables |
 
 ## Reproducing
