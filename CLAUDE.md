@@ -307,6 +307,12 @@ other root is tagged, because `idx` restarts at 0 in each one and would collide.
 `voice_diversity.py --pool-engines` measures a language across engines and roots, which is
 what the shipped corpus actually is.
 
+**Exclude the PATTERN, not the path.** After losing `bench/wild_results/` to a sync, the
+exclude added was that exact directory -- and the next sync then ate `bench/wild_results_mined`
+and `bench/wild_results_noisy`, which had not existed when the list was written. Five models'
+worth of baselines, twice. Excludes are now globs: `bench/wild_results*`, `tts/*.done`. The
+rule that would have prevented all three: **do not run `sync` while a remote job is writing.**
+
 **`sync --delete` ate `bench/wild_results/` WHILE the job was writing to it.** The baseline
 transcribed all 3,607 HALAS clips at 10.9 clip/s and then died on
 `FileNotFoundError: bench/wild_results/whisper-large-v2.summary.json` -- the directory was
@@ -539,11 +545,16 @@ is the check that the join is right. Count flags with exact membership, not `in`
 string: "canary" is a prefix of "canary_flash" and "whisper_large_v3" of "..._turbo", which
 inflated canary to 1,651.
 
-**What the wild arm measured.** On 263 VAD-confirmed voice-free clips every OpenAI checkpoint
-emits words on 100%, `Malaysian-turbo-v3` on 8.0% — the synthetic non-speech result, harder.
-Against HALAS human labels, CER separates flagged from clean by +0.22 (large-v3) while the
-lexicon rate separates them by 3.8 points, which is the measured case against a text blocklist.
-Aphasia is the worst trigger: `Malaysian-turbo-v3` loops on 25.1% and emits nothing on 59.9%.
+**What the wild arm measured**, on 4,421 VAD-confirmed voice-free clips: every OpenAI
+checkpoint emits words on 100%, `Malaysian-turbo-v3` on 8.5%. Of those outputs, 54% (large-v3)
+to 72% (turbo) are known lexicon phrases — against ~18% on HALAS speech clips, which is why the
+blocklist only works once the audio is known to be blank. Against HALAS human labels CER
+separates flagged from clean by +0.22 (large-v3) while the lexicon rate separates them by 3.8
+points. Aphasia is the worst trigger: `Malaysian-turbo-v3` loops on 25.1% and emits nothing on
+59.9%. **Most wild loops are model-specific** — on clips mined because large-v3 looped, turbo
+loops on 17.2% — so a loop corpus mined with one model is not a fair loop benchmark for another.
+Figure: `bench/plot_wild.py`. `bench/fill_wild_gaps.sh` re-runs whatever baseline is missing,
+driven by what is on disk rather than a hand-kept list.
 
 **The aphasia clips are never re-hosted.** Clinical speech from a membership-gated corpus;
 `build_wild_release.py` only reads `audio_wild/`, and they live under `audio/`, so exclusion is

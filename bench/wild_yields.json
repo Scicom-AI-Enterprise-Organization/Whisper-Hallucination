@@ -1,0 +1,12 @@
+{
+  "note": "clips kept per 8,000 heard; mined by scripts/mine_wild_hallucinations.py with whisper-large-v3",
+  "corpora": [
+    {"name": "AudioSet",              "detail": "YouTube, heavy background noise",   "kept": 4376, "heard": 8000},
+    {"name": "AMI",                   "detail": "spontaneous meetings, far-field",   "kept": 235,  "heard": 8000},
+    {"name": "GigaSpeech",            "detail": "podcasts + YouTube, speech-aligned","kept": 33,   "heard": 8000},
+    {"name": "Earnings-22",           "detail": "conference calls",                  "kept": 31,   "heard": 8000},
+    {"name": "People's Speech dirty", "detail": "noisy transcripts, clean audio",    "kept": 9,    "heard": 8000},
+    {"name": "VoxPopuli",             "detail": "parliament",                        "kept": 4,    "heard": 8000},
+    {"name": "People's Speech clean", "detail": "curated read speech",               "kept": 1,    "heard": 8000}
+  ]
+}

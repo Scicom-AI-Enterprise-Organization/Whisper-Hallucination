@@ -1,0 +1,902 @@
+{
+ "Malaysian-whisper-large-v3-turbo-v3": {
+  "halas_clean": {
+   "n": 627,
+   "any_output_rate": 0.7448,
+   "lexicon_rate": 0.0207,
+   "loop_rate": 0.0144,
+   "n_with_reference": 627,
+   "wer": 2.4536,
+   "cer": 1.4883,
+   "len_ratio_median": 1.0,
+   "over_1_5x_rate": 0.0877,
+   "top_outputs": [
+    {
+     "text": "okay so",
+     "count": 4
+    },
+    {
+     "text": "okay",
+     "count": 3
+    },
+    {
+     "text": "yeah so",
+     "count": 2
+    },
+    {
+     "text": "okay thank you",
+     "count": 2
+    },
+    {
+     "text": "our enterprise connectivity sweet tensor is just the right s",
+     "count": 1
+    }
+   ]
+  },
+  "halas_hallucination": {
+   "n": 2980,
+   "any_output_rate": 0.5379,
+   "lexicon_rate": 0.0238,
+   "loop_rate": 0.0128,
+   "n_with_reference": 2980,
+   "wer": 6.3789,
+   "cer": 2.6513,
+   "len_ratio_median": 0.8,
+   "over_1_5x_rate": 0.1221,
+   "top_outputs": [
+    {
+     "text": "okay",
+     "count": 14
+    },
+    {
+     "text": "so",
+     "count": 6
+    },
+    {
+     "text": "thank you",
+     "count": 6
+    },
+    {
+     "text": "yes",
+     "count": 5
+    },
+    {
+     "text": "mr",
+     "count": 3
+    }
+   ]
+  },
+  "aphasia": {
+   "n": 187,
+   "any_output_rate": 0.4011,
+   "lexicon_rate": 0.0642,
+   "loop_rate": 0.2513,
+   "top_outputs": [
+    {
+     "text": "oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh ",
+     "count": 26
+    },
+    {
+     "text": "terima kasih kerana menonton",
+     "count": 6
+    },
+    {
+     "text": "ah",
+     "count": 3
+    },
+    {
+     "text": "ya ya ya ya ya ya ya ya ya ya ya ya ya ya ya ya ya ya ya ya ",
+     "count": 2
+    },
+    {
+     "text": "hai hai hai hai hai hai hai hai hai hai hai hai hai hai hai ",
+     "count": 2
+    }
+   ]
+  },
+  "blank_speech": {
+   "n": 4421,
+   "any_output_rate": 0.0848,
+   "lexicon_rate": 0.0122,
+   "loop_rate": 0.012,
+   "top_outputs": [
+    {
+     "text": "terima kasih kerana menonton",
+     "count": 33
+    },
+    {
+     "text": "i am i am i am i am i am i am i am i am i am i am i am i am ",
+     "count": 23
+    },
+    {
+     "text": "tuan tuan tuan tuan tuan tuan tuan tuan tuan tuan tuan tuan ",
+     "count": 13
+    },
+    {
+     "text": "oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh ",
+     "count": 7
+    },
+    {
+     "text": "ah ah ah ah ah ah ah ah ah ah ah ah ah ah ah ah ah ah ah ah ",
+     "count": 3
+    }
+   ]
+  },
+  "lexicon_hit": {
+   "n": 2378,
+   "any_output_rate": 0.0542,
+   "lexicon_rate": 0.0189,
+   "loop_rate": 0.0076,
+   "top_outputs": [
+    {
+     "text": "terima kasih kerana menonton",
+     "count": 27
+    },
+    {
+     "text": "i am i am i am i am i am i am i am i am i am i am i am i am ",
+     "count": 21
+    },
+    {
+     "text": "tuan tuan tuan tuan tuan tuan tuan tuan tuan tuan tuan tuan ",
+     "count": 7
+    },
+    {
+     "text": "hai hai hai hai hai hai hai hai hai hai hai hai hai hai hai ",
+     "count": 2
+    },
+    {
+     "text": "eh eh eh eh eh eh eh eh eh eh eh eh eh eh eh eh eh eh eh eh ",
+     "count": 2
+    }
+   ]
+  },
+  "loop": {
+   "n": 64,
+   "any_output_rate": 0.4219,
+   "lexicon_rate": 0.0156,
+   "loop_rate": 0.1719,
+   "top_outputs": [
+    {
+     "text": "tuan tuan tuan tuan tuan tuan tuan tuan tuan tuan tuan tuan ",
+     "count": 2
+    },
+    {
+     "text": "i fill up glass water this big glass water i drink this",
+     "count": 2
+    },
+    {
+     "text": "oh oh oh oh oh oh bang bang bang bang bang bang",
+     "count": 1
+    },
+    {
+     "text": "oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh ",
+     "count": 1
+    },
+    {
+     "text": "i want it shit",
+     "count": 1
+    }
+   ]
+  }
+ },
+ "malaysian-whisper-large-v2": {
+  "halas_clean": {
+   "n": 627,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.1595,
+   "loop_rate": 0.0032,
+   "n_with_reference": 627,
+   "wer": 0.6953,
+   "cer": 0.4813,
+   "len_ratio_median": 1.0,
+   "over_1_5x_rate": 0.1005,
+   "top_outputs": [
+    {
+     "text": "okay",
+     "count": 15
+    },
+    {
+     "text": "yes",
+     "count": 9
+    },
+    {
+     "text": "thank you",
+     "count": 9
+    },
+    {
+     "text": "yeah",
+     "count": 9
+    },
+    {
+     "text": "okay okay",
+     "count": 5
+    }
+   ]
+  },
+  "halas_hallucination": {
+   "n": 2980,
+   "any_output_rate": 0.999,
+   "lexicon_rate": 0.1919,
+   "loop_rate": 0.0047,
+   "n_with_reference": 2980,
+   "wer": 2.1191,
+   "cer": 1.5939,
+   "len_ratio_median": 1.0,
+   "over_1_5x_rate": 0.2121,
+   "top_outputs": [
+    {
+     "text": "thank you",
+     "count": 67
+    },
+    {
+     "text": "terima kasih",
+     "count": 64
+    },
+    {
+     "text": "okay",
+     "count": 45
+    },
+    {
+     "text": "yes",
+     "count": 34
+    },
+    {
+     "text": "i am",
+     "count": 23
+    }
+   ]
+  },
+  "aphasia": {
+   "n": 187,
+   "any_output_rate": 0.6845,
+   "lexicon_rate": 0.016,
+   "loop_rate": 0.1658,
+   "top_outputs": [
+    {
+     "text": "i m sorry i m sorry i m sorry i m sorry i m sorry i m sorry ",
+     "count": 4
+    },
+    {
+     "text": "amin amin amin amin amin amin amin amin amin amin amin amin ",
+     "count": 3
+    },
+    {
+     "text": "oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh ",
+     "count": 3
+    },
+    {
+     "text": "i am the one who is the one who is the one who is the one wh",
+     "count": 3
+    },
+    {
+     "text": "alam alam alam alam alam alam alam alam alam alam alam alam ",
+     "count": 2
+    }
+   ]
+  },
+  "blank_speech": {
+   "n": 4421,
+   "any_output_rate": 0.9468,
+   "lexicon_rate": 0.2886,
+   "loop_rate": 0.0502,
+   "top_outputs": [
+    {
+     "text": "¶¶",
+     "count": 783
+    },
+    {
+     "text": "so",
+     "count": 437
+    },
+    {
+     "text": "tidak",
+     "count": 151
+    },
+    {
+     "text": "oh",
+     "count": 144
+    },
+    {
+     "text": "terima kasih kerana menonton",
+     "count": 118
+    }
+   ]
+  },
+  "lexicon_hit": {
+   "n": 2378,
+   "any_output_rate": 0.9125,
+   "lexicon_rate": 0.4041,
+   "loop_rate": 0.0559,
+   "top_outputs": [
+    {
+     "text": "so",
+     "count": 340
+    },
+    {
+     "text": "¶¶",
+     "count": 161
+    },
+    {
+     "text": "tidak",
+     "count": 119
+    },
+    {
+     "text": "oh",
+     "count": 115
+    },
+    {
+     "text": "terima kasih kerana menonton",
+     "count": 89
+    }
+   ]
+  },
+  "loop": {
+   "n": 64,
+   "any_output_rate": 0.9375,
+   "lexicon_rate": 0.1719,
+   "loop_rate": 0.3438,
+   "top_outputs": [
+    {
+     "text": "so",
+     "count": 4
+    },
+    {
+     "text": "ha ha ha ha ha ha ha ha ha ha ha ha ha ha ha ha ha ha ha ha ",
+     "count": 2
+    },
+    {
+     "text": "tidak tidak tidak tidak tidak tidak tidak tidak tidak tidak ",
+     "count": 2
+    },
+    {
+     "text": "terima kasih kerana menonton",
+     "count": 2
+    },
+    {
+     "text": "hahaha",
+     "count": 2
+    }
+   ]
+  }
+ },
+ "whisper-large-v2": {
+  "halas_clean": {
+   "n": 627,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.2392,
+   "loop_rate": 0.0,
+   "n_with_reference": 627,
+   "wer": 0.5025,
+   "cer": 0.3812,
+   "len_ratio_median": 0.971,
+   "over_1_5x_rate": 0.0383,
+   "top_outputs": [
+    {
+     "text": "yeah",
+     "count": 25
+    },
+    {
+     "text": "thank you",
+     "count": 19
+    },
+    {
+     "text": "okay",
+     "count": 7
+    },
+    {
+     "text": "go ahead",
+     "count": 7
+    },
+    {
+     "text": "thank you very much",
+     "count": 6
+    }
+   ]
+  },
+  "halas_hallucination": {
+   "n": 2980,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.3312,
+   "loop_rate": 0.0007,
+   "n_with_reference": 2980,
+   "wer": 1.0283,
+   "cer": 0.6551,
+   "len_ratio_median": 1.0,
+   "over_1_5x_rate": 0.1205,
+   "top_outputs": [
+    {
+     "text": "thank you",
+     "count": 176
+    },
+    {
+     "text": "yeah",
+     "count": 53
+    },
+    {
+     "text": "okay",
+     "count": 44
+    },
+    {
+     "text": "thanks",
+     "count": 42
+    },
+    {
+     "text": "go ahead",
+     "count": 31
+    }
+   ]
+  },
+  "aphasia": {
+   "n": 187,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.0909,
+   "loop_rate": 0.1283,
+   "top_outputs": [
+    {
+     "text": "អូនានានានានានានានានានានានានានានានានានានានានានានានានានានានានា",
+     "count": 12
+    },
+    {
+     "text": "ὀνᾶ ὀνᾶ ὀνᾶ ὀνᾶ ὀνᾶ ὀνᾶ ὀνᾶ ὀνᾶ ὀνᾶ ὀνᾶ ὀνᾶ ὀνᾶ ",
+     "count": 6
+    },
+    {
+     "text": "ლიელიელიელიელიელიელიელიელიელიელიელიელიელიელიელიელიელიელიელიე",
+     "count": 4
+    },
+    {
+     "text": "ლილილილილილილილილილილილილილილილილილილილილილილილილილილილილილი",
+     "count": 4
+    },
+    {
+     "text": "om om om",
+     "count": 4
+    }
+   ]
+  },
+  "blank_speech": {
+   "n": 4389,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.3882,
+   "loop_rate": 0.0223,
+   "top_outputs": [
+    {
+     "text": "you",
+     "count": 382
+    },
+    {
+     "text": "so",
+     "count": 326
+    },
+    {
+     "text": "i",
+     "count": 207
+    },
+    {
+     "text": "oh",
+     "count": 150
+    },
+    {
+     "text": "បានានានានានានានានានានានានានានានានានានានានានានានានានានានានានា",
+     "count": 144
+    }
+   ]
+  },
+  "lexicon_hit": {
+   "n": 2364,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.4788,
+   "loop_rate": 0.0212,
+   "top_outputs": [
+    {
+     "text": "you",
+     "count": 253
+    },
+    {
+     "text": "so",
+     "count": 190
+    },
+    {
+     "text": "i",
+     "count": 144
+    },
+    {
+     "text": "oh",
+     "count": 108
+    },
+    {
+     "text": "បានានានានានានានានានានានានានានានានានានានានានានានានានានានានានា",
+     "count": 69
+    }
+   ]
+  },
+  "loop": {
+   "n": 63,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.2063,
+   "loop_rate": 0.3016,
+   "top_outputs": [
+    {
+     "text": "you",
+     "count": 3
+    },
+    {
+     "text": "i",
+     "count": 2
+    },
+    {
+     "text": "bye bye",
+     "count": 1
+    },
+    {
+     "text": "woo run old mate oh uh-oh uh-oh oh bang bang bang bang bang",
+     "count": 1
+    },
+    {
+     "text": "ataque",
+     "count": 1
+    }
+   ]
+  }
+ },
+ "whisper-large-v3-turbo": {
+  "halas_clean": {
+   "n": 627,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.1834,
+   "loop_rate": 0.0,
+   "n_with_reference": 627,
+   "wer": 0.4567,
+   "cer": 0.3322,
+   "len_ratio_median": 1.0,
+   "over_1_5x_rate": 0.0718,
+   "top_outputs": [
+    {
+     "text": "yeah",
+     "count": 19
+    },
+    {
+     "text": "okay",
+     "count": 15
+    },
+    {
+     "text": "thank you",
+     "count": 13
+    },
+    {
+     "text": "so",
+     "count": 9
+    },
+    {
+     "text": "yes",
+     "count": 6
+    }
+   ]
+  },
+  "halas_hallucination": {
+   "n": 2980,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.2466,
+   "loop_rate": 0.0007,
+   "n_with_reference": 2980,
+   "wer": 1.002,
+   "cer": 0.6112,
+   "len_ratio_median": 1.0,
+   "over_1_5x_rate": 0.156,
+   "top_outputs": [
+    {
+     "text": "thank you",
+     "count": 132
+    },
+    {
+     "text": "okay",
+     "count": 60
+    },
+    {
+     "text": "yeah",
+     "count": 41
+    },
+    {
+     "text": "so",
+     "count": 29
+    },
+    {
+     "text": "and",
+     "count": 26
+    }
+   ]
+  },
+  "aphasia": {
+   "n": 187,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.4011,
+   "loop_rate": 0.0695,
+   "top_outputs": [
+    {
+     "text": "thank you",
+     "count": 15
+    },
+    {
+     "text": "oh",
+     "count": 10
+    },
+    {
+     "text": "oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh oh ",
+     "count": 7
+    },
+    {
+     "text": "so",
+     "count": 7
+    },
+    {
+     "text": "i m going to go",
+     "count": 5
+    }
+   ]
+  },
+  "blank_speech": {
+   "n": 4421,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.7207,
+   "loop_rate": 0.005,
+   "top_outputs": [
+    {
+     "text": "so",
+     "count": 1645
+    },
+    {
+     "text": "oh",
+     "count": 458
+    },
+    {
+     "text": "you",
+     "count": 166
+    },
+    {
+     "text": "музыка",
+     "count": 154
+    },
+    {
+     "text": "uh",
+     "count": 94
+    }
+   ]
+  },
+  "lexicon_hit": {
+   "n": 2378,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.82,
+   "loop_rate": 0.0017,
+   "top_outputs": [
+    {
+     "text": "so",
+     "count": 906
+    },
+    {
+     "text": "oh",
+     "count": 306
+    },
+    {
+     "text": "you",
+     "count": 128
+    },
+    {
+     "text": "продолжение следует",
+     "count": 83
+    },
+    {
+     "text": "uh",
+     "count": 68
+    }
+   ]
+  },
+  "loop": {
+   "n": 64,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.3594,
+   "loop_rate": 0.1719,
+   "top_outputs": [
+    {
+     "text": "you",
+     "count": 6
+    },
+    {
+     "text": "uh",
+     "count": 5
+    },
+    {
+     "text": "so",
+     "count": 3
+    },
+    {
+     "text": "oh",
+     "count": 2
+    },
+    {
+     "text": "i fill up glass water this big glass water i drink this",
+     "count": 2
+    }
+   ]
+  }
+ },
+ "whisper-large-v3": {
+  "halas_clean": {
+   "n": 627,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.1802,
+   "loop_rate": 0.0,
+   "n_with_reference": 627,
+   "wer": 0.4636,
+   "cer": 0.3282,
+   "len_ratio_median": 1.0,
+   "over_1_5x_rate": 0.0622,
+   "top_outputs": [
+    {
+     "text": "okay",
+     "count": 17
+    },
+    {
+     "text": "yeah",
+     "count": 13
+    },
+    {
+     "text": "thank you",
+     "count": 11
+    },
+    {
+     "text": "so",
+     "count": 8
+    },
+    {
+     "text": "yes",
+     "count": 7
+    }
+   ]
+  },
+  "halas_hallucination": {
+   "n": 2980,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.2181,
+   "loop_rate": 0.0003,
+   "n_with_reference": 2980,
+   "wer": 0.882,
+   "cer": 0.5494,
+   "len_ratio_median": 1.0,
+   "over_1_5x_rate": 0.1487,
+   "top_outputs": [
+    {
+     "text": "thank you",
+     "count": 88
+    },
+    {
+     "text": "okay",
+     "count": 68
+    },
+    {
+     "text": "yeah",
+     "count": 42
+    },
+    {
+     "text": "and",
+     "count": 24
+    },
+    {
+     "text": "so",
+     "count": 23
+    }
+   ]
+  },
+  "aphasia": {
+   "n": 187,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.2674,
+   "loop_rate": 0.0749,
+   "top_outputs": [
+    {
+     "text": "um",
+     "count": 15
+    },
+    {
+     "text": "thank you",
+     "count": 11
+    },
+    {
+     "text": "satsang with mooji",
+     "count": 2
+    },
+    {
+     "text": "okay",
+     "count": 2
+    },
+    {
+     "text": "nå",
+     "count": 2
+    }
+   ]
+  },
+  "blank_speech": {
+   "n": 4421,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.5356,
+   "loop_rate": 0.0084,
+   "top_outputs": [
+    {
+     "text": "so",
+     "count": 1037
+    },
+    {
+     "text": "¶¶",
+     "count": 662
+    },
+    {
+     "text": "oh",
+     "count": 268
+    },
+    {
+     "text": "you",
+     "count": 93
+    },
+    {
+     "text": "thank you",
+     "count": 71
+    }
+   ]
+  },
+  "lexicon_hit": {
+   "n": 2378,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.992,
+   "loop_rate": 0.0013,
+   "top_outputs": [
+    {
+     "text": "so",
+     "count": 1032
+    },
+    {
+     "text": "oh",
+     "count": 268
+    },
+    {
+     "text": "you",
+     "count": 93
+    },
+    {
+     "text": "thank you",
+     "count": 71
+    },
+    {
+     "text": "продолжение следует",
+     "count": 68
+    }
+   ]
+  },
+  "loop": {
+   "n": 64,
+   "any_output_rate": 1.0,
+   "lexicon_rate": 0.0,
+   "loop_rate": 1.0,
+   "top_outputs": [
+    {
+     "text": "ha ha ha ha ha ha ha ha ha ha ha ha ha ha ha ha ha ha ha ha ",
+     "count": 4
+    },
+    {
+     "text": "kjell kjell kjell kjell kjell kjell kjell kjell kjell kjell ",
+     "count": 4
+    },
+    {
+     "text": "røde røde røde røde røde røde røde røde røde røde røde røde ",
+     "count": 3
+    },
+    {
+     "text": "ha ha ha ha ha ha",
+     "count": 2
+    },
+    {
+     "text": "stavros stavros stavros stavros stavros stavros stavros stav",
+     "count": 2
+    }
+   ]
+  }
+ }
+}

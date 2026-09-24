@@ -90,8 +90,11 @@ def main():
     ap.add_argument("--wild", type=Path, default=Path("audio_wild"))
     ap.add_argument("--out", type=Path, default=Path("build/wild"))
     ap.add_argument("--config-name", default="wild")
-    ap.add_argument("--exclude", nargs="*", default=["aphasia"],
-                    help="collections never re-hosted; aphasia is clinical speech")
+    ap.add_argument("--exclude", nargs="*", default=["aphasia", "gigaspeech"],
+                    help="collections left out. `aphasia` is clinical speech and is never "
+                         "re-hosted. `gigaspeech` (config l) is a duplicate of `gigaspeech_xs`: "
+                         "streaming either config from the start yields the same first 8,000 "
+                         "clips, and the two runs matched 33/33 on source_id.")
     ap.add_argument("--rows-per-file", type=int, default=3000)
     ap.add_argument("--row-group-size", type=int, default=400)
     args = ap.parse_args()

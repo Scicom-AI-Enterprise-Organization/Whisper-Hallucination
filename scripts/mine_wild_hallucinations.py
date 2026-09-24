@@ -58,10 +58,13 @@ SR = 16000
 # recorded for a dataset barely fails; podcasts, YouTube and noisy crowd-sourced audio are
 # where hallucinations actually happen, so those are the sources that matter here.
 SOURCES = {
+    # NOTE: the gigaspeech configs differ in total size, not in ordering, so streaming either
+    # from the start gives the same first N clips -- `l` and `xs` returned the same 33 clips,
+    # matching 33/33 on source_id. Use one, or skip ahead in the stream.
     "gigaspeech":     dict(repo="speechcolab/gigaspeech", config="l", split="train",
-                           note="podcasts + YouTube, the noisy real-world case"),
+                           note="podcasts + YouTube; same head as xs when streamed"),
     "gigaspeech_xs":  dict(repo="speechcolab/gigaspeech", config="xs", split="train",
-                           note="same, small config for a quick pass"),
+                           note="podcasts + YouTube, the noisy real-world case"),
     "peoples_dirty":  dict(repo="MLCommons/peoples_speech", config="dirty", split="train",
                            note="the NOISY subset -- `clean` yields ~0.01%"),
     "peoples_dirty_sa": dict(repo="MLCommons/peoples_speech", config="dirty_sa", split="train",
