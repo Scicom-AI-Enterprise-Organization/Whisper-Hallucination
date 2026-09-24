@@ -160,7 +160,7 @@ Raw numbers: `bench/scores.json`. Harness: [`bench/`](https://github.com/Scicom-
 | `genuine_isolated` | 88 | 0.05 | one phrase spoken alone | the phrase |
 | `librispeech_test_clean` | 2,620 | 5.4 | English WER guard | human transcript |
 | **`lexicon_synth`** | **29,112** | **15.8** | synthetic positives, 83 languages | the phrase |
-| **`wild`** | **3,878** | **3.1** | real audio that triggered hallucination or looping | see below |
+| **`wild`** | **8,296** | **15.0** | real audio that triggered hallucination or looping | see below |
 | `lexicon` | 40,891 | — | known hallucination phrases, 100 languages | — |
 | `ban_candidates` | 40,891 | — | each phrase classified safe/unsafe to blocklist | — |
 | `targets` | 463 | — | phrases both hallucinated and genuinely said | — |
@@ -251,14 +251,17 @@ languages are excluded rather than scored.
 
 ## `wild` — real audio that actually failed
 
-Every other audio config is a built stimulus. This one is not constructed at all: 3,878 clips
-of real recordings where an ASR model hallucinated or looped.
+Every other audio config is a built stimulus. This one is not constructed at all: 8,296 clips,
+15 hours, of real recordings where an ASR model hallucinated or looped.
 
 | collection | clips | how it was labelled |
 |---|---:|---|
 | `halas` | 3,607 | **human span annotations** for 9 ASR systems, on Earnings-22 calls |
-| `ami` | 235 | mined: Silero VAD found no speech, yet the model emitted words |
+| `audioset` | 4,376 | mined: Silero VAD found no speech, yet the model emitted words |
+| `ami` | 235 | mined, same rule |
 | `earnings22` | 31 | mined, same rule |
+| `gigaspeech_xs` | 33 | mined, same rule |
+| `peoples_dirty` | 9 | mined: token run ≥ 6 |
 | `voxpopuli` | 4 | mined: token run ≥ 6 |
 | `peoples_speech` | 1 | mined: token run ≥ 6 |
 
@@ -274,20 +277,26 @@ Mining yield says where these failures live:
 
 | corpus | heard | kept | rate |
 |---|---:|---:|---:|
-| AMI — spontaneous meetings, far-field | 8,000 | 235 | **2.9%** |
-| Earnings-22 — conference calls | 8,000 | 31 | 0.4% |
+| **AudioSet** — YouTube, heavy background noise | 8,000 | 4,376 | **54.70%** |
+| AMI — spontaneous meetings, far-field | 8,000 | 235 | 2.94% |
+| GigaSpeech — podcasts + YouTube, speech-aligned | 8,000 | 33 | 0.41% |
+| Earnings-22 — conference calls | 8,000 | 31 | 0.39% |
+| People's Speech `dirty` — noisy transcripts, clean audio | 8,000 | 9 | 0.11% |
 | VoxPopuli — parliament | 8,000 | 4 | 0.05% |
-| People's Speech — curated read speech | 8,000 | 1 | **0.01%** |
+| People's Speech `clean` — curated read speech | 8,000 | 1 | **0.01%** |
 
-Curated read corpora barely trigger it. Spontaneous multi-party audio with real silence
-between turns does — which is what production audio sounds like.
+Yield tracks recording quality across five thousandfold. GigaSpeech is podcasts and YouTube —
+the right material — and still yields 0.41%, because its segments are cut to speech. The
+failures live in what segmentation throws away: music beds, crosstalk, the gaps between turns.
 
 **Baselines on this arm are in the project repo
 [README](https://github.com/Scicom-AI-Enterprise-Organization/Whisper-Hallucination#the-wild-arm).**
-The short version: on the 263 voice-free clips every OpenAI checkpoint emits words on 100% of
-them while `Malaysian-turbo-v3` emits on 8%; and on clips humans marked as hallucinated,
-large-v3 emits a known lexicon phrase 21.8% of the time against 18.0% on clean clips — a
-3.8-point gap, which is why a text blocklist cannot do this job.
+The short version: on 4,421 voice-free clips every OpenAI checkpoint emits words on 100% of
+them while `Malaysian-turbo-v3` emits on 8.5%, and 54–72% of those outputs are known lexicon
+phrases (`so` ×909, `¶¶` ×664, `Thank you.` ×70). On HALAS speech clips the same rate is ~18%
+whether humans marked the clip hallucinated or clean — a 3.8-point gap, which is why a text
+blocklist cannot do this job. Error against the human reference separates the same clips by 22
+points.
 
 Not included: the 187 Koenecke aphasia clips. That is clinical speech from a membership-gated
 corpus, so consent rather than licence keeps it out; `scripts/fetch_audio.py aphasia` gets it

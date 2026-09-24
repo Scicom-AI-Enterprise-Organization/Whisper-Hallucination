@@ -95,8 +95,11 @@ def main():
                          "re-hosted. `gigaspeech` (config l) is a duplicate of `gigaspeech_xs`: "
                          "streaming either config from the start yields the same first 8,000 "
                          "clips, and the two runs matched 33/33 on source_id.")
-    ap.add_argument("--rows-per-file", type=int, default=3000)
-    ap.add_argument("--row-group-size", type=int, default=400)
+    # AudioSet clips are 10 s each where HALAS clips are 1-3 s, so a row here is ~196 KB and
+    # 3,000 rows overshot the viewer's 300 MB scan limit at 588 MB. Size the shard for the
+    # LONGEST collection, not the average.
+    ap.add_argument("--rows-per-file", type=int, default=600)
+    ap.add_argument("--row-group-size", type=int, default=150)
     args = ap.parse_args()
 
     recs, skipped = [], Counter()
