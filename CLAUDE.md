@@ -50,6 +50,16 @@ cover `.venv*`, `.env`, `audio`, `audio_train`, `corpus`, `tts/out`, `bench/scor
 **Add to that list before generating anything new on the box.** Restore secrets with
 `claude-ping env-sync`, never by hand.
 
+**`claude-ping` resolves its config relative to `cwd`.** The lookup is `env PING_* >
+./claude-ping.json > defaults`, so running it from `preprint/` or any other subdirectory finds
+no config and falls back to a built-in default host: `ssh: connect to host 216.243.220.217 port
+11854: Connection refused`. It is not the box being down. `cd` to the repo root first.
+
+**`run_benchmark.py` skips an arm whose jsonl already exists.** Re-training into an existing run
+directory and then evaluating would score the NEW checkpoint against the OLD checkpoint's
+transcripts, with no error and no warning. `train/eval_run.sh` passes `--overwrite` for exactly
+this reason; do not remove it to save time on a resume.
+
 **`env-sync` REPLACES the remote `.env`, it does not merge.** Keys in `secret_keys` that are
 absent locally are reported as "skipped (not set locally)" and then simply are not in the file
 it writes — on 2026-09-25 adding `WANDB_API_KEY` to the local `.env` and running `env-sync`

@@ -23,4 +23,8 @@ __pycache__/
 .DS_Store
 .cping/
 
-claude-ping.jsonwandb/
+claude-ping.json
+wandb/
+
+# local only, not published
+preprint/
