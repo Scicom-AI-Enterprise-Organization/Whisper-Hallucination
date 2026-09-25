@@ -396,6 +396,52 @@ python bench/sweep_table.py                     # the comparison table
 bash train/sweep.sh stage2 all                  # winner on turbo + full fine-tunes
 ```
 
+### Method × learning-rate grid
+
+Twelve runs on the winning mix (`all` — every train split, 47% blank), each trained then
+scored on all seven arms. LoRA alpha tracks 2r so rank is the only thing that varies, and full
+fine-tunes use batch 4 × accum 4 to hold the same 16 clips per step as LoRA's 8 × 2 — otherwise
+effective batch size would confound the comparison. 1e-3 is absent on purpose: the first sweep
+diverged there.
+
+| method | rank / alpha | trainable params | learning rates |
+|---|---|---:|---|
+| LoRA | 32 / 64 | 31.5 M (2.0%) | 1e-4, 2e-4, 5e-4 |
+| LoRA | 64 / 128 | 62.9 M (4.0%) | 1e-4, 2e-4, 5e-4 |
+| LoRA | 128 / 256 | 125.8 M (8.0%) | 1e-4, 2e-4, 5e-4 |
+| full fine-tune | — | 1,574.9 M (100%) | 5e-6, 1e-5, 2e-5 |
+
+```bash
+bash train/grid.sh 6 A    # r=32 and the full fine-tunes
+bash train/grid.sh 7 B    # r=64 and r=128
+python bench/sweep_table.py
+```
+
+**LoRA rank × LR** — lower is better except `lexRec`; `wildWd`/`halCER` are real audio.
+
+| rank | lr | sil | music | nonsp | runaway | rdEmpty | lexRec | wildWd | halCER | lsWER |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 32 | 1e-4 | — | — | — | — | — | — | — | — | — |
+| 32 | 2e-4 | — | — | — | — | — | — | — | — | — |
+| 32 | 5e-4 | — | — | — | — | — | — | — | — | — |
+| 64 | 1e-4 | — | — | — | — | — | — | — | — | — |
+| 64 | 2e-4 | — | — | — | — | — | — | — | — | — |
+| 64 | 5e-4 | — | — | — | — | — | — | — | — | — |
+| 128 | 1e-4 | — | — | — | — | — | — | — | — | — |
+| 128 | 2e-4 | — | — | — | — | — | — | — | — | — |
+| 128 | 5e-4 | — | — | — | — | — | — | — | — | — |
+
+**Full fine-tune × LR**
+
+| lr | sil | music | nonsp | runaway | rdEmpty | lexRec | wildWd | halCER | lsWER |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 5e-6 | — | — | — | — | — | — | — | — | — |
+| 1e-5 | — | — | — | — | — | — | — | — | — |
+| 2e-5 | — | — | — | — | — | — | — | — | — |
+
+*Running. Cells fill from `bench/sweep_table.py` as each run is evaluated; the reference row
+is base `whisper-large-v3` in the table below.*
+
 ### Sweep results
 
 Judged on the pair, not on either half. `wildWd` and `halCER` are real audio; the rest are
