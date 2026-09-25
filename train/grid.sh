@@ -1,38 +1,41 @@
 #!/bin/bash
-# Method x learning-rate grid on the winning mix (`all`, every train split, 47% blank).
+# One or more grid jobs on ONE gpu. Jobs are `mix:rank:lr`, or `rank:lr` to use $MIX.
+# Rank 0 means a full fine-tune.
 #
-#   bash train/grid.sh 6 A     # half the grid on GPU 6
-#   bash train/grid.sh 7 B     # the other half on GPU 7
+#   bash train/grid.sh 0 all:32:1e-4 no_synth:32:1e-4
 #
-# LoRA alpha tracks rank (2r) so the effective scaling is constant and rank is the only thing
-# changing. 1e-3 is deliberately absent: the first sweep diverged there (corpus loss 9.76, and
-# its checkpoint hallucinates on 100% of silence), so the grid brackets the stable 2e-4.
+# Each job trains then immediately evaluates, so a finished GPU is never idle waiting for the
+# rest of the grid. Already-complete jobs are skipped, which makes the whole thing resumable;
+# FORCE=1 re-runs them anyway.
 set -u
 cd /root/whisper-halluc-train
-GPU=${1:?usage: grid.sh <gpu> <A|B>}
-HALF=${2:?usage: grid.sh <gpu> <A|B>}
+GPU=${1:?usage: grid.sh <gpu> <[mix:]rank:lr> [...]}
+shift
 MIX=${MIX:-all}
 STEPS=${STEPS:-1000}
+FORCE=${FORCE:-0}
+[ -f .env ] && set -a && . ./.env && set +a      # WANDB_API_KEY, HF_TOKEN
 
-# rank:lr  (rank 0 means a full fine-tune)
-A_JOBS="32:1e-4 32:2e-4 32:5e-4 0:5e-6 0:1e-5 0:2e-5"
-B_JOBS="64:1e-4 64:2e-4 64:5e-4 128:1e-4 128:2e-4 128:5e-4"
-[ "$HALF" = "A" ] && JOBS="$A_JOBS" || JOBS="$B_JOBS"
-
-for job in $JOBS; do
-  r=${job%%:*}; lr=${job##*:}
+for job in "$@"; do
+  # mix:rank:lr, or rank:lr with the mix from the environment
+  case "$job" in
+    *:*:*) mix=${job%%:*}; rest=${job#*:}; r=${rest%%:*}; lr=${rest##*:} ;;
+    *)     mix=$MIX; r=${job%%:*}; lr=${job##*:} ;;
+  esac
   if [ "$r" = "0" ]; then
-    name="v3_full_${MIX}_lr${lr}"; method=full; extra="--batch-size 4 --grad-accum 4"
+    name="v3_full_${mix}_lr${lr}"; method=full; extra="--batch-size 4 --grad-accum 4"
   else
-    name="v3_lora_r${r}_${MIX}_lr${lr}"; method=lora
+    name="v3_lora_r${r}_${mix}_lr${lr}"; method=lora
     extra="--lora-r $r --lora-alpha $((r*2)) --batch-size 8 --grad-accum 2"
   fi
-  if [ -f "runs/$name/eval.json" ] && [ -d "runs/$name/merged" ]; then
+  if [ "$FORCE" != "1" ] && [ -s "runs/$name/eval.json" ] && [ -d "runs/$name/merged" ]; then
     echo "[skip] $name"; continue
   fi
-  echo "=== $name ==="
+  echo "=== $name (gpu $GPU) ==="
   CUDA_VISIBLE_DEVICES=$GPU stdbuf -oL .venv_train/bin/python train/finetune_whisper.py \
-      --mix train/mixes/$MIX.jsonl --method $method --lr "$lr" --steps "$STEPS" \
-      --out "runs/$name" $extra 2>&1 | grep -E "trainable params|train_loss|saved|CUDA out|Error"
+      --mix train/mixes/$mix.jsonl --method $method --lr "$lr" --steps "$STEPS" \
+      --out "runs/$name" $extra 2>&1 \
+      | grep -E "trainable params|train_loss|'loss'|saved|wandb|CUDA out|Error"
   bash train/eval_run.sh "runs/$name" "$GPU"
+  echo "=== done $name ==="
 done

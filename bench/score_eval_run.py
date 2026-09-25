@@ -14,11 +14,13 @@ with both, plus the deltas against the base checkpoint when one is given.
   wild            real audio, split on `reasons`: blank_speech clips score like the silence
                   arm, HALAS clips score CER against the human-corrected reference, separated
                   by the human verdict.
-  accuracy        librispeech WER -- the regression guard.
+  accuracy        librispeech WER (English) and FLEURS macro-CER (multilingual) -- the two
+                  regression guards. Both must hold, and only the second can see a mix that
+                  damaged a language the English set never touches.
 
     python bench/score_eval_run.py --run runs/v3_lora_all --base bench/scores.json
 """
-import argparse, json, statistics, sys
+import argparse, json, os, statistics, sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -41,6 +43,43 @@ def read(path: Path):
     return []
 
 
+def flatten(out: dict) -> dict:
+    """eval.json -> flat `arm/metric` scalars. W&B charts scalars, not nested dicts, and the
+    wild block is nested one deeper because it is split by why the clip was collected."""
+    flat = {}
+    for arm in (*BLANK_ARMS, "reduplication", "lexicon_synth", "librispeech_test_clean",
+                "genuine", "speech_in_noise", "fleurs"):
+        for k, v in (out.get(arm) or {}).items():
+            if isinstance(v, (int, float)):
+                flat[f"{arm}/{k}"] = v
+    for reason, block in (out.get("wild") or {}).items():
+        for k, v in block.items():
+            if isinstance(v, (int, float)):
+                flat[f"wild/{reason}/{k}"] = v
+    for k, v in (out.get("delta_vs_base") or {}).items():
+        if isinstance(v, (int, float)):
+            flat[f"delta/{k}"] = v
+    return flat
+
+
+def push_to_wandb(run_dir: Path, out: dict):
+    rj = run_dir / "run.json"
+    if not rj.exists() or not os.environ.get("WANDB_API_KEY"):
+        return
+    meta = json.loads(rj.read_text())
+    rid, project = meta.get("wandb_run_id"), meta.get("wandb_project")
+    if not rid:
+        return
+    try:
+        import wandb
+        r = wandb.init(project=project, id=rid, resume="allow", reinit=True)
+        r.summary.update(flatten(out))
+        r.finish()
+        print(f"[wandb] eval attached to {project}/{rid}")
+    except Exception as e:                      # never fail a scored run over telemetry
+        print(f"[wandb] skipped: {type(e).__name__} {e}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--run", type=Path, required=True)
@@ -50,6 +89,10 @@ def main():
     ap.add_argument("--base-model", default="whisper-large-v3")
     ap.add_argument("--lexicon", type=Path, default=ROOT / "lexicon" / "combined_lexicon.csv")
     ap.add_argument("--loop-threshold", type=int, default=6)
+    ap.add_argument("--no-wandb", action="store_true",
+                    help="by default the benchmark numbers are attached to the run's own "
+                         "W&B run (id from run.json), so the training curve and the result "
+                         "are one object rather than two unlinked halves")
     args = ap.parse_args()
 
     res = args.results or (args.run / "bench")
@@ -135,6 +178,39 @@ def main():
                         "wer": round(statistics.mean(wer(r["reference_text"], r["hyp"]) for r in refs), 4),
                         "cer": round(statistics.mean(cer(r["reference_text"], r["hyp"]) for r in refs), 4)}
 
+    # ── multilingual accuracy guard ──────────────────────────────────────────────────
+    # librispeech only watches English. The mixes are 75+ languages, so a run could hold
+    # 0.035 WER there while quietly wrecking Tamil. FLEURS is averaged per LANGUAGE, not per
+    # clip, so a language with more clips cannot mask one that collapsed.
+    recs = read(res / "fleurs.jsonl")
+    if recs:
+        per = defaultdict(lambda: {"wer": [], "cer": []})
+        for r in recs:
+            lang = (r.get("meta") or {}).get("lang") or "??"
+            if not (r.get("reference_text") or "").strip():
+                continue
+            per[lang]["wer"].append(wer(r["reference_text"], r["hyp"]))
+            per[lang]["cer"].append(cer(r["reference_text"], r["hyp"]))
+        if per:
+            langs = {k: {"n": len(v["wer"]),
+                         "wer": round(statistics.mean(v["wer"]), 4),
+                         "cer": round(statistics.mean(v["cer"]), 4)}
+                     for k, v in sorted(per.items())}
+            out["fleurs"] = {
+                "n": sum(v["n"] for v in langs.values()),
+                "n_langs": len(langs),
+                # CER is the headline: WER is meaningless for zh/ja/th/lo/my/km, which do not
+                # put spaces between words, and those languages are in the mix.
+                "cer_macro": round(statistics.mean(v["cer"] for v in langs.values()), 4),
+                "wer_macro": round(statistics.mean(v["wer"] for v in langs.values()), 4),
+                # The macro mean is dominated by languages Whisper cannot transcribe at all
+                # (am, km, so, my sit at 1.0-1.8 for the untuned base). The median over
+                # languages says what the typical language looks like.
+                "cer_median_lang": round(statistics.median(v["cer"] for v in langs.values()), 4),
+                "worst_langs": sorted(langs.items(), key=lambda kv: -kv[1]["cer"])[:5],
+                "per_lang": langs,
+            }
+
     # ── deltas against the untuned checkpoint ────────────────────────────────────────
     if args.base.exists():
         base = json.loads(args.base.read_text()).get(args.base_model, {})
@@ -147,13 +223,21 @@ def main():
             for k in ("runaway_rate", "empty_rate"):
                 d[f"reduplication.{k}"] = round(
                     out["reduplication"][k] - base["reduplication"].get(k, 0), 4)
+        if "fleurs" in out and "fleurs" in base:
+            d["fleurs.cer_macro"] = round(out["fleurs"]["cer_macro"]
+                                          - base["fleurs"].get("cer_macro", 0), 4)
         if "librispeech_test_clean" in out and "librispeech_test_clean" in base:
             d["librispeech.wer"] = round(out["librispeech_test_clean"]["wer"]
                                          - base["librispeech_test_clean"].get("wer", 0), 4)
         out["delta_vs_base"] = d
 
     (args.run / "eval.json").write_text(json.dumps(out, indent=2))
-    print(json.dumps({k: v for k, v in out.items() if k != "wild"}, indent=1)[:1400])
+    if not args.no_wandb:
+        push_to_wandb(args.run, out)
+    brief = {k: v for k, v in out.items() if k != "wild"}
+    if "fleurs" in brief:
+        brief["fleurs"] = {k: v for k, v in brief["fleurs"].items() if k != "per_lang"}
+    print(json.dumps(brief, indent=1)[:1600])
     if "wild" in out:
         print("wild:", json.dumps(out["wild"])[:400])
     print(f"-> {args.run}/eval.json")

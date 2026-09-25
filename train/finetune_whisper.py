@@ -21,7 +21,7 @@ text and the final EOT.
     .venv_train/bin/python train/finetune_whisper.py --mix train/mixes/plus_synth.jsonl \
         --method lora --out runs/lora_plus_synth
 """
-import argparse, io, json, random
+import argparse, io, json, os, random
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -123,7 +123,17 @@ def main():
     ap.add_argument("--save-steps", type=int, default=0, help="0 = only at the end")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--wandb-project", default=os.environ.get("WANDB_PROJECT",
+                                                              "whisper-hallucination"))
+    ap.add_argument("--wandb-group", default=None,
+                    help="default: the mix name. Grouping by mix is what makes the "
+                         "with-synth / without-synth pair readable in one view.")
+    ap.add_argument("--no-wandb", action="store_true")
     args = ap.parse_args()
+
+    # W&B only if there is a key; a sweep must not die because a token is missing.
+    use_wandb = not args.no_wandb and bool(os.environ.get("WANDB_API_KEY"))
+    wb = None
 
     from transformers import (Seq2SeqTrainer, Seq2SeqTrainingArguments,
                               WhisperForConditionalGeneration, WhisperProcessor)
@@ -135,6 +145,27 @@ def main():
     blanks = sum(1 for r in rows if not (r.get("text") or "").strip())
     print(f"[train] {args.mix.name}: {len(rows)} clips, {blanks/len(rows):.0%} blank, "
           f"method={args.method}", flush=True)
+
+    if use_wandb:
+        import wandb
+        wb = wandb.init(
+            project=args.wandb_project,
+            group=args.wandb_group or args.mix.stem,
+            job_type=args.method,
+            name=args.out.name,
+            config={"mix": args.mix.stem, "method": args.method,
+                    "lora_r": args.lora_r if args.method == "lora" else None,
+                    "lora_alpha": args.lora_alpha if args.method == "lora" else None,
+                    "lora_target_modules": (list(args.lora_target_modules)
+                                            if args.method == "lora" else None),
+                    "steps": args.steps, "batch_size": args.batch_size,
+                    "grad_accum": args.grad_accum,
+                    "effective_batch": args.batch_size * args.grad_accum,
+                    "base_model": args.model, "n_clips": len(rows),
+                    "blank_share": round(blanks / len(rows), 4),
+                    "has_lexicon_synth": args.mix.stem in ("all", "plus_synth",
+                                                           "balanced", "synth_heavy")},
+            tags=[args.mix.stem, args.method], reinit=True)
 
     proc = WhisperProcessor.from_pretrained(args.model)
     model = WhisperForConditionalGeneration.from_pretrained(args.model, dtype=torch.bfloat16)
@@ -153,6 +184,8 @@ def main():
         model.gradient_checkpointing_enable()
 
     lr = args.lr if args.lr is not None else (2e-4 if args.method == "lora" else 1e-5)
+    if wb is not None:
+        wb.config.update({"lr": lr}, allow_val_change=True)
     targs = Seq2SeqTrainingArguments(
         output_dir=str(args.out),
         per_device_train_batch_size=args.batch_size,
@@ -164,7 +197,8 @@ def main():
         logging_steps=25,
         save_strategy="steps" if args.save_steps else "no",
         save_steps=args.save_steps or args.steps,
-        report_to=[],
+        report_to=["wandb"] if use_wandb else [],
+        run_name=args.out.name,
         remove_unused_columns=False,
         dataloader_num_workers=4,
         seed=args.seed,
@@ -196,7 +230,13 @@ def main():
                                 if args.method == "lora" else None),
         "n_clips": len(rows), "blank_share": round(blanks / len(rows), 4),
         "base_model": args.model,
+        # The scorer reopens this run to attach the benchmark numbers, so training curve and
+        # final metrics live on one W&B run instead of two unlinked halves.
+        "wandb_run_id": wb.id if wb is not None else None,
+        "wandb_project": args.wandb_project if wb is not None else None,
     }, indent=2))
+    if wb is not None:
+        wb.finish()
     print(f"[train] saved -> {args.out}/merged", flush=True)
 
 

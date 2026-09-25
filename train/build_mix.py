@@ -19,6 +19,9 @@ Mixes:
   plus_synth    corpus + every lexicon_synth positive.
   all           EVERY train split: corpus + lexicon_synth train + wild train. 59k clips,
                 133 h, and the blank share lands near 47% without any downsampling.
+  no_synth      `all` with lexicon_synth REMOVED, and nothing else changed. The controlled
+                half of "does the synthetic positive pool help on real audio?" -- paired with
+                `all`, the only difference between the two runs is those 22,845 clips.
   balanced      1:1 -- BOTH sides downsampled to the smaller of the two. Downsampling only
                 the blanks is a no-op once every train split is in: blanks (27,868) are
                 already fewer than positives (31,160), so `balanced` came out byte-identical
@@ -147,6 +150,8 @@ def main():
     write(args.out / "corpus.jsonl", shuffled(corpus))
     write(args.out / "plus_synth.jsonl", shuffled(corpus + synth))
     write(args.out / "all.jsonl", shuffled(corpus + synth + wild))
+    # Same clips as `all`, minus lexicon_synth. Paired A/B, so nothing else may differ.
+    write(args.out / "no_synth.jsonl", shuffled(corpus + wild))
     n_each = min(len(all_blank), len(all_pos))
     write(args.out / "balanced.jsonl",
           shuffled(rng.sample(all_blank, n_each) + rng.sample(all_pos, n_each)))

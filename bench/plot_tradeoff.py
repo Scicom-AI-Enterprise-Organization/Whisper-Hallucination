@@ -64,6 +64,14 @@ STYLE = dict(
 )
 
 
+def fleurs_median(scores, key):
+    f = (scores.get(key) or {}).get('fleurs') or {}
+    if f.get('cer_median_lang') is not None:
+        return f['cer_median_lang']
+    per = f.get('per_lang_cer') or {}
+    return float(np.median(list(per.values()))) if per else float('nan')
+
+
 def pooled_blank_rate(scores, key, metric='hallucination_rate_any_output'):
     num = den = 0
     for arm in BLANK_ARMS:
@@ -79,7 +87,7 @@ def main():
     scores = json.loads(BENCH.read_text())
     lex = json.loads(LEX.read_text())
 
-    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(16.0, 6.6), dpi=s['dpi'],
+    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(17.0, 6.6), dpi=s['dpi'],
                                   gridspec_kw=dict(width_ratios=[1.25, 1.0], wspace=0.22))
     fig.patch.set_facecolor(s['bg_color'])
     fig.subplots_adjust(left=0.065, right=0.985, top=0.80, bottom=0.11)
@@ -159,6 +167,13 @@ def main():
         ('no runaway\non repeats', lambda k: 1 - scores[k]['reduplication']['runaway_rate']),
         ('recovers\nreal speech', lambda k: lex[k]['recovered_rate']),
         ('librispeech\n1 − WER', lambda k: 1 - scores[k]['librispeech_test_clean']['wer']),
+        # librispeech is English. FLEURS is the same guard across 58 languages. The TYPICAL
+        # language, not the mean: the mean is dominated by the handful Whisper cannot
+        # transcribe at all (am 1.81, km 1.58), which says nothing about a checkpoint's
+        # multilingual health. CER because several of these languages have no word spaces,
+        # and floored at 0 -- a CER past 1.0 is wrong output longer than the reference, and
+        # there is nothing below "entirely wrong" to draw.
+        ('FLEURS\n1 − CER, typical lang', lambda k: max(0.0, 1 - fleurs_median(scores, k))),
     ]
     ax2.set_facecolor(s['bg_color'])
     ax2.grid(True, axis='y', color=s['grid_color'], linewidth=0.8, linestyle='--', alpha=0.6)
@@ -200,8 +215,9 @@ def main():
                  fontsize=13.5, color=s['title_color'], fontweight='bold', y=0.965)
     fig.text(0.5, 0.895,
              'The Malaysian fine-tunes buy silence on noise with deletions on speech; the '
-             'OpenAI checkpoints buy accuracy with text over every silent clip. '
-             'greedy decoding, auto language.',
+             'OpenAI checkpoints buy accuracy with text over every silent clip. The last '
+             'column is the damage an English-only accuracy guard cannot see — same '
+             'librispeech WER, nothing left in the other 57 languages. Greedy, auto language.',
              ha='center', fontsize=8.6, color=s['caption_color'], style='italic')
 
     out = s['output_file']

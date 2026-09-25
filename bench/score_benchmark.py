@@ -19,7 +19,7 @@ Metrics, by arm type:
   lang_drift           share whose detected language differs from the arm's expected one.
 """
 import argparse, json, statistics, sys
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -56,6 +56,30 @@ def score_file(path: Path, lexicon, loop_n, loop_thresh) -> dict:
     if refs and arm != "reduplication":
         out["wer"] = round(statistics.mean(wer(r["reference_text"], r["hyp"]) for r in refs), 4)
         out["cer"] = round(statistics.mean(cer(r["reference_text"], r["hyp"]) for r in refs), 4)
+    if arm == "fleurs":
+        # Micro wer/cer above would let a 20-clip language with clean audio offset one that
+        # collapsed, and the point of the arm is to catch exactly that. Average per LANGUAGE.
+        # CER is the headline: zh/ja/th/lo/my/km have no word spaces.
+        per = defaultdict(lambda: {"wer": [], "cer": []})
+        for r in recs:
+            if not (r.get("reference_text") or "").strip():
+                continue
+            lang = (r.get("meta") or {}).get("lang") or "??"
+            per[lang]["wer"].append(wer(r["reference_text"], r["hyp"]))
+            per[lang]["cer"].append(cer(r["reference_text"], r["hyp"]))
+        if per:
+            out["n_langs"] = len(per)
+            out["cer_macro"] = round(statistics.mean(
+                statistics.mean(v["cer"]) for v in per.values()), 4)
+            out["wer_macro"] = round(statistics.mean(
+                statistics.mean(v["wer"]) for v in per.values()), 4)
+            # The macro mean is dominated by the languages Whisper simply cannot transcribe
+            # (am 1.81, km 1.58, so 1.44 for large-v3). The median over languages says what
+            # the typical language looks like; report both or the number is misread.
+            out["cer_median_lang"] = round(statistics.median(
+                statistics.mean(v["cer"]) for v in per.values()), 4)
+            out["per_lang_cer"] = {k: round(statistics.mean(v["cer"]), 4)
+                                   for k, v in sorted(per.items())}
     if arm == "reduplication":
         ratios = sorted(overgeneration_ratio(r["hyp"], r["meta"].get("unit", ""),
                                              int(r["meta"].get("n_repeats", 0)))

@@ -25,8 +25,18 @@ decide from the audio.
 
 ## Results
 
-Five checkpoints, 11,852 clips each, greedy decoding, no forced language, no temperature
-fallback. Measured 2026-09-16/17 on 2× H20. Raw numbers in `bench/scores.json`.
+Five checkpoints, greedy decoding, no forced language, no temperature fallback. Every
+checkpoint is run on **all of it** — ~40k clips each, not just the negative arms:
+
+| what | clips per checkpoint | asks |
+|---|---:|---|
+| the 8 published arms | 11,852 | does it invent text, loop, or lose accuracy? |
+| `lexicon_synth` test × 3 padding conditions | 18,801 | the phrase IS spoken — does it come back? |
+| `wild` | 8,296 | the same, on real audio rather than built stimuli |
+| `fleurs` | 1,160 | accuracy in 58 languages, not just English |
+
+Measured 2026-09-16/17 (published arms) and 2026-09-25 (FLEURS) on H20s. Raw numbers in
+`bench/scores.json`, `bench/lexicon_synth_scores.json` and `bench/wild_scores.json`.
 
 ![Trade-off](bench/tradeoff.png)
 
@@ -81,15 +91,29 @@ itself a run of six. Use `runaway > 1.5×` and `emits nothing` here.
 
 | arm | n | large-v2 | large-v3 | turbo | malaysian-v2 | M-turbo-v3 |
 |---|---:|---:|---:|---:|---:|---:|
-| `librispeech_test_clean` | 2,620 | 4.5% | 3.5% | 3.5% | 3.5% | 10.6% |
-| `genuine` | 4,694 | 35.4% | 31.8% | 31.8% | 42.3% | 60.7% |
-| `speech_in_noise` | 1,200 | 41.6% | 34.5% | 36.1% | 51.1% | 58.7% |
+| `librispeech_test_clean` WER | 2,620 | 4.5% | **3.5%** | **3.5%** | **3.5%** | 10.6% |
+| `genuine` WER | 4,694 | 35.4% | **31.8%** | **31.8%** | 42.3% | 60.7% |
+| `speech_in_noise` WER | 1,200 | 41.6% | **34.5%** | 36.1% | 51.1% | 58.7% |
+| `fleurs` CER, typical language | 58 langs | 0.097 | **0.075** | 0.078 | 1.051 | 1.259 |
+| `fleurs` CER, macro mean | 1,160 | 0.422 | **0.305** | 0.511 | 1.781 | 1.681 |
 
 ![WER decomposition](bench/wer_decomposition.png)
 
+**English accuracy says nothing about the other 57 languages.** `malaysian-whisper-v2` matches
+base large-v3 on librispeech — 3.5% either way — and then returns CER **1.05** on the typical
+FLEURS language, with 2 of 58 languages under 0.15 against large-v3's 35. Specialising on Malay
+cost everything else, and no English benchmark can see it. That is why the sweep below is
+scored on both.
+
+The macro mean and the median disagree by 4× because Whisper cannot transcribe some of these
+languages at all: for base large-v3, Amharic sits at 1.81 CER, Khmer 1.58, Somali 1.44, while
+Spanish, Italian and Dutch are at 0.01. The mean measures the tail, the median the typical
+language; quoting one without the other misleads.
+
 `M-turbo-v3` looks broken. It is not. Drop the ~1% of clips with a token run ≥ 6 and
 `genuine` goes 60.7% → **33.9%**, `speech_in_noise` 58.7% → **25.6%** (best in the table).
-1% of clips carry 27 WER points.
+1% of clips carry 27 WER points. Looping is also what separates `turbo` from large-v3 on
+FLEURS — 4.7% of clips carry a token run ≥ 6 against 0.9%.
 
 ### The false-positive side
 
@@ -391,7 +415,7 @@ what teaches "no words here" rather than "emit something short".
 ```bash
 python train/build_mix.py --out train/mixes     # pulls lexicon_synth train from the Hub
 bash train/sweep.sh stage1                      # LoRA × 6 mixes, large-v3
-bash train/eval_run.sh runs/v3_lora_all 7       # all seven arms, both halves
+bash train/eval_run.sh runs/v3_lora_all 7       # every arm, both halves
 python bench/sweep_table.py                     # the comparison table
 bash train/sweep.sh stage2 all                  # winner on turbo + full fine-tunes
 ```
@@ -399,7 +423,8 @@ bash train/sweep.sh stage2 all                  # winner on turbo + full fine-tu
 ### Method × learning-rate grid
 
 Twelve runs on the winning mix (`all` — every train split, 47% blank), each trained then
-scored on all seven arms. LoRA alpha tracks 2r so rank is the only thing that varies, and full
+scored on the complete benchmark: all eight published arms plus `lexicon_synth`, `wild`, and
+FLEURS. LoRA alpha tracks 2r so rank is the only thing that varies, and full
 fine-tunes use batch 4 × accum 4 to hold the same 16 clips per step as LoRA's 8 × 2 — otherwise
 effective batch size would confound the comparison. 1e-3 is absent on purpose: the first sweep
 diverged there.
@@ -416,48 +441,41 @@ Whisper block, so attention-only adapters leave the bulk of each layer untouched
 them nearly doubles the trainable count at every rank (r=32: 31.5 M → 57.7 M).
 
 ```bash
-bash train/grid.sh 6 A    # r=32 and the full fine-tunes
-bash train/grid.sh 7 B    # r=64 and r=128
-python bench/sweep_table.py
+# one GPU per pair of jobs, `rank:lr`, rank 0 = full fine-tune. Each job trains then
+# evaluates, so a finished GPU never waits for the rest of the grid.
+bash train/grid.sh 0 32:1e-4 32:2e-4      # ... 5 more GPUs, 12 jobs total
+bash train/fleurs_pass.sh 0 BASE runs/*   # back-fill FLEURS onto runs scored before the arm
+python bench/readme_grid_table.py --write
 ```
 
 **Results** — one row per run. Lower is better except `lexRec`. `wildWd` and `halCER` are
 real audio; the rest are built stimuli.
 
-| method | rank/α | params | lr | sil | music | nonsp | runaway | rdEmpty | lexRec | wildWd | halCER | lsWER |
-|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| *base large-v3* | — | — | — | 0.619 | 0.970 | 0.899 | 0.029 | 0.001 | 0.698 | 0.999 | 0.549 | **0.035** |
-| LoRA | 32 / 64 | 57.7 M | 1e-4 | — | — | — | — | — | — | — | — | — |
-| LoRA | 32 / 64 | 57.7 M | 2e-4 | — | — | — | — | — | — | — | — | — |
-| LoRA | 32 / 64 | 57.7 M | 5e-4 | — | — | — | — | — | — | — | — | — |
-| LoRA | 64 / 128 | 115.3 M | 1e-4 | — | — | — | — | — | — | — | — | — |
-| LoRA | 64 / 128 | 115.3 M | 2e-4 | — | — | — | — | — | — | — | — | — |
-| LoRA | 64 / 128 | 115.3 M | 5e-4 | — | — | — | — | — | — | — | — | — |
-| LoRA | 128 / 256 | 230.7 M | 1e-4 | — | — | — | — | — | — | — | — | — |
-| LoRA | 128 / 256 | 230.7 M | 2e-4 | — | — | — | — | — | — | — | — | — |
-| LoRA | 128 / 256 | 230.7 M | 5e-4 | — | — | — | — | — | — | — | — | — |
-| full | — | 1,574.9 M | 5e-6 | — | — | — | — | — | — | — | — | — |
-| full | — | 1,574.9 M | 1e-5 | — | — | — | — | — | — | — | — | — |
-| full | — | 1,574.9 M | 2e-5 | — | — | — | — | — | — | — | — | — |
+<!-- grid-table:begin -->
 
-*Running. Cells fill from `bench/sweep_table.py` as each run is evaluated; the reference row
-is base `whisper-large-v3` in the table below.*
+| method | rank/α | params | lr | sil | music | nonsp | runaway | rdEmpty | lexRec | wildWd | halCER | lsWER | flCER |
+|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+
+<!-- grid-table:end -->
+
+`lsWER` is English accuracy, `flCER` multilingual — FLEURS test, 20 clips per language,
+averaged **per language** so a collapsed language cannot be masked by a large one. Character
+error rate rather than word, because zh/ja/th/lo/my/km do not put spaces between words and
+they are all in the training mix.
+
+*Cells fill from `python bench/readme_grid_table.py --write` as each run is evaluated.*
 
 ### Sweep results
 
 Judged on the pair, not on either half. `wildWd` and `halCER` are real audio; the rest are
 built stimuli. Lower is better except `lexRec`.
 
-| run | sil | music | nonsp | runaway | rdEmpty | lexRec | wildWd | halCER | lsWER |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| base large-v3 | 0.619 | 0.970 | 0.899 | 0.029 | 0.001 | 0.698 | 0.999 | 0.549 | **0.035** |
-| **`all`** (47% blank) | **0.024** | **0.307** | **0.118** | 0.076 | 0.000 | 0.827 | **0.470** | 0.591 | 0.040 |
-| `balanced` (50%) | 0.548 | 0.623 | 0.259 | 0.041 | 0.000 | **0.840** | — | — | — |
-| `blank_only` (100%) | 0.429 | 0.333 | 0.199 | **0.000** | **0.667** | 0.046 | 0.274 | 0.743 | **0.846** |
-| `corpus` (74%, lr 1e-3) | 1.000 | 1.000 | 1.000 | — | — | — | — | — | — |
-| `corpus` (74%, lr 2e-4) | 0.667 | 0.992 | 0.936 | — | — | — | — | — | — |
+<!-- mix-table:begin -->
 
-*`plus_synth` and `synth_heavy`, and the lr=2e-4 re-runs, are still evaluating.*
+| mix | blank share | lr | sil | music | nonsp | runaway | rdEmpty | lexRec | wildWd | halCER | lsWER | flCER |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+
+<!-- mix-table:end -->
 
 **`blank_only` is the failure made deliberate.** Perfect 0.000 runaway — because it emits
 nothing on 67% of clips that contain repeated speech, recovers 4.6% of spoken phrases, and
@@ -502,13 +520,21 @@ x, sr = sf.read(io.BytesIO(ds[0]["audio"]["bytes"]), dtype="float32")
 | **`wild`** | **8,296** | real audio that triggered hallucination or looping, train + test |
 | `lexicon` / `ban_candidates` / `targets` / `malaysian_sources` | — | lookup tables |
 
+One more arm is **not** in this dataset: `fleurs` is pulled from `google/fleurs` at benchmark
+time (20 test clips per language, 58 of the 60 requested have a test shard — `si` and `mg` do
+not). It is the multilingual counterpart to `librispeech_test_clean`, cached once to
+`bench/fleurs_sample.parquet` so every checkpoint is scored on the same clips.
+
 ## Reproducing
 
-Inference runs on the GPU box, never the laptop. GPUs 6–7 only. See `CLAUDE.md`.
+Inference runs on the GPU box, never the laptop — check occupancy before choosing GPUs.
+See `CLAUDE.md`.
 
 ```bash
 # benchmark
 python bench/run_benchmark.py --model openai/whisper-large-v3 --device cuda:7
+python bench/build_fleurs_cache.py --workers 12    # once: the 44-language accuracy sample
+bash train/fleurs_published.sh 7                   # FLEURS for the five published checkpoints
 python bench/score_benchmark.py --results bench/results --lexicon lexicon/combined_lexicon.csv
 python bench/plot_benchmark.py && python bench/plot_tradeoff.py
 
@@ -530,13 +556,14 @@ python scripts/build_lexicon_synth_release.py && python scripts/push_lexicon_syn
 ## Layout
 
 ```
-bench/      harness, scorers, metrics, plots, scores.json
+bench/      harness, scorers, metrics, plots, scores.json, README table generator
 scripts/    arm builders, lexicon builders, HF release, corpus + disjointness tools
 tts/        TTS and VC candidate comparison, synthesis harnesses, scorers, plots
 lexicon/    40,891 hallucination phrases, 100 languages, 4 merged public sources
 phrases/    targets.csv (high-risk), ban_candidates.csv (safe/unsafe to blocklist)
 benchmark/  exclusions.json — what the benchmark burned; training must exclude it
 ablation/   configs.json — 34-config grid, vLLM-aware
+train/      mix builder, fine-tuning, the method x lr grid, per-run evaluation
 audio/      generated + fetched arms (gitignored)
 ```
 

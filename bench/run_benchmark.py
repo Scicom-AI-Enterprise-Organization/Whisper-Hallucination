@@ -16,7 +16,7 @@ language drift on low-evidence audio is part of the failure being measured.
 Audio is read with soundfile via `Audio(decode=False)`; `datasets>=5` otherwise demands
 torchcodec just to hand back an array.
 """
-import argparse, io, json, time
+import argparse, io, json, os, time
 from pathlib import Path
 
 import numpy as np
@@ -26,6 +26,23 @@ from datasets import Audio, load_dataset
 from transformers import WhisperForConditionalGeneration, WhisperProcessor
 
 REPO = "Scicom-intl/Whisper-Hallucination"
+FLEURS_REPO = "google/fleurs"
+FLEURS_PER_LANG = 20          # 20 per language; ~44 of the 60 resolve
+
+FLEURS = {
+    "lt": "lt_lt", "az": "az_az", "ne": "ne_np", "am": "am_et", "my": "my_mm",
+    "fi": "fi_fi", "sk": "sk_sk", "kn": "kn_in", "th": "th_th", "lo": "lo_la",
+    "cs": "cs_cz", "ja": "ja_jp", "pl": "pl_pl", "ta": "ta_in", "ur": "ur_pk",
+    "el": "el_gr", "vi": "vi_vn", "ms": "ms_my", "id": "id_id", "en": "en_us",
+    "fr": "fr_fr", "de": "de_de", "es": "es_419", "pt": "pt_br", "ar": "ar_eg",
+    "zh": "cmn_hans_cn", "ko": "ko_kr", "hi": "hi_in", "km": "km_kh", "sw": "sw_ke",
+    "si": "si_lk", "sd": "sd_in", "te": "te_in", "ml": "ml_in", "mg": "mg_mg",
+    "yo": "yo_ng", "pa": "pa_in", "gu": "gu_in", "mr": "mr_in", "bn": "bn_in",
+    "ka": "ka_ge", "hy": "hy_am", "kk": "kk_kz", "mn": "mn_mn", "ps": "ps_af",
+    "sn": "sn_zw", "so": "so_so", "ha": "ha_ng", "yue": "yue_hant_hk", "uz": "uz_uz",
+    "sl": "sl_si", "et": "et_ee", "ro": "ro_ro", "da": "da_dk", "bg": "bg_bg",
+    "sv": "sv_se", "hu": "hu_hu", "nl": "nl_nl", "it": "it_it", "tr": "tr_tr",
+}
 ARMS = ["silence", "music", "nonspeech", "reduplication", "speech_in_noise",
         "genuine", "genuine_isolated", "librispeech_test_clean",
         # Not a benchmark arm -- synthetic positives. Its `test` split is the contrastive
@@ -36,8 +53,72 @@ ARMS = ["silence", "music", "nonspeech", "reduplication", "speech_in_noise",
         # Real audio that made a model fail. Its `test` split only -- `wild` train exists and
         # is used by the fine-tuning sweep, so benchmarking the train half would be scoring a
         # model on what it learned from.
-        "wild"]
+        "wild",
+        # Multilingual accuracy guard. librispeech only watches English, while the training
+        # corpus spans 75+ languages -- a mix that quietly wrecked Tamil would pass unnoticed.
+        "fleurs"]
 SR = 16000
+
+
+def load_fleurs(per_lang: int, limit: int = 0, cache: Path = None):
+    """FLEURS test, streamed per language and sampled, then CACHED to one parquet.
+
+    `datasets` cannot give a multilingual slice in one call, so each config is streamed and
+    truncated. Streaming also avoids pulling the whole 102-language corpus for ~900 clips --
+    but it would re-pull them for every checkpoint in a 12-run sweep, and two runs that
+    streamed different clips would not be comparable. So the first call materialises the
+    sample and every later one reads it back.
+    """
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    if cache and Path(cache).exists():
+        tb = pq.read_table(cache).to_pylist()
+        rows = [{"id": r["id"], "lang": r["lang"],
+                 "audio": {"bytes": r["audio_bytes"], "path": r["id"]},
+                 "reference_text": r["reference_text"]} for r in tb]
+        print(f"[fleurs] {len(rows)} cached clips over "
+              f"{len({r['lang'] for r in rows})} languages -> {cache}", flush=True)
+        return rows[:limit] if limit else rows
+
+    from datasets import Audio, load_dataset
+
+    rows = []
+    for lang, code in FLEURS.items():
+        try:
+            ds = load_dataset(FLEURS_REPO, code, split="test", streaming=True)
+            ds = ds.cast_column("audio", Audio(decode=False))
+            for i, r in enumerate(ds):
+                if i >= per_lang:
+                    break
+                a = r["audio"]
+                raw = a.get("bytes") if isinstance(a, dict) else None
+                if raw is None:
+                    continue
+                rows.append({"id": f"fleurs_{lang}_{i:03d}", "lang": lang,
+                             "audio": {"bytes": raw, "path": f"{lang}_{i}"},
+                             "reference_text": r.get("transcription") or r.get("raw_transcription") or ""})
+            print(f"  [fleurs] {lang} ({code}): {len(rows)} clips so far", flush=True)
+        except Exception as e:
+            print(f"  [fleurs] {lang} ({code}) skipped: {type(e).__name__} {str(e)[:60]}", flush=True)
+        if limit and len(rows) >= limit:
+            break
+    print(f"[fleurs] {len(rows)} clips over {len({r['lang'] for r in rows})} languages", flush=True)
+    if cache:
+        cache = Path(cache)
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        # Write-then-rename: a sweep runs several checkpoints at once and two of them can
+        # reach this line together. A half-written parquet read by the other is worse than
+        # a redundant download.
+        tmp = cache.with_suffix(f".parquet.{os.getpid()}.part")
+        pq.write_table(pa.table({
+            "id": [r["id"] for r in rows], "lang": [r["lang"] for r in rows],
+            "reference_text": [r["reference_text"] for r in rows],
+            "audio_bytes": [r["audio"]["bytes"] for r in rows],
+        }), tmp, compression="zstd", use_dictionary=[])   # audio is unique + compressed
+        tmp.rename(cache)
+        print(f"[fleurs] cached -> {cache}", flush=True)
+    return rows[:limit] if limit else rows
 
 
 def reference_of(row: dict, arm: str) -> str:
@@ -74,6 +155,9 @@ def main():
                          "`roomtone` pads with real near-silence from the `silence` arm, which "
                          "is a different signal entirely: a noise floor Whisper can hallucinate "
                          "on. Use zeros as the control and roomtone as the realistic case.")
+    ap.add_argument("--fleurs-per-lang", type=int, default=FLEURS_PER_LANG)
+    ap.add_argument("--fleurs-cache", type=Path, default=Path("bench/fleurs_sample.parquet"),
+                    help="built on first use; every later run reads the same clips")
     ap.add_argument("--pad-tag", default="",
                     help="suffix for the results filename, so padded runs do not overwrite the "
                          "unpadded ones (e.g. lexicon_synth__tone2.jsonl)")
@@ -123,9 +207,12 @@ def main():
             continue
         out.parent.mkdir(parents=True, exist_ok=True)
 
-        ds = load_dataset(REPO, arm, split="test").cast_column("audio", Audio(decode=False))
-        if args.limit:
-            ds = ds.select(range(min(args.limit, len(ds))))
+        if arm == "fleurs":
+            ds = load_fleurs(args.fleurs_per_lang, args.limit, args.fleurs_cache)
+        else:
+            ds = load_dataset(REPO, arm, split="test").cast_column("audio", Audio(decode=False))
+            if args.limit:
+                ds = ds.select(range(min(args.limit, len(ds))))
         padding = (f"  +pad {args.pad_lead}s/{args.pad_tail}s {args.pad_kind}"
                    if (args.pad_lead or args.pad_tail) else "")
         print(f"[run ] {tag}/{arm}{args.pad_tag}: {len(ds)} clips{padding}", flush=True)

@@ -27,7 +27,10 @@ is structural, not a promise:
 
 - **Whisper/TTS inference runs on the box, never the laptop** — via `claude-ping`, even for
   a five-clip debug script.
-- **GPUs 6–7 only.** 0–5 are other people's jobs at 100% utilisation.
+- **Check occupancy before choosing GPUs.** The standing assumption was "6–7 only, 0–5 are
+  other people's jobs at 100%" — true when it was written, not a law. On 2026-09-25 GPUs 0–5
+  were idle at 0 MiB and the whole box was available, which turned a 6-hour serial grid into
+  90 minutes. Read `nvidia-smi` rather than the habit, and ask before taking the whole box.
 - Published dataset stays permissively licensed (CC BY 4.0 / CC0 / MIT / Apache-2.0).
   NC sources (ESC-50, UrbanSound8K, malaysia-ai/*, Emilia) are *fetched by script*, never
   re-hosted — that keeps the ablation reproducible without relicensing anything.
@@ -46,6 +49,12 @@ left on the box to be reconciled later. Current excludes
 cover `.venv*`, `.env`, `audio`, `audio_train`, `corpus`, `tts/out`, `bench/scores.json`.
 **Add to that list before generating anything new on the box.** Restore secrets with
 `claude-ping env-sync`, never by hand.
+
+**`env-sync` REPLACES the remote `.env`, it does not merge.** Keys in `secret_keys` that are
+absent locally are reported as "skipped (not set locally)" and then simply are not in the file
+it writes — on 2026-09-25 adding `WANDB_API_KEY` to the local `.env` and running `env-sync`
+removed `HF_TOKEN` from the box, which had only ever existed there. Put every key in the local
+`.env` before syncing, or the sync is a deletion.
 
 `scp` fails while the master connection is up ("Connection closed"). Write remote files with
 `claude-ping exec 'cat > path <<EOF'` instead.
@@ -123,6 +132,39 @@ trailing silence does not raise it.
 **The lexicon contains degenerate entries.** `સ સ સ સ સ સ સ`, `त र` — Whisper loop artefacts
 captured as phrases. They wreck CER comparisons (one gave CER 22.9). Filter them:
 single repeated token, or ≤2 distinct characters.
+
+## The multilingual accuracy guard
+
+`librispeech_test_clean` is English. The training mixes span 75+ languages, so a run can hold
+0.035 WER there while quietly wrecking Tamil — nothing in the sweep would have shown it. The
+`fleurs` arm closes that: 20 clips per language, the same 60-language map
+`tts/judge_floor.py` already uses — of which ~44 resolve, the same ones that produced a
+judge floor.
+
+- **Averaged per LANGUAGE, not per clip.** A per-clip mean lets a large language mask a
+  collapsed one, which is the failure the arm exists to catch.
+- **CER, not WER.** zh/ja/th/lo/my/km do not put spaces between words, and all of them are in
+  the mix. `wer_macro` is reported alongside but is not the headline.
+- **The sample is cached** to `bench/fleurs_sample.parquet` (`bench/build_fleurs_cache.py`).
+  `datasets` cannot give a multilingual slice in one call, so the arm streams 44 configs —
+  once. Two checkpoints scored on different clips are not comparable, and re-streaming per run
+  would dominate the sweep's wall-clock. The write is temp-then-rename because parallel GPU
+  jobs can reach it together.
+- Runs scored before the arm existed are back-filled with `train/fleurs_pass.sh`, which runs
+  fleurs alone and re-scores, folding the column into the existing `eval.json`.
+
+## Weights & Biases
+
+`WANDB_API_KEY` in `.env`; project `whisper-hallucination`
+(`wandb.ai/aies-scicom-scicom-ai/whisper-hallucination`). `uv pip install --python
+.venv_train/bin/python wandb` — the venvs are uv-built and have **no `pip` binary**, so
+`.venv_train/bin/pip install` fails with "No module named pip".
+
+One W&B run per sweep config, and the benchmark result lands on that same run rather than a
+second one: `finetune_whisper.py` writes `wandb_run_id` into `run.json`, and
+`score_eval_run.py` resumes that id and pushes the flattened `eval.json` into the run summary.
+`group` is the mix, so the with-synth / without-synth pair reads as two groups in one view.
+Both are best-effort — no key, or a failed init, must never take down a training run.
 
 ## Production is vLLM
 

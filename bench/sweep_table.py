@@ -14,6 +14,7 @@ import json
 import os
 import statistics
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -60,10 +61,34 @@ def row_for(run_dir):
     recs = load(b, "librispeech_test_clean")
     if recs:
         out["ls_wer"] = statistics.mean(wer(r["reference_text"], r["hyp"]) for r in recs)
+    out["fl_cer"] = fleurs_macro_cer(load(b, "fleurs"))
     return out
 
 
+def fleurs_macro_cer(recs):
+    """Averaged per LANGUAGE, so 20 clips of Tamil count as much as 20 clips of English.
+    CER, not WER: zh/ja/th/lo/my/km do not put spaces between words."""
+    if not recs:
+        return None
+    per = defaultdict(list)
+    for r in recs:
+        if (r.get("reference_text") or "").strip():
+            per[(r.get("meta") or {}).get("lang") or "??"].append(
+                cer(r["reference_text"], r["hyp"]))
+    if not per:
+        return None
+    return statistics.mean(statistics.mean(v) for v in per.values())
+
+
 def main():
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--json", type=Path, default=None,
+                    help="also dump every row here. The run directories live on the GPU box "
+                         "and the plots are drawn on the laptop, so the numbers travel as "
+                         "JSON rather than installing matplotlib next to the training venv.")
+    args = ap.parse_args()
+
     rows = [row_for(d) for d in sorted(glob.glob("runs/*")) if os.path.isdir(f"{d}/bench")]
     base = json.loads((ROOT / "bench" / "scores.json").read_text()).get("whisper-large-v3", {})
     if base:
@@ -76,12 +101,19 @@ def main():
             "rd_empty": base["reduplication"]["empty_rate"],
             "lex_rec": 0.698, "wild_words": 0.999, "halas_cer": 0.549,
             "ls_wer": base["librispeech_test_clean"]["wer"],
+            # The base checkpoint runs the same FLEURS sample through the same harness,
+            # into its own directory -- a hardcoded number here would go stale silently.
+            "fl_cer": base.get("fleurs", {}).get("cer_macro"),
         })
+
+    if args.json:
+        args.json.write_text(json.dumps(rows, indent=1))
+        print(f"-> {args.json}")
 
     cols = [("silence", "sil"), ("music", "music"), ("nonspeech", "nonsp"),
             ("runaway", "runawy"), ("rd_empty", "rdEmpt"),
             ("lex_rec", "lexRec"), ("wild_words", "wildWd"), ("halas_cer", "halCER"),
-            ("ls_wer", "lsWER")]
+            ("ls_wer", "lsWER"), ("fl_cer", "flCER")]
     hdr = f"{'run':<26}" + "".join(f"{lab:>8}" for _, lab in cols)
     print(hdr)
     print("-" * len(hdr))
@@ -92,6 +124,7 @@ def main():
             line += f"{v:>8.3f}" if isinstance(v, (int, float)) else f"{'-':>8}"
         print(line)
     print("\nlower is better except lexRec. wildWd/halCER are real audio; the rest are stimuli.")
+    print("lsWER is English accuracy, flCER multilingual (FLEURS, per-language mean).")
 
 
 if __name__ == "__main__":
