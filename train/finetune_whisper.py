@@ -6,7 +6,8 @@ perfectly on the non-speech arms and is useless. So the target for a blank clip 
 transcript, the target for a positive clip is its text, and the mix ratio between them is the
 sweep's main factor (`train/build_mix.py`).
 
-  --method lora   PEFT adapters on the attention projections. Cheap enough to sweep.
+  --method lora   PEFT adapters on the attention projections AND the MLP (fc1/fc2, where
+                  most of a Whisper block's parameters live). Cheap enough to sweep.
   --method full   every weight. One or two runs, for the mix that wins the sweep.
 
 Target format follows the same contract as the rest of the Whisper family:
@@ -106,7 +107,15 @@ def main():
     ap.add_argument("--lora-r", type=int, default=32)
     ap.add_argument("--lora-alpha", type=int, default=64)
     ap.add_argument("--lora-dropout", type=float, default=0.05)
-    ap.add_argument("--lr", type=float, default=None, help="default: 1e-3 lora, 1e-5 full")
+    ap.add_argument("--lora-target-modules", nargs="+",
+                    default=["q_proj", "k_proj", "v_proj", "out_proj", "fc1", "fc2"],
+                    help="attention projections AND the MLP. fc1/fc2 hold most of the "
+                         "parameters in a Whisper block, so attention-only adapters leave the "
+                         "bulk of each layer untouched.")
+    ap.add_argument("--lr", type=float, default=None,
+                    help="default: 2e-4 lora, 1e-5 full. 1e-3 diverges on this data -- the "
+                         "corpus mix hit loss 9.76 there and its checkpoint hallucinates on "
+                         "100%% of silence.")
     ap.add_argument("--steps", type=int, default=1000)
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--grad-accum", type=int, default=2)
@@ -137,13 +146,13 @@ def main():
         from peft import LoraConfig, get_peft_model
         peft_cfg = LoraConfig(r=args.lora_r, lora_alpha=args.lora_alpha,
                               lora_dropout=args.lora_dropout, bias="none",
-                              target_modules=["q_proj", "k_proj", "v_proj", "out_proj"])
+                              target_modules=list(args.lora_target_modules))
         model = get_peft_model(model, peft_cfg)
         model.print_trainable_parameters()
     else:
         model.gradient_checkpointing_enable()
 
-    lr = args.lr if args.lr is not None else (1e-3 if args.method == "lora" else 1e-5)
+    lr = args.lr if args.lr is not None else (2e-4 if args.method == "lora" else 1e-5)
     targs = Seq2SeqTrainingArguments(
         output_dir=str(args.out),
         per_device_train_batch_size=args.batch_size,
@@ -181,6 +190,10 @@ def main():
         "mix": str(args.mix), "method": args.method, "lr": lr, "steps": args.steps,
         "batch_size": args.batch_size, "grad_accum": args.grad_accum,
         "lora_r": args.lora_r if args.method == "lora" else None,
+        "lora_target_modules": (list(args.lora_target_modules)
+                                if args.method == "lora" else None),
+        "lora_target_modules": (list(args.lora_target_modules)
+                                if args.method == "lora" else None),
         "n_clips": len(rows), "blank_share": round(blanks / len(rows), 4),
         "base_model": args.model,
     }, indent=2))

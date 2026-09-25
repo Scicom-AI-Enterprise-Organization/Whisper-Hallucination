@@ -368,8 +368,8 @@ Stage 1 is one LoRA run per mix on `whisper-large-v3`; stage 2 takes the winning
 | base models | `openai/whisper-large-v3`, `openai/whisper-large-v3-turbo` |
 | method | LoRA (stage 1 + 2) and full fine-tune (stage 2) |
 | LoRA rank / alpha / dropout | 32 / 64 / 0.05 |
-| LoRA target modules | `q_proj`, `k_proj`, `v_proj`, `out_proj` |
-| trainable parameters | 31.5 M of 1.57 B (**2.0%**) |
+| LoRA target modules | `q_proj`, `k_proj`, `v_proj`, `out_proj` (attn) + `fc1`, `fc2` (MLP) |
+| trainable parameters | 57.7 M at r=32 (**3.6%**) — `fc1`/`fc2` hold most of a block |
 | learning rate | **2e-4** LoRA, 1e-5 full — see below |
 | steps / warmup | 1,000 / 50 |
 | batch size × grad accum | 8 × 2 = 16 clips per step (16k clips seen, ~0.3 epoch of `all`) |
@@ -406,10 +406,14 @@ diverged there.
 
 | method | rank / alpha | trainable params | learning rates |
 |---|---|---:|---|
-| LoRA | 32 / 64 | 31.5 M (2.0%) | 1e-4, 2e-4, 5e-4 |
-| LoRA | 64 / 128 | 62.9 M (4.0%) | 1e-4, 2e-4, 5e-4 |
-| LoRA | 128 / 256 | 125.8 M (8.0%) | 1e-4, 2e-4, 5e-4 |
+| LoRA | 32 / 64 | 57.7 M (3.6%) | 1e-4, 2e-4, 5e-4 |
+| LoRA | 64 / 128 | 115.3 M (7.0%) | 1e-4, 2e-4, 5e-4 |
+| LoRA | 128 / 256 | 230.7 M (13.0%) | 1e-4, 2e-4, 5e-4 |
 | full fine-tune | — | 1,574.9 M (100%) | 5e-6, 1e-5, 2e-5 |
+
+Adapters cover the MLP as well as attention. `fc1`/`fc2` hold most of the parameters in a
+Whisper block, so attention-only adapters leave the bulk of each layer untouched — including
+them nearly doubles the trainable count at every rank (r=32: 31.5 M → 57.7 M).
 
 ```bash
 bash train/grid.sh 6 A    # r=32 and the full fine-tunes
@@ -417,27 +421,24 @@ bash train/grid.sh 7 B    # r=64 and r=128
 python bench/sweep_table.py
 ```
 
-**LoRA rank × LR** — lower is better except `lexRec`; `wildWd`/`halCER` are real audio.
+**Results** — one row per run. Lower is better except `lexRec`. `wildWd` and `halCER` are
+real audio; the rest are built stimuli.
 
-| rank | lr | sil | music | nonsp | runaway | rdEmpty | lexRec | wildWd | halCER | lsWER |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 32 | 1e-4 | — | — | — | — | — | — | — | — | — |
-| 32 | 2e-4 | — | — | — | — | — | — | — | — | — |
-| 32 | 5e-4 | — | — | — | — | — | — | — | — | — |
-| 64 | 1e-4 | — | — | — | — | — | — | — | — | — |
-| 64 | 2e-4 | — | — | — | — | — | — | — | — | — |
-| 64 | 5e-4 | — | — | — | — | — | — | — | — | — |
-| 128 | 1e-4 | — | — | — | — | — | — | — | — | — |
-| 128 | 2e-4 | — | — | — | — | — | — | — | — | — |
-| 128 | 5e-4 | — | — | — | — | — | — | — | — | — |
-
-**Full fine-tune × LR**
-
-| lr | sil | music | nonsp | runaway | rdEmpty | lexRec | wildWd | halCER | lsWER |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 5e-6 | — | — | — | — | — | — | — | — | — |
-| 1e-5 | — | — | — | — | — | — | — | — | — |
-| 2e-5 | — | — | — | — | — | — | — | — | — |
+| method | rank/α | params | lr | sil | music | nonsp | runaway | rdEmpty | lexRec | wildWd | halCER | lsWER |
+|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| *base large-v3* | — | — | — | 0.619 | 0.970 | 0.899 | 0.029 | 0.001 | 0.698 | 0.999 | 0.549 | **0.035** |
+| LoRA | 32 / 64 | 57.7 M | 1e-4 | — | — | — | — | — | — | — | — | — |
+| LoRA | 32 / 64 | 57.7 M | 2e-4 | — | — | — | — | — | — | — | — | — |
+| LoRA | 32 / 64 | 57.7 M | 5e-4 | — | — | — | — | — | — | — | — | — |
+| LoRA | 64 / 128 | 115.3 M | 1e-4 | — | — | — | — | — | — | — | — | — |
+| LoRA | 64 / 128 | 115.3 M | 2e-4 | — | — | — | — | — | — | — | — | — |
+| LoRA | 64 / 128 | 115.3 M | 5e-4 | — | — | — | — | — | — | — | — | — |
+| LoRA | 128 / 256 | 230.7 M | 1e-4 | — | — | — | — | — | — | — | — | — |
+| LoRA | 128 / 256 | 230.7 M | 2e-4 | — | — | — | — | — | — | — | — | — |
+| LoRA | 128 / 256 | 230.7 M | 5e-4 | — | — | — | — | — | — | — | — | — |
+| full | — | 1,574.9 M | 5e-6 | — | — | — | — | — | — | — | — | — |
+| full | — | 1,574.9 M | 1e-5 | — | — | — | — | — | — | — | — | — |
+| full | — | 1,574.9 M | 2e-5 | — | — | — | — | — | — | — | — | — |
 
 *Running. Cells fill from `bench/sweep_table.py` as each run is evaluated; the reference row
 is base `whisper-large-v3` in the table below.*
