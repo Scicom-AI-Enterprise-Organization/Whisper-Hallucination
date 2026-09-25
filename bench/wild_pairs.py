@@ -62,6 +62,9 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--runs", default="runs")
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--tex", type=Path, default=None,
+                    help="emit the paper's paired table as booktabs rows, so no number is "
+                         "retyped between the scorer and the manuscript")
     a = ap.parse_args()
 
     rows = {}
@@ -86,6 +89,34 @@ def main():
             print(f"{tag:<22}" + "".join(
                 f"{r[k]:>8.3f}" if isinstance(r.get(k), float) else f"{'-':>8}"
                 for k, _ in cols))
+    if a.tex:
+        lines = [r"\begin{tabular}{llrrrrr}", r"\toprule",
+                 r"\textbf{config} & \textbf{mix} & \textbf{wild words} & \textbf{wild loop}"
+                 r" & \textbf{recovered} & \textbf{ls WER} & \textbf{FLEURS CER} \\",
+                 r"\midrule",
+                 r"\textit{base large-v3} & \textit{none} & 0.999 & 0.008 & 0.698 & 0.035 "
+                 r"& 0.305 \\", r"\midrule"]
+        for rank, lr in CONFIGS:
+            got = False
+            for mix in ("no_synth", "all"):
+                name = f"v3_lora_r{rank}_{mix}_lr{lr}" if rank else f"v3_full_{mix}_lr{lr}"
+                r = rows.get(name)
+                if not r or r.get("wild_words") is None:
+                    continue
+                cfg = (f"LoRA r{rank}, {lr}" if rank else f"full, {lr}") if not got else ""
+                got = True
+                cells = " & ".join(
+                    f"{r[k]:.3f}" if isinstance(r.get(k), float) else "--"
+                    for k in ("wild_words", "wild_loop", "lex_rec", "ls_wer", "fl_cer"))
+                label = r"\texttt{no\_synth}" if mix == "no_synth" else r"\texttt{all}"
+                lines.append(f"{cfg} & {label} & {cells} \\\\")
+            if got:
+                lines.append(r"\addlinespace[2pt]")
+        lines += [r"\bottomrule", r"\end{tabular}"]
+        a.tex.parent.mkdir(parents=True, exist_ok=True)
+        a.tex.write_text("\n".join(lines) + "\n")
+        print(f"-> {a.tex}")
+
     if a.json:
         a.json.parent.mkdir(parents=True, exist_ok=True)
         a.json.write_text(json.dumps(list(rows.values()), indent=1))

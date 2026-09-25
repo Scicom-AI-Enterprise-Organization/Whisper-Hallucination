@@ -66,8 +66,12 @@ the teacher was right, so it inherits a failure mode that never appears in its o
 data. The second response, adding non-speech audio so the model learns to stay quiet, is
 already used in production systems and it works, but it teaches suppression without teaching
 discrimination. The checkpoint that is best on every non-speech arm here is also the one that
-recovers the fewest genuinely spoken phrases and deletes 58\% of repeated speech. We argue the
-teacher has to be fixed, with both halves of the signal, and we do the work that requires. We build a
+recovers the fewest genuinely spoken phrases and deletes 58\% of repeated speech. We argue the teacher has to be fixed, with both halves of the signal, and we do the work that
+requires. Across twelve matched pairs of fine-tunes that differ only by those synthetic
+positives, adding them lowers word emission on real voice-free audio in 10 pairs and raises
+phrase recovery in 11. Among the ten pairs that hold English accuracy, it is 10 out of 10. The
+best checkpoint takes hallucination on silence from 61.9\% to 2.4\% and words over real
+voice-free audio from 99.9\% to 47.8\% while raising phrase recovery from 69.8\% to 82.7\%. We build a
 benchmark that scores both halves of the problem at once, 11,852 clips over eight arms plus
 6,267 synthetic positives, 8,296 clips of real audio that made a production model fail, and
 FLEURS in 58 languages. We collect a lexicon of 40,891 hallucination phrases in 100 languages,
@@ -772,7 +776,88 @@ same mix at 2e-4 converges cleanly to 0.64. The checkpoint from the diverged run
 
 \subsection{Results}
 
-% RESULTS PLACEHOLDER: filled from bench/readme_tables.py once the 24 runs finish.
+Table~\ref{tab:paired} is the answer to both questions. Every row is one fine-tune of
+\texttt{whisper-large-v3}, and the two rows in each pair differ only by the 22,845 synthetic
+positives.
+
+\begin{table}[htbp]
+\centering
+\caption{The paired sweep. \texttt{wild words} is the share of 4,421 real voice-free clips
+where the model emitted words, \texttt{wild loop} the share carrying a token run of six or
+more, \texttt{recovered} the share of genuinely spoken phrases it got back. Lower is better
+everywhere except \texttt{recovered}.}
+\label{tab:paired}
+\small
+\begin{adjustbox}{max width=\linewidth}
+\input{table_paired}
+\end{adjustbox}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.86\linewidth]{img/fig_sweep_wild_halluc.png}
+  \caption{Hallucination on real voice-free audio, with and without the synthetic positives, at
+  every configuration in the grid.}
+  \label{fig:sweepwild}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.86\linewidth]{img/fig_sweep_cost.png}
+  \caption{The trade from Figure~\ref{fig:tradeoff}, redrawn with the fine-tunes on it. The
+  mix without the synthetic positives walks left and down. The mix with them walks left and
+  up.}
+  \label{fig:sweepcost}
+\end{figure}
+
+\textbf{Without the synthetic lexicon, hallucination falls a little and the model forgets a
+lot.} At the ten configurations that keep LibriSpeech word error rate at or under 0.040, word
+emission on real voice-free audio moves from 0.999 to between 0.799 and 0.968. Phrase recovery
+falls from 0.698 to between 0.535 and 0.602 in every one of them, and FLEURS character error
+rate rises from 0.305 to between 0.522 and 0.809. That is the answer to the first question.
+Fine-tuning on negatives alone does reduce hallucination, and it costs more accuracy than it
+buys quiet.
+
+Two configurations do silence the model. \texttt{no\_synth} at rank 64 and 5e-4 reaches 0.150,
+and at rank 128 and 5e-4 it reaches 0.071, the quietest number anywhere in this paper. Look at
+what came with it: recovery 0.511 and 0.292, FLEURS 0.680 and 0.839, and LibriSpeech word error
+rate 0.113 at rank 128, three times the base model. That is \texttt{malaysian-turbo-v3}
+reproduced from scratch in a thousand steps. A model can always be made quiet by making it
+mute.
+
+\textbf{With it, the model gets quieter and more accurate at the same time.} Across the twelve
+pairs, adding the synthetic positives lowers word emission on wild audio in 10, raises phrase
+recovery in 11, and lowers FLEURS character error rate in 10. The median differences are
+$-0.110$ on wild audio, $+0.203$ on recovery and $-0.135$ on FLEURS. LibriSpeech does not move:
+the median difference is $0.000$, and neither mix wins it more often than the other.
+
+Restrict to the ten pairs where both halves hold LibriSpeech word error rate at or under 0.040,
+which is the only regime anybody would ship, and it is unanimous. \texttt{all} emits fewer
+words on real voice-free audio in \textbf{10 of 10}, recovers more phrases in 9 of 10, and
+holds multilingual accuracy better in 8 of 10. The two configurations where
+\texttt{no\_synth} looks quieter are exactly the two that failed the accuracy test.
+
+The best single checkpoint in the grid is \texttt{all} at rank 64 and 5e-4: silence
+hallucination 0.619 to \textbf{0.024}, words over wild voice-free audio 0.999 to
+\textbf{0.478}, phrase recovery 0.698 to \textbf{0.827}, for LibriSpeech 0.035 to 0.041 and
+FLEURS 0.305 to 0.398. It is quieter on noise and better on speech than the model it came from,
+which is the corner Figure~\ref{fig:tradeoff} says is empty.
+
+\textbf{Repetition on wild audio does not move.} The \texttt{wild loop} column sits between
+0.000 and 0.017 for every run against a base of 0.008, and \texttt{all} is lower in only 2 of
+12 pairs. We report this because it is what the data says, not because it helps. Real
+voice-free clips rarely loop in the first place, so there is almost nothing there to fix. The
+repetition effect is real but it lives on the \texttt{reduplication} arm, where the deletion
+rate never exceeds 0.002 across all 24 runs, meaning no configuration bought its quiet by
+erasing repeated speech.
+
+\textbf{Every fine-tune is worse than the base model on FLEURS.} The best of the 24 is 0.381
+against the base model's 0.305. The synthetic positives cut the damage substantially, median
+0.460 against 0.607, but they do not remove it. The corpus is 75 languages and FLEURS is 58, and
+a thousand steps at a Malay-weighted mix moves the model away from the rest. This is the
+honest cost of the method and it is the first thing we would attack next. Without this arm we
+would not have known: LibriSpeech word error rate is flat at 0.034 to 0.037 across almost every
+run in the table.
 
 \section{Limitations}
 
@@ -804,9 +889,12 @@ The decoder-side ablation is designed and not run: 34 configurations of beam wid
 fallback, repetition and presence penalties, and the interaction between those and a fine-tuned
 checkpoint. The interesting question is whether a model trained to stop still needs the knobs.
 
-Stage two of the sweep is the winning configuration applied to
-\texttt{whisper-large-v3-turbo}, which is the checkpoint most people actually serve and the one
-with the worst repetition profile of the three base models.
+Stage two of the sweep is the winning configuration, LoRA at rank 64 and 5e-4 on the
+\texttt{all} mix, applied to \texttt{whisper-large-v3-turbo}. That is the checkpoint most
+people actually serve and the one with the worst repetition profile of the three base models.
+Every run here is a thousand steps, which is roughly a third of an epoch of the mix; whether the
+FLEURS regression is a transient of undertraining or a real cost of the data is the first thing
+a longer run would settle.
 
 Two languages, Sinhala and Malagasy, have no FLEURS configuration, so they have no judge floor
 and fall back to a flat gate that accepts almost nothing. They need a floor measured from

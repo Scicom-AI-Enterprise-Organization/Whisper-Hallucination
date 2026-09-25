@@ -1,0 +1,44 @@
+\begin{tabular}{llrrrrr}
+\toprule
+\textbf{config} & \textbf{mix} & \textbf{wild words} & \textbf{wild loop} & \textbf{recovered} & \textbf{ls WER} & \textbf{FLEURS CER} \\
+\midrule
+\textit{base large-v3} & \textit{none} & 0.999 & 0.008 & 0.698 & 0.035 & 0.305 \\
+\midrule
+LoRA r32, 1e-4 & \texttt{no\_synth} & 0.958 & 0.008 & 0.571 & 0.034 & 0.668 \\
+ & \texttt{all} & 0.761 & 0.011 & 0.757 & 0.035 & 0.527 \\
+\addlinespace[2pt]
+LoRA r32, 2e-4 & \texttt{no\_synth} & 0.948 & 0.008 & 0.602 & 0.034 & 0.549 \\
+ & \texttt{all} & 0.619 & 0.008 & 0.799 & 0.035 & 0.419 \\
+\addlinespace[2pt]
+LoRA r32, 5e-4 & \texttt{no\_synth} & 0.799 & 0.005 & 0.559 & 0.036 & 0.610 \\
+ & \texttt{all} & 0.780 & 0.003 & 0.829 & 0.036 & 0.415 \\
+\addlinespace[2pt]
+LoRA r64, 1e-4 & \texttt{no\_synth} & 0.956 & 0.007 & 0.597 & 0.035 & 0.604 \\
+ & \texttt{all} & 0.754 & 0.009 & 0.783 & 0.034 & 0.460 \\
+\addlinespace[2pt]
+LoRA r64, 2e-4 & \texttt{no\_synth} & 0.968 & 0.005 & 0.599 & 0.035 & 0.533 \\
+ & \texttt{all} & 0.793 & 0.016 & 0.818 & 0.035 & 0.426 \\
+\addlinespace[2pt]
+LoRA r64, 5e-4 & \texttt{no\_synth} & 0.150 & 0.000 & 0.511 & 0.041 & 0.680 \\
+ & \texttt{all} & 0.478 & 0.005 & 0.827 & 0.041 & 0.398 \\
+\addlinespace[2pt]
+LoRA r128, 1e-4 & \texttt{no\_synth} & 0.925 & 0.005 & 0.591 & 0.035 & 0.530 \\
+ & \texttt{all} & 0.807 & 0.011 & 0.798 & 0.035 & 0.461 \\
+\addlinespace[2pt]
+LoRA r128, 2e-4 & \texttt{no\_synth} & 0.823 & 0.002 & 0.574 & 0.036 & 0.522 \\
+ & \texttt{all} & 0.721 & 0.000 & 0.840 & 0.037 & 0.381 \\
+\addlinespace[2pt]
+LoRA r128, 5e-4 & \texttt{no\_synth} & 0.071 & 0.002 & 0.292 & 0.113 & 0.839 \\
+ & \texttt{all} & 0.241 & 0.005 & 0.816 & 0.047 & 0.464 \\
+\addlinespace[2pt]
+full, 5e-6 & \texttt{no\_synth} & 0.931 & 0.013 & 0.535 & 0.035 & 0.797 \\
+ & \texttt{all} & 0.918 & 0.017 & 0.504 & 0.035 & 0.886 \\
+\addlinespace[2pt]
+full, 1e-5 & \texttt{no\_synth} & 0.937 & 0.009 & 0.548 & 0.035 & 0.809 \\
+ & \texttt{all} & 0.866 & 0.013 & 0.615 & 0.035 & 0.761 \\
+\addlinespace[2pt]
+full, 2e-5 & \texttt{no\_synth} & 0.922 & 0.005 & 0.598 & 0.034 & 0.539 \\
+ & \texttt{all} & 0.728 & 0.007 & 0.724 & 0.036 & 0.545 \\
+\addlinespace[2pt]
+\bottomrule
+\end{tabular}
