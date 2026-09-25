@@ -11,7 +11,11 @@ excerpts, generated reduplication. This one is not constructed at all. Two kinds
   blank_speech   where the label needs no annotator: a token run >= 6, or words emitted
                  where Silero VAD finds no speech at all.
 
-`split="test"` like every other benchmark arm. The Koenecke aphasia clips are deliberately
+Ships `train` and `test`. The split is by SOURCE RECORDING, not by clip
+(`scripts/split_wild.py`): several AudioSet clips come from one video and a dozen HALAS
+segments from one call, so a clip-level split would put near neighbours on both sides. HALAS
+is entirely `test` -- it is the only human-labelled part and spending it on training would
+cost the benchmark -- and so is every `loop` clip, which has no reference to train toward. The Koenecke aphasia clips are deliberately
 NOT here: that is clinical speech from a membership-gated corpus, and consent, not licence,
 is the reason. `scripts/fetch_audio.py aphasia` still gets them for local measurement.
 
@@ -60,6 +64,7 @@ FEATURES = Features({
     "speech_frac": Value("float32"),
     "rms_db": Value("float32"),
     "duration_s": Value("float32"),
+    "split": Value("string"),
 })
 
 
@@ -129,6 +134,7 @@ def main():
                     "speech_frac": num(r.get("speech_frac"), float, -1.0),
                     "rms_db": num(r.get("rms_db"), float, 0.0),
                     "duration_s": num(r.get("duration_s"), float, 0.0),
+                    "split": (r.get("split") or "test"),
                 })
     if not recs:
         raise SystemExit("no wild clips found")
@@ -140,12 +146,17 @@ def main():
     d.mkdir(parents=True, exist_ok=True)
     for old in d.glob("*.parquet"):
         old.unlink()
-    n_files = max(1, -(-len(recs) // args.rows_per_file))
-    for i in range(n_files):
-        chunk = recs[i * args.rows_per_file:(i + 1) * args.rows_per_file]
-        target = d / f"test-{i:05d}-of-{n_files:05d}.parquet"
-        pq.write_table(table(chunk), target, compression="zstd", use_dictionary=[],
-                       row_group_size=args.row_group_size, write_page_index=True)
+    for split in ("train", "test"):
+        part = [r for r in recs if r["split"] == split]
+        if not part:
+            continue
+        n_files = max(1, -(-len(part) // args.rows_per_file))
+        for i in range(n_files):
+            chunk = part[i * args.rows_per_file:(i + 1) * args.rows_per_file]
+            target = d / f"{split}-{i:05d}-of-{n_files:05d}.parquet"
+            pq.write_table(table(chunk), target, compression="zstd", use_dictionary=[],
+                           row_group_size=args.row_group_size, write_page_index=True)
+    n_files = len(list(d.glob("*.parquet")))
     biggest = max(f.stat().st_size for f in d.glob("*.parquet"))
     if biggest > 300e6:
         raise SystemExit(f"a shard is {biggest/1e6:.0f} MB, over the viewer's scan limit")
@@ -153,6 +164,7 @@ def main():
     stats = {
         "config": args.config_name, "clips": len(recs),
         "hours": round(sum(r["duration_s"] for r in recs) / 3600, 3),
+        "splits": dict(Counter(r["split"] for r in recs)),
         "by_collection": dict(Counter(r["collection"] for r in recs)),
         "by_reason": dict(Counter(x for r in recs for x in (r["reasons"] or "").split("|") if x)),
         "excluded_collections": dict(skipped),

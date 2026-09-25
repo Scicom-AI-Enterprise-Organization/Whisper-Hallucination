@@ -84,6 +84,8 @@ configs:
     path: data/lexicon_synth/test-*.parquet
 - config_name: wild
   data_files:
+  - split: train
+    path: data/wild/train-*.parquet
   - split: test
     path: data/wild/test-*.parquet
 ---
@@ -161,6 +163,7 @@ Raw numbers: `bench/scores.json`. Harness: [`bench/`](https://github.com/Scicom-
 | `librispeech_test_clean` | 2,620 | 5.4 | English WER guard | human transcript |
 | **`lexicon_synth`** | **29,112** | **15.8** | synthetic positives, 83 languages | the phrase |
 | **`wild`** | **8,296** | **15.0** | real audio that triggered hallucination or looping | see below |
+| | | | *ships `train` (3,628) and `test` (4,668)* | |
 | `lexicon` | 40,891 | — | known hallucination phrases, 100 languages | — |
 | `ban_candidates` | 40,891 | — | each phrase classified safe/unsafe to blocklist | — |
 | `targets` | 463 | — | phrases both hallucinated and genuinely said | — |
@@ -264,6 +267,20 @@ Every other audio config is a built stimulus. This one is not constructed at all
 | `peoples_dirty` | 9 | mined: token run ≥ 6 |
 | `voxpopuli` | 4 | mined: token run ≥ 6 |
 | `peoples_speech` | 1 | mined: token run ≥ 6 |
+
+**Ships `train` (3,628) and `test` (4,668), split by SOURCE RECORDING.** Several AudioSet clips
+come from one YouTube video and a dozen HALAS segments from one earnings call, so a clip-level
+split would put near neighbours on both sides and inflate the test score. Two things are held
+out by rule rather than by hash:
+
+- **HALAS is entirely `test`** — the only human-labelled part of the arm, and the flagship wild
+  evaluation. Training on it would buy a little data and cost the benchmark.
+- **Every `loop` clip is `test`** — there is no reference transcript, so no target to train
+  toward.
+
+What is trainable is the mined `blank_speech` material: real audio a VAD confirms contains no
+speech, whose correct target is the empty string. Same lesson as the synthetic blank arms, on
+audio that actually occurs.
 
 `reasons` says which rule caught the clip. `models_flagged` and `n_models_flagged` carry the
 HALAS human verdicts. `reference_text` is the human-corrected transcript where one exists.

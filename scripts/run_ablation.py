@@ -31,13 +31,44 @@ def load_configs(names=None):
     return out
 
 
-def load_arm(arm: str):
-    manifest = ARMS / arm / "manifest.csv"
-    if not manifest.exists():
-        raise SystemExit(f"no manifest for arm {arm!r} at {manifest} - build or fetch it first")
-    rows = list(csv.DictReader(manifest.open(encoding="utf-8")))
-    for r in rows:
-        r["_abs"] = str(ARMS / arm / r["audio_filepath"])
+REPO = "Scicom-intl/Whisper-Hallucination"
+
+
+def load_arm(arm: str, from_hub: bool = True):
+    """Arm clips as (id, reference, waveform) rows.
+
+    Default source is the PUBLISHED dataset, not a local build, for the same reason
+    `bench/run_benchmark.py` pulls from the Hub: the ablation should measure the audio anyone
+    reproducing this would get. The arms are also not materialised on the box -- only the
+    generated corpora are -- so a local manifest would simply be missing.
+
+    faster-whisper accepts a numpy array, so nothing is written to disk.
+    """
+    if not from_hub:
+        manifest = ARMS / arm / "manifest.csv"
+        if not manifest.exists():
+            raise SystemExit(f"no manifest for arm {arm!r} at {manifest} - build or fetch it first")
+        rows = list(csv.DictReader(manifest.open(encoding="utf-8")))
+        for r in rows:
+            r["_abs"] = str(ARMS / arm / r["audio_filepath"])
+        return rows
+
+    import io
+    import soundfile as sf
+    from datasets import Audio, load_dataset
+
+    # `datasets>=5` wants torchcodec to decode an audio column; hand back bytes instead.
+    ds = load_dataset(REPO, arm, split="test").cast_column("audio", Audio(decode=False))
+    rows = []
+    for r in ds:
+        x, sr = sf.read(io.BytesIO(r["audio"]["bytes"]), dtype="float32")
+        if x.ndim > 1:
+            x = x.mean(axis=1)
+        rows.append({"audio_filepath": r.get("id", ""),
+                     "reference_text": ("" if arm in ("silence", "music", "nonspeech")
+                                        else (r.get("reference_text") or r.get("text") or "")),
+                     "_wave": x, "_sr": sr,
+                     **{k: v for k, v in r.items() if k != "audio"}})
     return rows
 
 
@@ -51,6 +82,8 @@ def main():
     ap.add_argument("--compute-type", default="float16")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--overwrite", action="store_true")
+    ap.add_argument("--local-arms", action="store_true",
+                    help="read audio/<arm>/manifest.csv instead of the published dataset")
     args = ap.parse_args()
 
     from faster_whisper import WhisperModel
@@ -71,7 +104,7 @@ def main():
             if out.exists() and not args.overwrite:
                 print(f"[skip] {cname}/{arm} (exists)")
                 continue
-            rows = load_arm(arm)
+            rows = load_arm(arm, from_hub=not args.local_arms)
             if args.limit:
                 rows = rows[: args.limit]
             out.parent.mkdir(parents=True, exist_ok=True)
@@ -82,7 +115,8 @@ def main():
                     kw = dict(decode)
                     if args.language:
                         kw["language"] = args.language
-                    segs, info = model.transcribe(r["_abs"], **kw)
+                    source = r["_wave"] if "_wave" in r else r["_abs"]
+                    segs, info = model.transcribe(source, **kw)
                     segs = list(segs)
                     rec = {
                         "audio_filepath": r["audio_filepath"],
@@ -95,7 +129,9 @@ def main():
                         "detected_language": info.language,
                         "language_probability": round(info.language_probability, 4),
                         "reference_text": r.get("reference_text", ""),
-                        "meta": {k: v for k, v in r.items() if not k.startswith("_")},
+                        "meta": {k: v for k, v in r.items()
+                                 if not k.startswith("_") and k not in
+                                 ("audio_filepath", "reference_text")},
                     }
                     fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
                     if i % 50 == 0:

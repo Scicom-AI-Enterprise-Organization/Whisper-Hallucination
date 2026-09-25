@@ -127,6 +127,12 @@ Everything above is a built stimulus. `wild` is real audio that actually made a 
 3,607 Earnings-22 clips with **human span annotations** (HALAS, 9 systems), 4,689 mined from
 streamed corpora with no annotator, and 187 aphasia clips kept local.
 
+It ships **`train` (3,628) and `test` (4,668), split by source recording** — several AudioSet
+clips come from one video, a dozen HALAS segments from one call, so a clip-level split would
+leak near neighbours. HALAS is entirely `test` (the human labels are the point of it) and so is
+every `loop` clip (no reference to train toward). The trainable half is mined `blank_speech`:
+real audio with no speech in it, target the empty string.
+
 ![Wild arm](bench/wild_results.png)
 
 **Hallucination yield tracks recording quality, across five thousandfold.** Per 8,000 clips
@@ -336,7 +342,7 @@ x, sr = sf.read(io.BytesIO(ds[0]["audio"]["bytes"]), dtype="float32")
 | `genuine_isolated` | 88 | one phrase spoken alone |
 | `librispeech_test_clean` | 2,620 | English WER guard |
 | **`lexicon_synth`** | **29,112** | synthetic positives, 83 languages, train + test |
-| **`wild`** | **3,878** | real audio that triggered hallucination or looping |
+| **`wild`** | **8,296** | real audio that triggered hallucination or looping, train + test |
 | `lexicon` / `ban_candidates` / `targets` / `malaysian_sources` | — | lookup tables |
 
 ## Reproducing

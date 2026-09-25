@@ -556,6 +556,14 @@ loops on 17.2% — so a loop corpus mined with one model is not a fair loop benc
 Figure: `bench/plot_wild.py`. `bench/fill_wild_gaps.sh` re-runs whatever baseline is missing,
 driven by what is on disk rather than a hand-kept list.
 
+**Split the wild arm by RECORDING, and force at recording level.** `scripts/split_wild.py`.
+Two bugs the guards caught, both of which would have silently inflated a test score:
+forcing individual `loop` clips to test left their siblings from the same recording in train
+(1 recording straddling), and the AMI key took the first field of
+`train_ami_en2001a_h03_mee067_...`, which is the literal `train` -- so all 235 AMI clips
+collapsed into one "recording" and went wherever it landed. The meeting is the THIRD field.
+A key that groups everything is not a key.
+
 **The aphasia clips are never re-hosted.** Clinical speech from a membership-gated corpus;
 `build_wild_release.py` only reads `audio_wild/`, and they live under `audio/`, so exclusion is
 structural rather than a flag someone can forget.
