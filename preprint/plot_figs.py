@@ -27,7 +27,7 @@ MODELS = [
     ("whisper-large-v3", "large-v3", "#1e8449", "^"),
     ("whisper-large-v3-turbo", "turbo", "#e67e22", "D"),
     ("malaysian-whisper-large-v2", "malaysian-v2", "#5b7fd4", "s"),
-    ("Malaysian-whisper-large-v3-turbo-v3", "M-turbo-v3", "#203882", "o"),
+    ("Malaysian-whisper-large-v3-turbo-v3", "malaysian-turbo-v3", "#203882", "o"),
 ]
 GRID = dict(color="#e0e0e0", linewidth=0.8, linestyle="--", alpha=0.6)
 INK = "#333333"
