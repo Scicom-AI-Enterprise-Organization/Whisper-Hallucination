@@ -32,7 +32,11 @@ ARMS = ["silence", "music", "nonspeech", "reduplication", "speech_in_noise",
         # other half of `silence`/`music`/`nonspeech`: the SAME phrases, but actually spoken.
         # Emitting the phrase here is the correct answer, so it measures what a hallucination
         # filter would wrongly delete.
-        "lexicon_synth"]
+        "lexicon_synth",
+        # Real audio that made a model fail. Its `test` split only -- `wild` train exists and
+        # is used by the fine-tuning sweep, so benchmarking the train half would be scoring a
+        # model on what it learned from.
+        "wild"]
 SR = 16000
 
 
@@ -41,6 +45,11 @@ def reference_of(row: dict, arm: str) -> str:
         return ""                                   # correct output is nothing at all
     if arm == "lexicon_synth":
         return row.get("phrase") or ""              # the phrase the clip actually says
+    if arm == "wild":
+        # Mixed by design: a HALAS clip carries a human-corrected transcript, a blank_speech
+        # clip carries nothing because the correct output IS nothing. `score_eval_run.py`
+        # splits them on `reasons` rather than averaging the two together.
+        return row.get("reference_text") or ""
     return row.get("reference_text") or row.get("text") or ""
 
 

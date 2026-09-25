@@ -16,9 +16,18 @@ Mixes:
   blank_only    24,212 blanks, nothing else. The naive recipe, included to reproduce the
                 failure rather than assume it.
   corpus        the staged corpus unchanged: 74% blank.
-  plus_synth    corpus + every lexicon_synth positive. Blank share falls to ~44%.
-  balanced      blanks downsampled to 1:1 against positives.
+  plus_synth    corpus + every lexicon_synth positive.
+  all           EVERY train split: corpus + lexicon_synth train + wild train. 59k clips,
+                133 h, and the blank share lands near 47% without any downsampling.
+  balanced      1:1 -- BOTH sides downsampled to the smaller of the two. Downsampling only
+                the blanks is a no-op once every train split is in: blanks (27,868) are
+                already fewer than positives (31,160), so `balanced` came out byte-identical
+                to `all` until this was fixed.
   synth_heavy   blanks downsampled to 1:2 against positives.
+
+`wild` train is the interesting addition: 3,656 clips of REAL audio a VAD confirms has no
+speech, against the synthetic FSD50K and FMA blanks the corpus uses. Its test half, and all of
+HALAS, stay held out (`scripts/split_wild.py`).
 
 Every mix is disjoint from the benchmark by construction -- the corpus was built that way
 (`scripts/verify_disjoint.py`) and `lexicon_synth` train excludes every `targets.csv` phrase.
@@ -83,6 +92,20 @@ def load_synth_from_hub(cache: Path):
     return rows
 
 
+def load_wild_train(wild_dir: Path):
+    """Mined wild clips assigned to `train`. Blank target: the audio has no speech in it."""
+    rows = []
+    for man in sorted(wild_dir.rglob("manifest.csv")):
+        for r in csv.DictReader(man.open(encoding="utf-8")):
+            if r.get("split") != "train":
+                continue
+            rows.append({"audio_filepath": str(man.parent / r["audio_filepath"]),
+                         "text": "", "lang": "", "arm": f"wild_{man.parent.parent.name}",
+                         "is_blank": True,
+                         "duration_s": float(r.get("duration_s") or 0)})
+    return rows
+
+
 def write(path: Path, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as fh:
@@ -99,7 +122,9 @@ def main():
     ap.add_argument("--corpus", type=Path, default=Path("corpus/train.jsonl"))
     ap.add_argument("--synth-cache", type=Path, default=Path("audio/lexicon_synth_hub"),
                     help="where the published lexicon_synth train clips are materialised")
+    ap.add_argument("--wild", type=Path, default=Path("audio_wild"))
     ap.add_argument("--no-synth", action="store_true")
+    ap.add_argument("--no-wild", action="store_true")
     ap.add_argument("--out", type=Path, default=Path("train/mixes"))
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
@@ -107,21 +132,26 @@ def main():
     rng = random.Random(args.seed)
     corpus = load_corpus(args.corpus)
     synth = [] if args.no_synth else load_synth_from_hub(args.synth_cache)
+    wild = [] if args.no_wild else load_wild_train(args.wild)
     blanks = [r for r in corpus if r["is_blank"]]
     pos = [r for r in corpus if not r["is_blank"]]
-    print(f"corpus: {len(blanks)} blank + {len(pos)} positive | lexicon_synth: {len(synth)}")
+    print(f"corpus: {len(blanks)} blank + {len(pos)} positive | "
+          f"lexicon_synth: {len(synth)} | wild train: {len(wild)} blank")
 
     def shuffled(xs):
         xs = list(xs); rng.shuffle(xs); return xs
 
     all_pos = pos + synth
-    write(args.out / "blank_only.jsonl", shuffled(blanks))
+    all_blank = blanks + wild
+    write(args.out / "blank_only.jsonl", shuffled(all_blank))
     write(args.out / "corpus.jsonl", shuffled(corpus))
     write(args.out / "plus_synth.jsonl", shuffled(corpus + synth))
+    write(args.out / "all.jsonl", shuffled(corpus + synth + wild))
+    n_each = min(len(all_blank), len(all_pos))
     write(args.out / "balanced.jsonl",
-          shuffled(rng.sample(blanks, min(len(blanks), len(all_pos))) + all_pos))
+          shuffled(rng.sample(all_blank, n_each) + rng.sample(all_pos, n_each)))
     write(args.out / "synth_heavy.jsonl",
-          shuffled(rng.sample(blanks, min(len(blanks), len(all_pos) // 2)) + all_pos))
+          shuffled(rng.sample(all_blank, min(len(all_blank), len(all_pos) // 2)) + all_pos))
 
 
 if __name__ == "__main__":

@@ -317,6 +317,116 @@ Seven languages skipped (`am ml my sd si te sr`): FLEURS has no config for them,
 no judge floor, the flat 0.25 gate applies, and `si` accepts 0.5% of clips whatever voice
 they are in. Re-voicing does not help. They need a floor from another corpus.
 
+## Ablation
+
+Two grids. The decoder grid (`ablation/configs.json`, 34 configs) turns knobs at inference
+time; the training sweep changes the weights. Both are scored on **both halves** of the
+benchmark, because the knobs that kill hallucination also delete real speech — a config that
+wins the non-speech arms by going quiet is a loss.
+
+### Training sets
+
+Everything below is disjoint from the benchmark by construction, and every `test` split stays
+held out.
+
+| source | clips | hours | target | teaches |
+|---|---:|---:|---|---|
+| **`corpus/train.jsonl`** | **32,527** | **111.0** | | staged, verified disjoint |
+| ├ nonspeech (FSD50K `dev`) | 16,983 | 33.3 | *empty* | noise → say nothing |
+| ├ music (FMA shards 2–12) | 7,170 | 58.3 | *empty* | music → say nothing |
+| ├ emilia (Malaysian) | 5,801 | 14.8 | transcript | keep accuracy |
+| ├ reduplication | 2,514 | 4.0 | exact repeats | don't run away |
+| └ silence | 59 | 0.7 | *empty* | room tone → say nothing |
+| **`lexicon_synth` train** | **22,845** | **12.5** | the phrase | the phrase IS spoken — transcribe it |
+| **`wild` train** | **3,656** | **9.6** | *empty* | **real** noisy audio → say nothing |
+| **total** | **59,028** | **133.1** | | 47% blank / 53% positive |
+
+`corpus/val.jsonl` (663 clips, 2.2 h) is the validation split.
+
+**The blank:positive ratio is the sweep's main factor.** The staged corpus alone is **74%
+blank**, which is the recipe that produces `Malaysian-turbo-v3`: best-in-class on non-speech
+and it deletes 46% of real speech. `lexicon_synth` is the counterweight — the same phrases the
+blanks teach the model to suppress, this time actually spoken. `wild` train adds 3,656 clips of
+real voice-free audio in place of synthetic noise.
+
+| mix | what it is |
+|---|---|
+| `blank_only` | blanks only — reproduces the failure rather than assuming it |
+| `corpus` | staged corpus unchanged, 74% blank |
+| `plus_synth` | corpus + `lexicon_synth` |
+| **`all`** | **every train split: 59,028 clips, 133 h, 47% blank** |
+| `balanced` | blanks downsampled 1:1 against positives |
+| `synth_heavy` | blanks downsampled 1:2 against positives |
+
+### Sweep parameters
+
+Stage 1 is one LoRA run per mix on `whisper-large-v3`; stage 2 takes the winning mix to
+`whisper-large-v3-turbo` and to full fine-tunes of both.
+
+| | value |
+|---|---|
+| base models | `openai/whisper-large-v3`, `openai/whisper-large-v3-turbo` |
+| method | LoRA (stage 1 + 2) and full fine-tune (stage 2) |
+| LoRA rank / alpha / dropout | 32 / 64 / 0.05 |
+| LoRA target modules | `q_proj`, `k_proj`, `v_proj`, `out_proj` |
+| trainable parameters | 31.5 M of 1.57 B (**2.0%**) |
+| learning rate | **2e-4** LoRA, 1e-5 full — see below |
+| steps / warmup | 1,000 / 50 |
+| batch size × grad accum | 8 × 2 = 16 clips per step (16k clips seen, ~0.3 epoch of `all`) |
+| precision | bf16 |
+| max label length | 200 tokens |
+| loss | on the transcript only — the four prompt tokens are masked to −100 |
+| throughput | ~12.8 clips/s per H20, ~21 min per run |
+
+**lr=1e-3 is too high and the first sweep proved it.** At that rate `corpus` finished at loss
+9.76 while mixes containing the same clips finished at 1.1–1.2, which reads as "the 74% blank
+mix is bad" and is not: the same mix at **2e-4 converges cleanly** — final 0.64, per-step
+0.32–0.42, grad norms 1–4. The evaluated `corpus` checkpoint from that run hallucinates on
+100% of silence and music, i.e. it is a diverged model, not a data result. Control the
+optimiser before attributing anything to the mix.
+
+The target for a blank clip is the empty transcript under that clip's language token, which is
+what teaches "no words here" rather than "emit something short".
+
+```bash
+python train/build_mix.py --out train/mixes     # pulls lexicon_synth train from the Hub
+bash train/sweep.sh stage1                      # LoRA × 6 mixes, large-v3
+bash train/eval_run.sh runs/v3_lora_all 7       # all seven arms, both halves
+python bench/sweep_table.py                     # the comparison table
+bash train/sweep.sh stage2 all                  # winner on turbo + full fine-tunes
+```
+
+### Sweep results
+
+Judged on the pair, not on either half. `wildWd` and `halCER` are real audio; the rest are
+built stimuli. Lower is better except `lexRec`.
+
+| run | sil | music | nonsp | runaway | rdEmpty | lexRec | wildWd | halCER | lsWER |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| base large-v3 | 0.619 | 0.970 | 0.899 | 0.029 | 0.001 | 0.698 | 0.999 | 0.549 | **0.035** |
+| **`all`** (47% blank) | **0.024** | **0.307** | **0.118** | 0.076 | 0.000 | 0.827 | **0.470** | 0.591 | 0.040 |
+| `balanced` (50%) | 0.548 | 0.623 | 0.259 | 0.041 | 0.000 | **0.840** | — | — | — |
+| `blank_only` (100%) | 0.429 | 0.333 | 0.199 | **0.000** | **0.667** | 0.046 | 0.274 | 0.743 | **0.846** |
+| `corpus` (74%, lr 1e-3) | 1.000 | 1.000 | 1.000 | — | — | — | — | — | — |
+| `corpus` (74%, lr 2e-4) | 0.667 | 0.992 | 0.936 | — | — | — | — | — | — |
+
+*`plus_synth` and `synth_heavy`, and the lr=2e-4 re-runs, are still evaluating.*
+
+**`blank_only` is the failure made deliberate.** Perfect 0.000 runaway — because it emits
+nothing on 67% of clips that contain repeated speech, recovers 4.6% of spoken phrases, and
+lands librispeech WER at **0.846** against base 0.035. Ranked on the non-speech arms alone it
+would look like the best model here. That is the whole argument for measuring both halves.
+
+**More blank supervision is not what helps.** The staged corpus alone, converged, barely moves
+hallucination (silence 0.667 vs base 0.619; nonspeech 0.936 vs 0.899). The gain in `all` comes
+from the `lexicon_synth` positives, not from more blanks.
+
+**`all` is the only run that improves both halves.** Silence hallucination falls 96%, word
+emission on real voice-free audio halves (0.999 → 0.470), phrase recovery rises 0.698 → 0.827
+— for +0.005 librispeech WER and +0.04 HALAS CER. Those last two are the honest cost, and
+`lexicon_synth` recovery is partly in-domain since its train split is in the mix; librispeech
+and `wild` are the out-of-domain checks.
+
 ## The published dataset
 
 Every audio config is `split="test"`. `lexicon_synth` is the exception — it is training

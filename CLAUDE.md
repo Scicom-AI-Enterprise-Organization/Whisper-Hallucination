@@ -341,6 +341,18 @@ in the wrong language and returns CER > 1.0 that says nothing about the audio â€
 at 1.47 until the QA was fixed to force the language and batch by it, as `score_tts.py` and
 `score_vc.py` already did.
 
+**LoRA at lr=1e-3 is too high for this data.** The first sweep ran there: `corpus` finished at
+loss 9.76 while mixes containing the same clips finished at 1.1-1.2, which reads as "the 74%
+blank mix is bad" and is not. The same mix at **lr=2e-4 converges cleanly** -- final 0.64,
+per-step 0.32-0.42, grad norms 1-4. A mix comparison run at an LR where one arm diverges is
+confounded; control the optimiser before attributing anything to the data.
+
+**`| tail -N` also throws away the training curve.** The sweep's per-step losses went into a
+`grep ... | tail -4`, so when `v3_lora_corpus` finished at loss 9.76 against 1.22 for the mixes
+containing the same data, there was no curve to say whether it spiked once or diverged. Keep
+the full log and filter when reading, not when writing. `save_strategy="no"` likewise means no
+`trainer_state.json` to fall back on.
+
 **Piping a long run through `| tail -N` hides it until it exits.** Both `head` and `tail`
 buffer, so progress lines never appear; `stdbuf -oL` on the producer and the filter, or no
 pager at all.
