@@ -56,8 +56,13 @@ def row_for(run_dir):
         hh = [r for r in recs if "halas_hallucination" in ((r["meta"] or {}).get("reasons") or "")]
         if bs:
             out["wild_words"] = sum(bool(normalise(r["hyp"])) for r in bs) / len(bs)
+            # The repetition half of the question, on real audio rather than built stimuli.
+            out["wild_loop"] = sum(max_ngram_repeat(r["hyp"], 1) >= 6 for r in bs) / len(bs)
         if hh:
             out["halas_cer"] = statistics.mean(cer(r["reference_text"], r["hyp"]) for r in hh)
+        lp = [r for r in recs if "loop" in ((r["meta"] or {}).get("reasons") or "")]
+        if lp:
+            out["wild_loop_mined"] = sum(max_ngram_repeat(r["hyp"], 1) >= 6 for r in lp) / len(lp)
     recs = load(b, "librispeech_test_clean")
     if recs:
         out["ls_wer"] = statistics.mean(wer(r["reference_text"], r["hyp"]) for r in recs)
