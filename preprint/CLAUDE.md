@@ -1,0 +1,68 @@
+# preprint/CLAUDE.md
+
+The task, as given, so it survives a context reset.
+
+## What this is
+
+A preprint titled **"How to Reduce Whisper Hallucination"**. Scaffolding (`neurips_2023.sty`,
+`.bib`, `.gitignore`) was copied from
+`Scicom-AI-Enterprise-Organization/X-Codec-2.0-25TPS-24k/tree/main/preprint`. Same author,
+same venue style.
+
+Build: `pdflatex neurips_2023 && bibtex neurips_2023 && pdflatex neurips_2023 && pdflatex neurips_2023`
+
+## The argument, in the order it has to be told
+
+1. **Whisper is still the best multilingual STT there is.** Say that plainly, then say what
+   is actually wrong with it. Not a hedge, a diagnosis.
+2. **Distillation launders the problem.** NVIDIA NeMo and others distil Whisper output and
+   *filter out the bad examples*. The student never sees the teacher's mistakes, so it never
+   learns not to make them. It inherits the failure mode with no evidence of it in its
+   training set.
+3. **So fix the teacher.** That is the thesis.
+4. **Gather the dataset.** The negative pool: silence, music, non-speech, reduplication,
+   speech in noise, genuine speech, plus real wild audio that actually made a model fail.
+5. **Benchmark on it.** Five checkpoints, both halves, and the finding that no checkpoint is
+   both quiet on noise and accurate on speech.
+6. **Find the lexicon.** What Whisper actually says when it hallucinates: 40,891 phrases,
+   100 languages, merged from four public sources plus mining.
+7. **Build synthetic audio.** Pick the TTS/VC model by measurement, not by reputation, then
+   synthesise the lexicon so the phrases exist as *positives*: the phrase really spoken.
+8. **Sweep training.** Method x learning rate, with and without the synthetic positives.
+9. **Output.** What fell, what it cost, what to use.
+
+## House style, non-negotiable
+
+- **No em dashes.** Not one. Use a comma, a full stop, or parentheses.
+- **Sound like a person.** Short declarative sentences. Say the number, then say what it
+  means. No "delve", no "it is worth noting that", no throat-clearing before the point.
+- **Straight to the point.** If a sentence can be deleted without losing a fact, delete it.
+- **More graphs, one chart per image.** The repo's own figures are multi-panel because a
+  README wants one picture that says everything. A paper does not: every panel needs its own
+  number and its own caption. `plot_figs.py` re-draws them as single-panel PNGs into `img/`
+  straight from the scorer output. Never hand-edit a figure, and never copy a composite in.
+- **Legends go outside the axes**, under the plot (`legend_below`). Inside the frame they land
+  on the bars and points a reader came for, and which corner is free changes with the data.
+- **Float placement is `[tb]`, not `[H]`.** `[H]` pins a figure where it is declared and leaves
+  the rest of the page blank when it does not fit, which is what made the first draft look
+  half empty.
+- **Acknowledgements are professional.** Thank Scicom (MSC) Berhad. No jokes about the
+  electricity bill.
+- **Section titles are short noun phrases.** "Wild audio", not "Wild pool: audio that actually
+  broke a model". A colon followed by an editorial clause reads as machine-written.
+
+## Where the numbers come from
+
+Never type a number that is not in one of these:
+
+| file | holds |
+|---|---|
+| `../bench/scores.json` | the 8 published arms + `fleurs`, 5 checkpoints |
+| `../bench/lexicon_synth_scores.json` | the false-positive arm, 3 padding conditions |
+| `../bench/wild_scores.json` | real audio baselines |
+| `../tts/tts_scores.json`, `../tts/vc_scores_summary.json` | generator selection |
+| box: `runs/*/eval.json` | every sweep run, both halves |
+
+`../CLAUDE.md` holds the caveats. Read them before quoting anything: metric ambiguity on the
+non-speech arms, `loop_rate` being confounded on reduplication, mean CER being a tail
+statistic on `lexicon_synth`.

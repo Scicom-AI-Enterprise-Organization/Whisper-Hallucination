@@ -26,5 +26,3 @@ __pycache__/
 claude-ping.json
 wandb/
 
-# local only, not published
-preprint/
