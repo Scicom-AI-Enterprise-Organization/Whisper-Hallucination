@@ -255,8 +255,9 @@ The obvious remedy is to put non-speech audio back in. Two groups already do.
 Canary-1B-v2 \citep{sekoyan2025canaryv2} states it plainly: the training mix has ``non-speech
 audio added to reduce hallucinations for ASR and AST''. Mesolitica's Malaysian Whisper
 fine-tunes \citep{mesolitica2025malaysianwhisper} do the same thing and, unusually, publish the
-whole pipeline. Their stage-two training set includes an AudioSet block with a dedicated noise
-subset, and the preparation code is open.
+whole pipeline. Their stage-two training set \citep{mesolitica2025stage2} lists an AudioSet
+block of 805k rows with a dedicated \texttt{noise} subset of 13.4k, and the preparation code
+is open \citep{malaysiaai2025pipeline}.
 
 It works, and our benchmark shows exactly how well. In Table~\ref{tab:nonspeech},
 \texttt{Malaysian-turbo-v3} is the best checkpoint measured on every non-speech arm, by a wide
