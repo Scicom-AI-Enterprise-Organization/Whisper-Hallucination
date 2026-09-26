@@ -442,9 +442,23 @@ bash train/sweep.sh stage2 all                  # winner on turbo + full fine-tu
 
 ### Method × learning-rate grid
 
-Twelve runs on the winning mix (`all` — every train split, 47% blank), each trained then
-scored on the complete benchmark: all eight published arms plus `lexicon_synth`, `wild`, and
-FLEURS. LoRA alpha tracks 2r so rank is the only thing that varies, and full
+66 runs: 33 configurations, each on **both** mixes so every row is half of a matched pair.
+Five ranks in each of two adapter families at three learning rates, plus three full
+fine-tunes. Each is trained then scored on the complete benchmark: all eight published arms
+plus `lexicon_synth`, `wild`, and FLEURS.
+
+**The paired result.** Adding `lexicon_synth` lowers word emission on real voice-free audio in
+**31 of 33** pairs, raises phrase recovery in **32 of 33**, and lowers FLEURS CER in **31 of
+33**. Median differences −0.118, +0.186, −0.107. LibriSpeech does not move either way, median
+0.000. Restricted to the 30 pairs that hold LibriSpeech at or under 0.040, it is **30 of 30**
+on hallucination. Full numbers: `python bench/wild_pairs.py --summary`.
+
+**The target-set result.** On the `all` mix, adapting `fc1`/`fc2` as well as attention lowers
+wild hallucination in **15 of 15** matched rank and LR cells, median −0.133. Attention-only
+adapters span 0.762 to 0.911 across every rank against a base of 0.999, so they never really
+learn to be quiet. attn+MLP at r8 (14.4 M) beats attn-only at r64 (62.9 M). On `no_synth` the
+advantage vanishes (7 of 15, median +0.005): the extra capacity only pays when there is a
+contrastive signal to use it on. LoRA alpha tracks 2r so rank is the only thing that varies, and full
 fine-tunes use batch 4 × accum 4 to hold the same 16 clips per step as LoRA's 8 × 2 — otherwise
 effective batch size would confound the comparison. 1e-3 is absent on purpose: the first sweep
 diverged there.
@@ -474,7 +488,41 @@ real audio; the rest are built stimuli.
 <!-- grid-table:begin -->
 
 | method | rank/α | params | lr | sil | music | nonsp | runaway | rdEmpty | lexRec | wildWd | halCER | lsWER | flCER |
-|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| *base large-v3* | — | — | — | 0.619 | 0.970 | 0.899 | 0.029 | 0.001 | 0.698 | 0.999 | 0.549 | 0.035 | 0.305 |
+| LoRA attn+MLP | 8 / 16 | 14.4 M | 1e-4 | 0.238 | 0.800 | 0.625 | 0.002 | **0.000** | 0.715 | 0.745 | 0.558 | 0.036 | 0.541 |
+| LoRA attn+MLP | 8 / 16 | 14.4 M | 2e-4 | 0.310 | 0.847 | 0.601 | **0.000** | **0.000** | 0.762 | 0.758 | 0.574 | 0.035 | 0.507 |
+| LoRA attn+MLP | 8 / 16 | 14.4 M | 5e-4 | 0.500 | 0.817 | 0.479 | 0.001 | 0.004 | 0.790 | 0.695 | 0.567 | 0.034 | 0.449 |
+| LoRA attn+MLP | 16 / 32 | 28.8 M | 1e-4 | 0.333 | 0.840 | 0.621 | 0.001 | **0.000** | 0.732 | 0.742 | 0.567 | 0.036 | 0.547 |
+| LoRA attn+MLP | 16 / 32 | 28.8 M | 2e-4 | 0.429 | 0.800 | 0.408 | **0.000** | 0.005 | 0.778 | 0.710 | 0.563 | **0.033** | 0.449 |
+| LoRA attn+MLP | 16 / 32 | 28.8 M | 5e-4 | 0.262 | 0.710 | 0.306 | **0.000** | 0.002 | 0.810 | 0.611 | 0.537 | 0.036 | 0.385 |
+| LoRA attn+MLP | 32 / 64 | 57.7 M | 1e-4 | 0.190 | 0.838 | 0.628 | **0.000** | **0.000** | 0.757 | 0.761 | 0.553 | 0.035 | 0.528 |
+| LoRA attn+MLP | 32 / 64 | 57.7 M | 2e-4 | 0.310 | 0.660 | 0.306 | 0.003 | 0.001 | 0.799 | 0.619 | 0.541 | 0.035 | 0.419 |
+| LoRA attn+MLP | 32 / 64 | 57.7 M | 5e-4 | 0.619 | 0.813 | 0.646 | 0.006 | **0.000** | 0.829 | 0.780 | 0.543 | 0.036 | 0.415 |
+| LoRA attn+MLP | 64 / 128 | 115.3 M | 1e-4 | 0.190 | 0.813 | 0.527 | **0.000** | **0.000** | 0.783 | 0.754 | 0.545 | 0.034 | 0.460 |
+| LoRA attn+MLP | 64 / 128 | 115.3 M | 2e-4 | 0.476 | 0.898 | 0.634 | **0.000** | **0.000** | 0.818 | 0.793 | 0.566 | 0.035 | 0.426 |
+| LoRA attn+MLP | 64 / 128 | 115.3 M | 5e-4 | **0.024** | 0.500 | 0.125 | 0.008 | **0.000** | 0.827 | 0.478 | 0.590 | 0.041 | 0.398 |
+| LoRA attn+MLP | 128 / 256 | 230.7 M | 1e-4 | 0.548 | 0.910 | 0.699 | **0.000** | **0.000** | 0.798 | 0.807 | 0.535 | 0.035 | 0.461 |
+| LoRA attn+MLP | 128 / 256 | 230.7 M | 2e-4 | 0.190 | 0.662 | 0.280 | **0.000** | **0.000** | 0.840 | 0.721 | 0.547 | 0.037 | **0.381** |
+| LoRA attn+MLP | 128 / 256 | 230.7 M | 5e-4 | 0.167 | **0.377** | **0.040** | 0.044 | **0.000** | 0.816 | **0.241** | 0.780 | 0.047 | 0.464 |
+| LoRA attn | 8 / 16 | 7.9 M | 1e-4 | 0.595 | 0.963 | 0.951 | 0.003 | **0.000** | 0.662 | 0.911 | 0.535 | 0.035 | 0.613 |
+| LoRA attn | 8 / 16 | 7.9 M | 2e-4 | 0.571 | 0.968 | 0.913 | 0.004 | **0.000** | 0.699 | 0.900 | 0.554 | 0.034 | 0.583 |
+| LoRA attn | 8 / 16 | 7.9 M | 5e-4 | 0.548 | 0.920 | 0.695 | **0.000** | **0.000** | 0.767 | 0.801 | **0.513** | 0.034 | 0.503 |
+| LoRA attn | 16 / 32 | 15.7 M | 1e-4 | 0.595 | 0.967 | 0.926 | 0.003 | **0.000** | 0.680 | 0.900 | 0.560 | 0.035 | 0.652 |
+| LoRA attn | 16 / 32 | 15.7 M | 2e-4 | 0.548 | 0.928 | 0.729 | **0.000** | **0.000** | 0.733 | 0.842 | 0.558 | 0.034 | 0.540 |
+| LoRA attn | 16 / 32 | 15.7 M | 5e-4 | 0.571 | 0.938 | 0.642 | 0.001 | **0.000** | 0.804 | 0.798 | 0.514 | 0.034 | 0.451 |
+| LoRA attn | 32 / 64 | 31.5 M | 1e-4 | 0.571 | 0.952 | 0.854 | 0.003 | **0.000** | 0.719 | 0.885 | 0.530 | 0.034 | 0.570 |
+| LoRA attn | 32 / 64 | 31.5 M | 2e-4 | 0.548 | 0.963 | 0.846 | **0.000** | **0.000** | 0.759 | 0.883 | 0.541 | 0.034 | 0.506 |
+| LoRA attn | 32 / 64 | 31.5 M | 5e-4 | 0.619 | 0.968 | 0.807 | 0.008 | **0.000** | 0.817 | 0.885 | 0.536 | 0.035 | 0.473 |
+| LoRA attn | 64 / 128 | 62.9 M | 1e-4 | 0.214 | 0.922 | 0.745 | **0.000** | **0.000** | 0.749 | 0.843 | 0.542 | 0.034 | 0.475 |
+| LoRA attn | 64 / 128 | 62.9 M | 2e-4 | 0.500 | 0.983 | 0.847 | **0.000** | **0.000** | 0.786 | 0.894 | 0.519 | 0.034 | 0.522 |
+| LoRA attn | 64 / 128 | 62.9 M | 5e-4 | 0.429 | 0.930 | 0.364 | 0.041 | **0.000** | **0.846** | 0.896 | 0.552 | 0.036 | 0.384 |
+| LoRA attn | 128 / 256 | 125.8 M | 1e-4 | 0.548 | 0.940 | 0.788 | **0.000** | **0.000** | 0.767 | 0.845 | 0.530 | 0.034 | 0.522 |
+| LoRA attn | 128 / 256 | 125.8 M | 2e-4 | 0.595 | 0.943 | 0.703 | 0.003 | **0.000** | 0.818 | 0.854 | 0.514 | 0.036 | 0.420 |
+| LoRA attn | 128 / 256 | 125.8 M | 5e-4 | 0.452 | 0.852 | 0.398 | 0.066 | **0.000** | 0.825 | 0.762 | 0.591 | 0.040 | 0.402 |
+| full | — | 1,574.9 M | 5e-6 | 0.524 | 0.965 | 0.939 | 0.031 | **0.000** | 0.504 | 0.918 | 0.524 | 0.035 | 0.886 |
+| full | — | 1,574.9 M | 1e-5 | 0.476 | 0.947 | 0.891 | 0.003 | **0.000** | 0.615 | 0.866 | 0.526 | 0.035 | 0.761 |
+| full | — | 1,574.9 M | 2e-5 | 0.310 | 0.807 | 0.705 | 0.002 | **0.000** | 0.724 | 0.728 | 0.546 | 0.036 | 0.545 |
 
 <!-- grid-table:end -->
 
@@ -494,6 +542,13 @@ built stimuli. Lower is better except `lexRec`.
 
 | mix | blank share | lr | sil | music | nonsp | runaway | rdEmpty | lexRec | wildWd | halCER | lsWER | flCER |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| *base large-v3* | — | — | 0.619 | 0.970 | 0.899 | 0.029 | 0.001 | 0.698 | 0.999 | 0.549 | 0.035 | 0.305 |
+| `blank_only` | 100% | 2e-4 | **0.000** | **0.198** | **0.042** | **0.000** | 0.557 | 0.019 | **0.093** | 0.909 | 0.848 | 0.996 |
+| `corpus` | 74% | 2e-4 | 0.667 | 0.992 | 0.936 | 0.001 | **0.000** | 0.594 | 0.957 | 0.540 | 0.034 | 0.756 |
+| `plus_synth` | 44% | 1e-3 | 0.286 | 0.710 | 0.193 | 0.043 | **0.000** | 0.832 | 0.674 | 0.669 | 0.040 | **0.409** |
+| **`all`** | 47% | 2e-4 | 0.452 | 0.770 | 0.383 | **0.000** | **0.000** | 0.792 | 0.718 | 0.547 | 0.034 | 0.437 |
+| `balanced` | 50% | 1e-3 | 0.548 | 0.623 | 0.259 | 0.041 | **0.000** | **0.840** | 0.380 | 0.662 | 0.038 | 0.421 |
+| `synth_heavy` | 33% | 2e-4 | 0.405 | 0.748 | 0.403 | **0.000** | 0.003 | 0.822 | 0.683 | **0.521** | **0.034** | 0.412 |
 
 <!-- mix-table:end -->
 

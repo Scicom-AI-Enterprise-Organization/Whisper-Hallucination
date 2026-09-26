@@ -84,11 +84,11 @@ data. The second response, adding non-speech audio so the model learns to stay q
 already used in production systems and it works, but it teaches suppression without teaching
 discrimination. The checkpoint that is best on every non-speech arm here is also the one that
 recovers the fewest genuinely spoken phrases and deletes 58\% of repeated speech. We argue the teacher has to be fixed, with both halves of the signal, and we do the work that
-requires. Across twelve matched pairs of fine-tunes that differ only by those synthetic
-positives, adding them lowers word emission on real voice-free audio in 10 pairs and raises
-phrase recovery in 11. Among the ten pairs that hold English accuracy, it is 10 out of 10. The
-best checkpoint takes hallucination on silence from 61.9\% to 2.4\% and words over real
-voice-free audio from 99.9\% to 47.8\% while raising phrase recovery from 69.8\% to 82.7\%. We build a
+requires. Across 33 matched pairs of fine-tunes that differ only by those synthetic positives, adding
+them lowers word emission on real voice-free audio in 31 pairs and raises phrase recovery in
+32. Among the 30 pairs that hold English accuracy, it is 30 out of 30. The best checkpoint
+takes hallucination on silence from 61.9\% to 2.4\% and words over real voice-free audio from
+99.9\% to 47.8\% while raising phrase recovery from 69.8\% to 82.7\%. We build a
 benchmark that scores both halves of the problem at once, 11,852 clips over eight arms plus
 6,267 synthetic positives, 8,296 clips of real audio that made a production model fail, and
 FLEURS in 58 languages. We collect a lexicon of 40,891 hallucination phrases in 100 languages,
@@ -911,9 +911,9 @@ everywhere except \texttt{recovered}.}
 \end{figure}
 
 \textbf{Without the synthetic lexicon, hallucination falls a little and the model forgets a
-lot.} At the ten configurations that keep LibriSpeech word error rate at or under 0.040, word
+lot.} Across the configurations that keep LibriSpeech word error rate at or under 0.040, word
 emission on real voice-free audio moves from 0.999 to between 0.799 and 0.968. Phrase recovery
-falls from 0.698 to between 0.535 and 0.602 in every one of them, and FLEURS character error
+falls from 0.698 to between 0.511 and 0.602 in every one of them, and FLEURS character error
 rate rises from 0.305 to between 0.522 and 0.809. That is the answer to the first question.
 Fine-tuning on negatives alone does reduce hallucination, and it costs more accuracy than it
 buys quiet.
@@ -925,17 +925,17 @@ rate 0.113 at rank 128, three times the base model. That is \texttt{malaysian-tu
 reproduced from scratch in a thousand steps. A model can always be made quiet by making it
 mute.
 
-\textbf{With it, the model gets quieter and more accurate at the same time.} Across the twelve
-pairs, adding the synthetic positives lowers word emission on wild audio in 10, raises phrase
-recovery in 11, and lowers FLEURS character error rate in 10. The median differences are
-$-0.110$ on wild audio, $+0.203$ on recovery and $-0.135$ on FLEURS. LibriSpeech does not move:
+\textbf{With it, the model gets quieter and more accurate at the same time.} Across all 33
+pairs, adding the synthetic positives lowers word emission on wild audio in 31, raises phrase
+recovery in 32, and lowers FLEURS character error rate in 31. The median differences are
+$-0.118$ on wild audio, $+0.186$ on recovery and $-0.107$ on FLEURS. LibriSpeech does not move:
 the median difference is $0.000$, and neither mix wins it more often than the other.
 
-Restrict to the ten pairs where both halves hold LibriSpeech word error rate at or under 0.040,
+Restrict to the 30 pairs where both halves hold LibriSpeech word error rate at or under 0.040,
 which is the only regime anybody would ship, and it is unanimous. \texttt{all} emits fewer
-words on real voice-free audio in \textbf{10 of 10}, recovers more phrases in 9 of 10, and
-holds multilingual accuracy better in 8 of 10. The two configurations where
-\texttt{no\_synth} looks quieter are exactly the two that failed the accuracy test.
+words on real voice-free audio in \textbf{30 of 30}, recovers more phrases in 29 of 30, and
+holds multilingual accuracy better in 28 of 30. The configurations where \texttt{no\_synth}
+looks quieter are the ones that failed the accuracy test.
 
 The best single checkpoint in the grid is \texttt{all} at rank 64 and 5e-4: silence
 hallucination 0.619 to \textbf{0.024}, words over wild voice-free audio 0.999 to
@@ -946,7 +946,7 @@ which is the corner Figure~\ref{fig:tradeoff} says is empty.
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_loss.png}
-  \caption{Training curves for all 24 runs. The mix without the synthetic positives sits below
+  \caption{Training curves for all 66 runs. The mix without the synthetic positives sits below
   the mix with them for the whole of training, and it is the worse model on every axis that
   matters. An empty target is cheap to predict, and \texttt{no\_synth} is 77\% blank against
   \texttt{all} at 47\%, so the gap is arithmetic rather than evidence. Full fine-tunes (dashed)
@@ -963,23 +963,59 @@ which is the corner Figure~\ref{fig:tradeoff} says is empty.
   \label{fig:lossresult}
 \end{figure}
 
-\textbf{Training loss is the wrong thing to watch here.} Eight of the nine \texttt{no\_synth}
-LoRA runs finish below every \texttt{all} LoRA run: 0.310 to 0.476 against 0.541 to 0.709. The
-ninth, rank 128 at 5e-4, ends at 0.678 and is the run whose LibriSpeech word error rate tripled.
-The mix that trains to a visibly better loss is the one that recovers 0.54 to 0.60 of spoken
-phrases against 0.76 to 0.84 (Figure~\ref{fig:loss}, Figure~\ref{fig:lossresult}). The reason is arithmetic:
+\textbf{Training loss is the wrong thing to watch here.} Twenty-eight of the thirty
+\texttt{no\_synth} LoRA runs finish below \emph{every} \texttt{all} LoRA run. Median final
+loss is 0.322 against 0.621. The mix that trains to a visibly better loss is the one that recovers less. Phrase recovery
+separates the two completely: across the sixty LoRA runs, no checkpoint trained without the
+positives exceeds 0.602 and none trained with them falls below 0.662 (Figure~\ref{fig:loss}, Figure~\ref{fig:lossresult}). The reason is arithmetic:
 \texttt{no\_synth} is 77\% blank-labelled against \texttt{all} at 47\%, and predicting an empty
 transcript is cheap. Comparing cross-entropy across mixes with different blank shares measures
-the mixes, not the models. The full fine-tunes make the same point from the other side: they
-end at 1.5 to 2.8 on \texttt{all} and are still descending at step 1,000, which is what a
-thousand steps of 16 clips looks like on 1.5 B parameters.
+the mixes, not the models. The full fine-tunes make the same point from the other side: they end at 1.51, 2.01 and 2.81
+on \texttt{all} against 0.45, 0.53 and 0.86 on \texttt{no\_synth}, and all six are still
+descending at step 1,000, which is what a thousand steps of 16 clips looks like on 1.5 B
+parameters.
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.86\linewidth]{img/fig_sweep_family.png}
+  \caption{Same rank, same learning rate, same mix, different modules. Adapting the two
+  feed-forward matrices as well as the four attention projections is what makes the model stop.
+  Attention-only adapters barely move off the base model at any rank.}
+  \label{fig:sweepfamily}
+\end{figure}
+
+\textbf{Learning to stop lives in the feed-forward layers.} On the \texttt{all} mix, across all
+fifteen matched rank and learning-rate cells, adapting \texttt{fc1} and \texttt{fc2} as well as
+the attention projections lowers word emission on wild audio in \textbf{15 of 15}, by a median
+of 0.133. Attention-only adapters span 0.762 to 0.911 across the whole rank range, against a
+base model at 0.999: five ranks and three learning rates, and none of them really learns to be
+quiet. Adding the MLP pair spans 0.241 to 0.807 over the same grid.
+
+Capacity is not the lever, coverage is. Attention plus MLP at rank 8, which is 14.4 M trainable
+parameters, reaches 0.695 on wild audio. Attention only at rank 64, which is 62.9 M, reaches
+0.896. Four and a half times the parameters in the wrong places is worse than a
+quarter of them in the right ones.
+
+\textbf{And the MLP only helps when the positives are there.} Run the same comparison on
+\texttt{no\_synth} and it disappears: attention plus MLP wins 7 of 15 with a median difference
+of $+0.005$, which is noise. The extra capacity is what lets the model use the contrastive
+signal; without the positives there is nothing for it to use it on.
+
+\textbf{One run diverged, and the positives are what prevented it.} Attention-only at rank 128
+and 5e-4 on \texttt{no\_synth} finished at loss 8.27 and is destroyed: LibriSpeech word error
+rate 0.985, phrase recovery 0.000, words on 100\% of silence. Its twin, the identical
+configuration on \texttt{all}, converged to 0.658 and is a perfectly ordinary checkpoint at
+0.762 on wild audio and 0.040 on LibriSpeech. Same rank, same learning rate, same steps. That
+pair is one of the 33 and we have left it in, because excluding a run for diverging on one arm
+of a paired comparison is exactly the filtering this paper argues against; with it removed the
+headline is 30 of 32 rather than 31 of 33.
 
 \textbf{Repetition on wild audio does not move.} The \texttt{wild loop} column sits between
 0.000 and 0.017 for every run against a base of 0.008, and \texttt{all} is lower in only 2 of
 12 pairs. We report this because it is what the data says, not because it helps. Real
 voice-free clips rarely loop in the first place, so there is almost nothing there to fix. The
 repetition effect is real but it lives on the \texttt{reduplication} arm, where the deletion
-rate never exceeds 0.002 across all 24 runs, meaning no configuration bought its quiet by
+rate never exceeds 0.006 across all 66 runs, meaning no configuration bought its quiet by
 erasing repeated speech.
 
 \textbf{Every fine-tune is worse than the base model on FLEURS.} The best of the 24 is 0.381
@@ -1018,19 +1054,20 @@ mute.
 The missing ingredient is cheap once you look for it. Hallucinations are a small, enumerable
 set of phrases, so we collected 40,891 of them in 100 languages, chose a text-to-speech system
 by measurement, and synthesised them as positives: the same text the negatives teach the model
-to suppress, this time genuinely spoken and labelled with its transcript. In twelve matched
-pairs of fine-tunes that differ by nothing else, those clips lower word emission on real
-voice-free audio in 10 pairs and raise phrase recovery in 11, and among the ten pairs that hold
-English accuracy it is 10 out of 10. The best checkpoint takes silence hallucination from
+to suppress, this time genuinely spoken and labelled with its transcript. In 33 matched pairs of fine-tunes that differ by nothing else, those clips lower word emission
+on real voice-free audio in 31 pairs and raise phrase recovery in 32, and among the 30 pairs
+that hold English accuracy it is 30 out of 30. The best checkpoint takes silence hallucination from
 61.9\% to 2.4\% and words over real voice-free audio from 99.9\% to 47.8\% while raising phrase
 recovery from 69.8\% to 82.7\%, for five thousandths of LibriSpeech word error rate. That is
 the top-left corner Figure~\ref{fig:tradeoff} shows to be empty.
 
-Two things we would not have known without measuring both halves on every run. Training loss
+Three things we would not have known without measuring both halves on every run. Training loss
 ranks these models backwards, because a blank-heavy mix is cheap to fit and the mix that trains
-to the better loss is the worse model. And every fine-tune we produced is worse than the base
-model on FLEURS while LibriSpeech stays flat at 0.034 to 0.037, so an English-only accuracy
-guard would have reported no cost at all. The benchmark, the lexicon, the synthetic corpus and
+to the better loss is the worse model. Every fine-tune we produced is worse than the base model
+on FLEURS while LibriSpeech stays flat at 0.034 to 0.037, so an English-only accuracy guard
+would have reported no cost at all. And which modules the adapters touch matters more than how
+many parameters they have: attention-only adapters do not learn to stop at any rank we tried,
+while adding the two feed-forward matrices at rank 8, a quarter of the parameters, does. The benchmark, the lexicon, the synthetic corpus and
 the wild audio are released so the next attempt can be scored the same way.
 
 \section{Limitations}
