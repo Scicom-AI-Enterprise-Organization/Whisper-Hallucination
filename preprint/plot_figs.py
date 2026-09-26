@@ -526,24 +526,46 @@ def _paired(metric, ylab, title, sub, fname, base=None, as_pct=True):
     if not rows:
         print(f"!! {fname}: no {SWEEP.name} yet")
         return
-    fig, ax = plt.subplots(figsize=(6.8, 3.9), dpi=DPI)
+    # 33 configurations will not fit as two-line horizontal labels; they overprint into a
+    # smear. One line each, rotated, with the family spelled out in a band instead of repeated
+    # on every tick.
+    fig, ax = plt.subplots(figsize=(9.4, 4.4), dpi=DPI)
     x = np.arange(len(rows))
     av = [(r[4] or {}).get(metric) for r in rows]
     nv = [(r[5] or {}).get(metric) for r in rows]
-    ax.bar(x - 0.2, [v if v is not None else 0 for v in nv], width=0.38, color="#922b21",
-           edgecolor="white", linewidth=0.7, label="without the synthetic lexicon", zorder=3)
-    ax.bar(x + 0.2, [v if v is not None else 0 for v in av], width=0.38, color="#1e8449",
-           edgecolor="white", linewidth=0.7, label="with the synthetic lexicon", zorder=3)
+    ax.bar(x - 0.21, [v if v is not None else 0 for v in nv], width=0.40, color="#922b21",
+           edgecolor="white", linewidth=0.6, label="without the synthetic lexicon", zorder=3)
+    ax.bar(x + 0.21, [v if v is not None else 0 for v in av], width=0.40, color="#1e8449",
+           edgecolor="white", linewidth=0.6, label="with the synthetic lexicon", zorder=3)
     if base is not None:
         ax.axhline(base, color="#1a1a2e", linewidth=1.0, linestyle=":", alpha=0.8)
-        ax.text(len(rows) - 0.4, base, f" base large-v3  {base:.3f}", fontsize=7.4,
+        ax.text(len(rows) - 0.4, base, f"base large-v3  {base:.3f} ", fontsize=7.4,
                 color="#1a1a2e", style="italic", va="bottom", ha="right")
+
+    # a rule and a label wherever the adapter family changes
+    top = max([v for v in av + nv + [base or 0] if v is not None] + [0.01]) * 1.22
+    fams = [r[1] for r in rows]
+    start = 0
+    for i in range(1, len(fams) + 1):
+        if i == len(fams) or fams[i] != fams[start]:
+            if start:
+                ax.axvline(start - 0.5, color="#bbbbbb", linewidth=0.9, zorder=1)
+            ax.text((start + i - 1) / 2, top * 0.985, FAM_LABEL[fams[start]], ha="center",
+                    va="top", fontsize=8.2, color="#555555", style="italic")
+            start = i
+
     ax.set_xticks(x)
-    ax.set_xticklabels([r[0] for r in rows], fontsize=6.0, color=INK)
+    ax.set_xticklabels([r[0].replace("\n", " ") for r in rows], fontsize=6.8, color=INK,
+                       rotation=90)
+    ax.set_xlim(-0.7, len(rows) - 0.3)
+    ax.set_ylim(0, top)
     if as_pct:
-        pct(ax, max([v for v in av + nv + [base or 0] if v is not None] + [0.01]) * 1.2)
+        # ticks stop at 100%: the headroom above it exists for the family band, not for data
+        ticks = [v for v in np.arange(0, 1.01, 0.2)]
+        ax.set_yticks(ticks)
+        ax.set_yticklabels([f"{v:.0%}" for v in ticks], fontsize=8.5, color=TICK)
     frame(ax, ylab=ylab, title=title, sub=sub)
-    legend_below(ax, ncol=2, pad=0.22)
+    legend_below(ax, ncol=2, pad=0.30)
     save(fig, fname)
 
 
