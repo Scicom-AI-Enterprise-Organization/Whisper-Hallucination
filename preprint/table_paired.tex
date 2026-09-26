@@ -1,7 +1,18 @@
-\begin{tabular}{llrrrrr}
+\begin{longtable}{llrrrrr}
+\caption{The paired sweep, all 33 configurations. \texttt{wild words} is the share of 4,421 real voice-free clips where the model emitted words, \texttt{wild loop} the share carrying a token run of six or more, \texttt{recovered} the share of genuinely spoken phrases it got back. Lower is better everywhere except \texttt{recovered}.}\label{tab:paired}\\
 \toprule
 \textbf{config} & \textbf{mix} & \textbf{wild words} & \textbf{wild loop} & \textbf{recovered} & \textbf{ls WER} & \textbf{FLEURS CER} \\
 \midrule
+\endfirsthead
+\multicolumn{7}{l}{\footnotesize\itshape Table \thetable\ continued from the previous page}\\
+\toprule
+\textbf{config} & \textbf{mix} & \textbf{wild words} & \textbf{wild loop} & \textbf{recovered} & \textbf{ls WER} & \textbf{FLEURS CER} \\
+\midrule
+\endhead
+\midrule \multicolumn{7}{r}{\footnotesize\itshape continued on the next page}\\
+\endfoot
+\bottomrule
+\endlastfoot
 \textit{base large-v3} & \textit{none} & 0.999 & 0.008 & 0.698 & 0.035 & 0.305 \\
 \midrule
 LoRA r8 attn+mlp, 1e-4 & \texttt{no\_synth} & 0.961 & 0.012 & 0.594 & 0.035 & 0.633 \\
@@ -103,5 +114,4 @@ full, 1e-5 & \texttt{no\_synth} & 0.937 & 0.009 & 0.548 & 0.035 & 0.809 \\
 full, 2e-5 & \texttt{no\_synth} & 0.922 & 0.005 & 0.598 & 0.034 & 0.539 \\
  & \texttt{all} & 0.728 & 0.007 & 0.724 & 0.036 & 0.545 \\
 \addlinespace[2pt]
-\bottomrule
-\end{tabular}
+\end{longtable}

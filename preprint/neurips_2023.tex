@@ -25,6 +25,7 @@
 \usepackage{multirow}
 \usepackage{float}
 \usepackage{adjustbox}
+\usepackage{longtable}
 \usepackage[section]{placeins}
 
 % LaTeX will not put a float on a page whose text drops below \textfraction, which with 17
@@ -882,16 +883,7 @@ Table~\ref{tab:paired} is the answer to both questions. Every row is one fine-tu
 \texttt{whisper-large-v3}, and the two rows in each pair differ only by the 22,845 synthetic
 positives.
 
-\begin{table}[!htbp]
-\centering
-\caption{The paired sweep. \texttt{wild words} is the share of 4,421 real voice-free clips
-where the model emitted words, \texttt{wild loop} the share carrying a token run of six or
-more, \texttt{recovered} the share of genuinely spoken phrases it got back. Lower is better
-everywhere except \texttt{recovered}.}
-\label{tab:paired}
-\small
-\input{table_paired}
-\end{table}
+{\footnotesize\input{table_paired}}
 
 \begin{figure}[!htbp]
   \centering

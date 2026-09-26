@@ -135,10 +135,24 @@ def main():
                           ("wild_words", "lex_rec", "ls_wer", "fl_cer", "silence")})
 
     if a.tex:
-        lines = [r"\begin{tabular}{llrrrrr}", r"\toprule",
-                 r"\textbf{config} & \textbf{mix} & \textbf{wild words} & \textbf{wild loop}"
-                 r" & \textbf{recovered} & \textbf{ls WER} & \textbf{FLEURS CER} \\",
-                 r"\midrule",
+        # A longtable, not a tabular in a float: 66 data rows do not fit on one page, and a
+        # float that does not fit is a float that gets squeezed or shunted to the end.
+        head = (r"\textbf{config} & \textbf{mix} & \textbf{wild words} & \textbf{wild loop}"
+                r" & \textbf{recovered} & \textbf{ls WER} & \textbf{FLEURS CER} \\")
+        lines = [r"\begin{longtable}{llrrrrr}",
+                 r"\caption{The paired sweep, all 33 configurations. \texttt{wild words} is the "
+                 r"share of 4,421 real voice-free clips where the model emitted words, "
+                 r"\texttt{wild loop} the share carrying a token run of six or more, "
+                 r"\texttt{recovered} the share of genuinely spoken phrases it got back. Lower "
+                 r"is better everywhere except \texttt{recovered}.}"
+                 r"\label{tab:paired}\\",
+                 r"\toprule", head, r"\midrule", r"\endfirsthead",
+                 r"\multicolumn{7}{l}{\footnotesize\itshape Table \thetable\ continued from "
+                 r"the previous page}\\",
+                 r"\toprule", head, r"\midrule", r"\endhead",
+                 r"\midrule \multicolumn{7}{r}{\footnotesize\itshape continued on the next "
+                 r"page}\\", r"\endfoot",
+                 r"\bottomrule", r"\endlastfoot",
                  r"\textit{base large-v3} & \textit{none} & 0.999 & 0.008 & 0.698 & 0.035 "
                  r"& 0.305 \\", r"\midrule"]
         for fam, rank, lr in CONFIGS:
@@ -157,7 +171,7 @@ def main():
                 lines.append(f"{cfg} & {label} & {cells} \\\\")
             if got:
                 lines.append(r"\addlinespace[2pt]")
-        lines += [r"\bottomrule", r"\end{tabular}"]
+        lines += [r"\end{longtable}"]
         a.tex.parent.mkdir(parents=True, exist_ok=True)
         a.tex.write_text("\n".join(lines) + "\n")
         print(f"-> {a.tex}")
