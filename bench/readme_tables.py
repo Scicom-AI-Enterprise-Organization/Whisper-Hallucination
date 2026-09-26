@@ -20,12 +20,27 @@ import json  # noqa: E402
 
 
 
-# (run dir, method, rank/alpha, params, lr) -- the grid as launched, so a run that failed to
-# produce a checkpoint shows as an empty row rather than vanishing from the table.
-PARAMS = {32: "57.7 M", 64: "115.3 M", 128: "230.7 M", 0: "1,574.9 M"}
-GRID = ([("v3_lora_r{r}_all_lr{lr}", "LoRA", r, lr)
-         for r in (32, 64, 128) for lr in ("1e-4", "2e-4", "5e-4")]
-        + [("v3_full_all_lr{lr}", "full", 0, lr) for lr in ("5e-6", "1e-5", "2e-5")])
+# The grid as launched, so a run that failed to produce a checkpoint shows as an empty row
+# rather than vanishing from the table. Two adapter families: `lora` covers the attention
+# projections and fc1/fc2, `loraattn` covers attention only. Trainable counts are measured,
+# 983,040 parameters per rank unit attention-only and 1,802,240 with the MLP pair.
+LRS = ("1e-4", "2e-4", "5e-4")
+RANKS = (8, 16, 32, 64, 128)
+PER_RANK = {"loraattn": 983_040, "lora": 1_802_240}
+FAM_LABEL = {"lora": "LoRA attn+MLP", "loraattn": "LoRA attn", "full": "full"}
+GRID = ([("lora", r, lr) for r in RANKS for lr in LRS]
+        + [("loraattn", r, lr) for r in RANKS for lr in LRS]
+        + [("full", 0, lr) for lr in ("5e-6", "1e-5", "2e-5")])
+
+
+def run_name(fam, rank, lr, mix="all"):
+    return f"v3_full_{mix}_lr{lr}" if fam == "full" else f"v3_{fam}_r{rank}_{mix}_lr{lr}"
+
+
+def params_str(fam, rank):
+    if fam == "full":
+        return "1,574.9 M"
+    return f"{PER_RANK[fam] * rank / 1e6:.1f} M"
 
 COLS = [("silence", "sil"), ("music", "music"), ("nonspeech", "nonsp"),
         ("runaway", "runaway"), ("rd_empty", "rdEmpty"), ("lex_rec", "lexRec"),
@@ -109,9 +124,9 @@ def main():
         return row_for(d) if (d / "bench").is_dir() else {}
 
     grid = [(["*base large-v3*", "—", "—", "—"], base_vals())]
-    for tmpl, method, r, lr in GRID:
-        grid.append(([method, f"{r} / {2*r}" if r else "—", PARAMS[r], lr],
-                     vals_for(tmpl.format(r=r, lr=lr))))
+    for fam, r, lr in GRID:
+        grid.append(([FAM_LABEL[fam], f"{r} / {2*r}" if r else "—", params_str(fam, r), lr],
+                     vals_for(run_name(fam, r, lr))))
     grid_block = render(grid, ["method", "rank/α", "params", "lr"])
 
     mix = [(["*base large-v3*", "—", "—"], base_vals())]
