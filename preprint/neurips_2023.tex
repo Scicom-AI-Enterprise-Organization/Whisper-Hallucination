@@ -78,7 +78,7 @@ urlcolor=blue
 Whisper changed what open speech recognition means: one checkpoint, 99 languages, no
 per-language tuning, running on a laptop. It is still the default four years on, and it is
 still the teacher that Distil-Whisper, Kotoba-Whisper and NVIDIA's Granary are all distilled
-from. It also writes sentences nobody said. On 42 clips of pure room tone, \texttt{whisper-large-v3}
+from. But it writes sentences nobody said. On 42 clips of pure room tone, \texttt{whisper-large-v3}
 emits words on 61.9\% of them and emits something on 100\% of them. The usual response is to
 distil a student from Whisper pseudo-labels and filter the hallucinations out of the corpus
 first. That removes the evidence, not the behaviour: the student is fitted to the subset where
