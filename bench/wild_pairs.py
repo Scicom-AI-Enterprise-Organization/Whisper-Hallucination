@@ -18,8 +18,18 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "bench"))
 from metrics import cer, max_ngram_repeat, normalise  # noqa: E402
 
-CONFIGS = [(r, lr) for r in (32, 64, 128) for lr in ("1e-4", "2e-4", "5e-4")] + \
-          [(0, lr) for lr in ("5e-6", "1e-5", "2e-5")]
+LRS = ("1e-4", "2e-4", "5e-4")
+RANKS = (8, 16, 32, 64, 128)
+# `lora` adapts the attention projections AND fc1/fc2; `loraattn` leaves the MLP alone, which
+# is the original LoRA recipe. Same run directory layout, different family prefix.
+CONFIGS = ([("lora", r, lr) for r in RANKS for lr in LRS]
+           + [("loraattn", r, lr) for r in RANKS for lr in LRS]
+           + [("full", 0, lr) for lr in ("5e-6", "1e-5", "2e-5")])
+FAM_LABEL = {"lora": "attn+mlp", "loraattn": "attn only", "full": "full"}
+
+
+def run_name(fam, rank, lr, mix):
+    return f"v3_full_{mix}_lr{lr}" if fam == "full" else f"v3_{fam}_r{rank}_{mix}_lr{lr}"
 
 
 def wild_of(run):
@@ -79,13 +89,13 @@ def main():
     print(hdr); print("-" * len(hdr))
     print(f"{'base large-v3':<22}" + "".join(
         f"{v:>8.3f}" for v in (0.999, 0.008, 0.698, 0.035, 0.305, 0.619, 0.001)))
-    for rank, lr in CONFIGS:
+    for fam, rank, lr in CONFIGS:
         for mix in ("no_synth", "all"):
-            name = f"v3_lora_r{rank}_{mix}_lr{lr}" if rank else f"v3_full_{mix}_lr{lr}"
-            r = rows.get(name)
+            r = rows.get(run_name(fam, rank, lr, mix))
             if not r:
                 continue
-            tag = (f"r{rank} {lr}" if rank else f"full {lr}") + " " + mix
+            short = {"lora": "L", "loraattn": "A", "full": "F"}[fam]
+            tag = (f"{short}r{rank} {lr}" if rank else f"full {lr}") + " " + mix
             print(f"{tag:<22}" + "".join(
                 f"{r[k]:>8.3f}" if isinstance(r.get(k), float) else f"{'-':>8}"
                 for k, _ in cols))
@@ -96,14 +106,14 @@ def main():
                  r"\midrule",
                  r"\textit{base large-v3} & \textit{none} & 0.999 & 0.008 & 0.698 & 0.035 "
                  r"& 0.305 \\", r"\midrule"]
-        for rank, lr in CONFIGS:
+        for fam, rank, lr in CONFIGS:
             got = False
             for mix in ("no_synth", "all"):
-                name = f"v3_lora_r{rank}_{mix}_lr{lr}" if rank else f"v3_full_{mix}_lr{lr}"
-                r = rows.get(name)
+                r = rows.get(run_name(fam, rank, lr, mix))
                 if not r or r.get("wild_words") is None:
                     continue
-                cfg = (f"LoRA r{rank}, {lr}" if rank else f"full, {lr}") if not got else ""
+                cfg = ((f"LoRA r{rank} {FAM_LABEL[fam]}, {lr}" if rank
+                        else f"full, {lr}") if not got else "")
                 got = True
                 cells = " & ".join(
                     f"{r[k]:.3f}" if isinstance(r.get(k), float) else "--"
