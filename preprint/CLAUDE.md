@@ -62,6 +62,11 @@ so copied text loses spaces and looks broken even when the page is fine.
   floating, so one can never land mid-sentence at a page top), and no section forward-
   references a float that lives in a later section. Check both before committing:
   every `\label` must have a `\ref` earlier in the file than its own `\begin{figure|table}`.
+- **`\raggedbottom`, not the style's `\flushbottom`.** `\flushbottom` stretches the gaps
+  between paragraphs so every page ends at the same depth. With `[H]` figures that slack has
+  to go somewhere and it lands mid-page as visible holes. `\raggedbottom` puts it at the foot,
+  where it belongs. Measure with ink-per-page rather than by eye; the target is a median above
+  55% of body rows carrying ink, and any page under 35% is worth looking at.
 - **An introducing sentence must earn its place.** "Table 2 is the measurement." is filler
   wearing a reference. Say what the reader will see in it and why it is there, or fold the
   reference into the last sentence of the paragraph above and add no new sentence at all.

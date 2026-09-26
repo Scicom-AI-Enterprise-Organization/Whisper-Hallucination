@@ -45,14 +45,18 @@
 \setlength{\@fpsep}{14pt plus 0fil}
 \setlength{\@fpbot}{0pt plus 1fil}
 \makeatother
+% The style uses \flushbottom, which stretches the gaps between paragraphs to make every page
+% end at the same depth. With [H] figures that slack has to go somewhere and it lands between
+% paragraphs as visible holes. Put it at the foot of the page instead.
+\raggedbottom
 
 % The default skips put a caption flush against its table and a float flush against the
 % surrounding text, which reads as a wall.
-\setlength{\abovecaptionskip}{10pt}
-\setlength{\belowcaptionskip}{8pt}
-\setlength{\textfloatsep}{16pt plus 2pt minus 2pt}
-\setlength{\intextsep}{13pt plus 2pt minus 2pt}
-\setlength{\floatsep}{20pt plus 4pt minus 4pt}
+\setlength{\abovecaptionskip}{6pt}
+\setlength{\belowcaptionskip}{4pt}
+\setlength{\textfloatsep}{12pt plus 2pt minus 2pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+\setlength{\floatsep}{12pt plus 2pt minus 2pt}
 % One type size for every table in the paper, and tighter columns. Scaling each table to fit
 % gives each one its own size, which is what makes a document look like it changed fonts.
 \setlength{\tabcolsep}{4pt}
