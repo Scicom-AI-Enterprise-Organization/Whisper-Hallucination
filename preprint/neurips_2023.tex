@@ -75,8 +75,10 @@ urlcolor=blue
 \maketitle
 
 \begin{abstract}
-Whisper is not the most accurate open speech recogniser any more, and it is still the one
-everybody builds on. It is also the one that writes sentences nobody said. On 42 clips of pure room tone, \texttt{whisper-large-v3}
+Whisper changed what open speech recognition means: one checkpoint, 99 languages, no
+per-language tuning, running on a laptop. It is still the default four years on, and it is
+still the teacher that Distil-Whisper, Kotoba-Whisper and NVIDIA's Granary are all distilled
+from. It also writes sentences nobody said. On 42 clips of pure room tone, \texttt{whisper-large-v3}
 emits words on 61.9\% of them and emits something on 100\% of them. The usual response is to
 distil a student from Whisper pseudo-labels and filter the hallucinations out of the corpus
 first. That removes the evidence, not the behaviour: the student is fitted to the subset where
@@ -102,31 +104,36 @@ of the synthetic positives. The benchmark, the lexicon and the synthetic corpus 
 
 \section{Introduction}
 
-Whisper \citep{radford2022whisper} is not the most accurate open recogniser on the market. It
-has not been for a while. Canary-1B-v2 \citep{sekoyan2025canaryv2} reports an average word
-error rate of 8.1\% against \texttt{whisper-large-v3}'s 9.9\% on its 25 European languages.
-SeamlessM4T \citep{seamless2023m4t} reported a 45\% relative word error rate reduction over
-\texttt{whisper-large-v2} on FLEURS across 77 overlapping languages. Omnilingual ASR
-\citep{keren2025omnilingual} covers more than 1,600 languages, over 500 of which had no ASR at
-all before it.
+Whisper \citep{radford2022whisper} changed what open speech recognition means. Multilingual
+transcription used to mean a model per language and a pipeline per domain. Whisper made it one
+MIT-licensed checkpoint covering 99 languages, with no per-language tuning, running on a
+laptop. Four years later it is still the default, and it is good: we measured it on 20 FLEURS
+\citep{conneau2022fleurs} test clips in each of 58 languages, and
+\texttt{whisper-large-v3} reaches a character error rate of 0.075 on the typical language,
+with 35 of the 58 under 0.15 (Figure~\ref{fig:fleursperlang}).
 
-Whisper is still the model this paper is about, for two reasons.
+This paper is about the one thing it does badly, and it is worth being clear at the outset
+that the thing it does badly is narrow. Whisper is not broken. It transcribes speech extremely
+well. It just does not know how to say nothing.
 
-The first is that one checkpoint covers 99 languages, runs anywhere, and needs no per-language
-tuning, and that combination is still rare. We measured it on 20 FLEURS
-\citep{conneau2022fleurs} test clips in each of 58 languages: \texttt{whisper-large-v3}
-reaches a character error rate of 0.075 on the typical language, and 35 of the 58 land under
-0.15 (Figure~\ref{fig:fleursperlang}).
+More than that, Whisper is the teacher. Distil-Whisper \citep{gandhi2023distilwhisper} is
+trained on Whisper pseudo-labels. So is Kotoba-Whisper \citep{kotobawhisper2024}. So is
+Granary \citep{koluguri2025granary}, and therefore so are Canary-1B-v2 and
+Parakeet-TDT-0.6B-v3 \citep{sekoyan2025canaryv2}. A defect in Whisper is not contained to
+Whisper. It propagates into the corpora that train its successors.
 
-The second reason is the one that matters. Whisper is the teacher. Distil-Whisper
-\citep{gandhi2023distilwhisper} is trained on Whisper pseudo-labels. So is Kotoba-Whisper
-\citep{kotobawhisper2024}. So is Granary \citep{koluguri2025granary}, and therefore so are
-Canary-1B-v2 and Parakeet-TDT-0.6B-v3 \citep{sekoyan2025canaryv2}, the models that now beat it.
-A defect in Whisper is not contained to Whisper. It propagates into the corpora that train its
-successors, and Section~\ref{sec:distil} argues that the way those corpora are built lets the
-defect through while deleting the evidence for it.
+It is no longer the most accurate model, and that makes the point stronger rather than weaker.
+Canary-1B-v2 reports an average word error rate of 8.1\% against \texttt{whisper-large-v3}'s
+9.9\% on its 25 European languages, SeamlessM4T \citep{seamless2023m4t} reported a 45\%
+relative reduction over \texttt{whisper-large-v2} on FLEURS across 77 overlapping languages,
+and Omnilingual ASR \citep{keren2025omnilingual} covers more than 1,600 languages. The first
+two of those were trained on Whisper output. Fixing the teacher is worth doing precisely
+because the students have already overtaken it, and Section~\ref{sec:distil} argues that the
+way their corpora are built lets its worst behaviour through while deleting the evidence for
+it.
 
-It also invents text. Not rarely, not only on hard audio, and not harmlessly.
+The failure is this. Over audio with no speech in it, Whisper writes a sentence anyway. Not
+rarely, not only on hard audio, and not harmlessly.
 \citet{koenecke2024careless} ran more than 13,000 clips from AphasiaBank through Whisper and
 found that roughly 1\% of transcriptions contained entire hallucinated phrases or sentences
 present nowhere in the audio, and that 38\% of those hallucinations carried explicit harms:
