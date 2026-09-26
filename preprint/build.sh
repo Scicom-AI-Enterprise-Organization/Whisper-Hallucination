@@ -3,16 +3,13 @@
 #
 #   bash preprint/build.sh
 #
-# Always from a clean aux. An aux left over from a run whose labels have since changed
-# produces "File ended while scanning use of \@writefile" and forty undefined references that
-# have nothing to do with the source.
+# latexmk, not a hand-rolled pass sequence. Running pdflatex/bibtex by hand raced with itself
+# more than once and produced an empty .bbl with "I found no \bibdata command", which surfaces
+# as several dozen undefined citations that have nothing to do with the source.
 set -u
 cd "$(dirname "$0")"
-rm -f neurips_2023.aux neurips_2023.bbl neurips_2023.blg neurips_2023.out neurips_2023.toc
-pdflatex -interaction=nonstopmode neurips_2023.tex > /dev/null 2>&1
-bibtex neurips_2023 > /dev/null 2>&1
-pdflatex -interaction=nonstopmode neurips_2023.tex > /dev/null 2>&1
-pdflatex -interaction=nonstopmode neurips_2023.tex > /dev/null 2>&1
+latexmk -C > /dev/null 2>&1
+latexmk -pdf -interaction=nonstopmode -halt-on-error neurips_2023.tex > /tmp/latexmk.log 2>&1
 python3 - <<'PY'
 import re
 log = open("neurips_2023.log", errors="ignore").read()
@@ -25,6 +22,6 @@ print(f"pages {pages[0] if pages else '?'} | errors {len(errs)} | "
 for e in errs[:5]:
     print("  ", e.strip())
 PY
-# do not pipe this script through head: SIGPIPE kills it mid-build and the aux is left stale
+# do not pipe this script through head: SIGPIPE kills it mid-build
 echo "a clean log is not a clean page: rasterise one and look at it"
 echo "  gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r62 -dFirstPage=N -dLastPage=N -sOutputFile=/tmp/p.png neurips_2023.pdf"

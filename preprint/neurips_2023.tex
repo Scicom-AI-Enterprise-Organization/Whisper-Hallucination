@@ -148,9 +148,8 @@ SeamlessM4T v2 and 55 k for Canary-1B-v2. Omnilingual ASR is recent enough that 
 copies on the Hub are community conversions. Whatever the leaderboards say, Whisper is what is
 running.
 
-So the defect is not confined to one model that has been superseded. It is in the model most
-production systems use, and it is in the teacher that Distil-Whisper, Kotoba-Whisper and
-Granary distilled from. Section~\ref{sec:distil} argues that the way those corpora are built
+So the defect sits in the model most production systems use, and in the teacher that
+Distil-Whisper, Kotoba-Whisper and Granary distilled from. Section~\ref{sec:distil} argues that the way those corpora are built
 lets the behaviour through while deleting the evidence for it.
 
 The failure is this. Over audio with no speech in it, Whisper writes a sentence anyway. Not
@@ -169,7 +168,7 @@ nothing downstream can tell the difference.
 The five checkpoints measured throughout this paper are named as follows. Three are the
 OpenAI releases. The other two are Mesolitica's Malay fine-tunes, which matter here because
 their training pipeline is public and already contains non-speech audio, so they are the
-closest existing thing to the fix this paper proposes.
+closest existing thing to the fix this paper proposes. Table~\ref{tab:models} names them.
 
 \begin{table}[!htbp]
 \centering
@@ -216,7 +215,8 @@ second counts any output including a bare full stop.}
 \end{tabular}
 \end{table}
 
-Every OpenAI checkpoint writes something on every single clip that has no speech in it. Read
+Every OpenAI checkpoint writes something on every single clip that has no speech in it
+(Figure~\ref{fig:benchmark}). Read
 the first block and the second block together, because published hallucination rates for the
 same model on the same audio differ by more than ten times depending on which one an author
 chose to report.
@@ -224,7 +224,8 @@ chose to report.
 The second failure is repetition. On 1,440 clips built from a known unit repeated a known
 number of times, the 95th percentile of emitted repeats divided by true repeats is 1.00 for
 \texttt{large-v3} and 18.3 for \texttt{turbo}. The two Malay fine-tunes reach 55.0 and 73.3.
-A single clip can produce hundreds of copies of one token.
+A single clip can produce hundreds of copies of one token. Figure~\ref{fig:redup} shows both
+extremes side by side.
 
 Both failures come from the same place. The Whisper decoder is a language model conditioned on
 an audio encoder. When the acoustic evidence is weak or absent, the prior takes over and the
@@ -290,8 +291,7 @@ is open \citep{malaysiaai2025pipeline}.
 It works, and our benchmark shows exactly how well. In Table~\ref{tab:nonspeech},
 \texttt{Malaysian-turbo-v3} is the best checkpoint measured on every non-speech arm, by a wide
 margin: 16.7\% on silence against 61.9\% for base \texttt{large-v3}, and 9.3\% on non-speech
-against 89.9\%. Adding negatives is not a marginal trick. It is the single most effective thing
-anyone in this table did.
+against 89.9\%. Adding negatives is the single most effective thing anyone in this table did.
 
 Then look at what it cost. The same checkpoint recovers 41.1\% of phrases that are genuinely
 spoken, against 69.8\% for the base model it was tuned from (Table~\ref{tab:lexsynth}), deletes
@@ -326,6 +326,8 @@ emitting text, which is the failure mode of every aggressive fine-tune we measur
 \section{Dataset}
 
 \subsection{Non-speech audio}
+
+Table~\ref{tab:arms} lists the eight benchmark arms.
 
 \begin{table}[!htbp]
 \centering
@@ -379,7 +381,7 @@ split would leak near neighbours.
 Mining needs no annotator. Two signatures are self-evident: a token run of six or more, and
 words emitted where Silero voice activity detection finds no speech. We never call a clip a
 hallucination because a transcript disagrees with a reference, since that finds ordinary
-recognition errors.
+recognition errors. Table~\ref{tab:yield} gives the yield by corpus.
 
 \begin{table}[!htbp]
 \centering
@@ -402,8 +404,8 @@ People's Speech \texttt{clean} & curated read speech & 1 & 0.01\% \\
 \end{tabular}
 \end{table}
 
-Two lessons. Curated corpora barely fail, so a hallucination study built on them will conclude
-the problem is small. And a corpus can be the right material and still hide the failure:
+Two lessons (Figure~\ref{fig:wildyield}). Curated corpora barely fail, so a hallucination
+study built on them will conclude the problem is small. And a corpus can be the right material and still hide the failure:
 GigaSpeech is podcasts and YouTube and yields 0.41\%, because its segments are cut to speech.
 
 \subsection{Multilingual accuracy}
@@ -428,7 +430,7 @@ Their pipeline is open, their training mix already contains non-speech audio, an
 only checkpoints here that were deliberately tuned against hallucination. Treat them as the
 strong baseline, not as a foil.
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_tradeoff.png}
   \caption{Every checkpoint trades one failure for the other. Horizontal axis is how often the model emits words over audio with no speech in it, pooled over the three non-speech arms and weighted by clip count. Vertical axis is how often it recovers a phrase that is genuinely spoken. The top left corner is the model everyone wants and nothing is there.}
@@ -439,14 +441,14 @@ strong baseline, not as a foil.
 $r = +0.63$ between the pooled non-speech word-emission rate and phrase recovery. Quiet models delete real speech and accurate models write over silence. This is
 the central measurement of the paper and it is what makes a one-sided metric dangerous.
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_nonspeech.png}
   \caption{Hallucination on the three non-speech arms. Every bar is error, because the correct output is the empty string.}
   \label{fig:benchmark}
 \end{figure}
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_repetition.png}
   \caption{Both extremes are wrong on repeated speech. A model that emits more repeats than were spoken is running away; a model that emits nothing has deleted the speech. \texttt{Malaysian-turbo-v3} does the second on 58.0\% of clips.}
@@ -478,14 +480,14 @@ the central measurement of the paper and it is what makes a one-sided metric dan
 \texttt{malaysian-whisper-v2} matches base \texttt{large-v3} on LibriSpeech, 3.5\% either way,
 and returns character error rate 1.05 on the typical FLEURS language. Two of its 58 languages
 land under 0.15, against 35 for \texttt{large-v3}. Specialising on Malay cost everything else,
-and no English benchmark can see it.
+and no English benchmark can see it (Figure~\ref{fig:accuracy}).
 
 The macro mean and the median disagree by four times because Whisper cannot transcribe some of
 these languages at all. For base \texttt{large-v3}, Amharic sits at 1.81 character error rate,
 Khmer at 1.58, Somali at 1.44, while Spanish, Italian and Dutch sit at 0.01. The mean measures
 the tail and the median measures the typical language. Quoting one without the other misleads.
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_fleurs_per_lang.png}
   \caption{The same measurement language by language, ordered by base \texttt{large-v3}
@@ -495,7 +497,7 @@ the tail and the median measures the typical language. Quoting one without the o
   \label{fig:fleursperlang}
 \end{figure}
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_accuracy.png}
   \caption{English accuracy hides what a multilingual fine-tune destroyed. \texttt{malaysian-whisper-v2} matches base \texttt{large-v3} on LibriSpeech and returns character error rate 1.05 on the typical FLEURS language.}
@@ -510,7 +512,7 @@ carries 27 points of word error rate. Looping is also what separates \texttt{tur
 
 \subsection{The positive arm}
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_lexsynth_recovered.png}
   \caption{The ranking inverts when the phrase is really spoken. 6,267 clips in 83 languages, each run three ways. Padding is applied to the same clips, so each triple is a within-clip comparison.}
@@ -536,18 +538,19 @@ carries 27 points of word error rate. Looping is also what separates \texttt{tur
 \end{table}
 
 \texttt{Malaysian-turbo-v3} wins every non-speech arm in Table~\ref{tab:nonspeech} and recovers
-41.1\% of genuinely spoken phrases, against 69.8\% for \texttt{large-v3}. Its silence is a prior
+41.1\% of genuinely spoken phrases, against 69.8\% for \texttt{large-v3}
+(Figure~\ref{fig:lexsynth}). Its silence is a prior
 against emitting text, not a detector. Report one side only and you will ship it.
 
 Room tone costs the fine-tunes and not the base models. Same speech, two seconds of noise floor
 on each side: \texttt{malaysian-v2} gains 0.38 mean character error rate,
 \texttt{malaysian-turbo-v3} gains 2.24, \texttt{large-v3} gains 0.014. Mean character error rate here is
-a tail statistic. The median moves by hundredths while the mean triples, because 3\% to 6\% of
-clips run past twice the phrase length.
+a tail statistic. The median moves by hundredths while the mean triples, because 3\% to 6\% of clips run past
+twice the phrase length (Figure~\ref{fig:lexsynthtail}).
 
 \subsection{Results on wild audio}
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_lexsynth_tail.png}
   \caption{Mean character error rate on the positive arm is a tail statistic. The median barely
@@ -556,7 +559,7 @@ clips run past twice the phrase length.
   \label{fig:lexsynthtail}
 \end{figure}
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_wild_yield.png}
   \caption{Hallucination yield by corpus, per 8,000 clips heard, on a log scale. Curated corpora barely fail. GigaSpeech is the right material and still yields 0.41\%, because its segments are cut to speech.}
@@ -564,7 +567,7 @@ clips run past twice the phrase length.
 \end{figure}
 
 On 4,421 clips that a voice activity detector confirms contain no speech, every OpenAI
-checkpoint emits words on 100\% of them. \texttt{Malaysian-turbo-v3} emits words on 8.5\%. Of
+checkpoint emits words on 100\% of them (Figure~\ref{fig:wildblank}). \texttt{Malaysian-turbo-v3} emits words on 8.5\%. Of
 those outputs, 53.6\% for \texttt{large-v3} and 72.1\% for \texttt{turbo} are exactly a phrase
 from the lexicon, against roughly 18\% to 22\% on speech clips from the same corpus. The
 blocklist works, but only once the audio is already known to be blank.
@@ -573,7 +576,7 @@ Most wild loops are model-specific. On clips mined because \texttt{large-v3} loo
 \texttt{turbo} loops on 17.2\%. A loop corpus mined with one model is not a fair loop benchmark
 for another.
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_wild_blank.png}
   \caption{Real audio that a voice activity detector confirms has no speech in it. Every OpenAI
@@ -588,8 +591,8 @@ for another.
 
 Hallucinations repeat themselves. \texttt{thank you for watching}, \texttt{so}, the Russian
 \texttt{Prodolzhenie sleduet...} (``to be continued''), and the Malay
-\texttt{terima kasih kerana menonton} appear over and over on audio containing none of them. We merged four public sources into 40,891
-phrases across 100 languages.
+\texttt{terima kasih kerana menonton} appear over and over on audio containing none of them. We merged four public sources into 40,891 phrases across 100 languages
+(Table~\ref{tab:lexsources}).
 
 \begin{table}[!htbp]
 \centering
@@ -640,7 +643,7 @@ than it looks.
 
 \subsection{Choosing a generator}
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_tts.png}
   \caption{Text-to-speech candidates on 48 lexicon phrases in 22 languages, identical text, scored by recognition round trip. Coverage and quality are not the same axis.}
@@ -677,7 +680,7 @@ why.
 
 \subsection{Voice diversity}
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_voice_diversity.png}
   \caption{One voice per language, and what fixed it. Pairwise speaker similarity on a calibrated scale where 0.605 is two strangers and 0.853 is two clips of the same person.}
@@ -686,10 +689,10 @@ why.
 
 OmniVoice takes no speaker argument, so every clip it produces carries an empty voice field. We
 measured what that means with WavLM speaker embeddings \citep{chen2021wavlm} on a calibrated
-scale: 33 of its 74 languages sat at a median pairwise cosine of 0.75 or worse. One voice per
-language. A corpus built that way teaches the model one speaker's phrase, not the phrase.
+scale: 33 of its 74 languages sat at a median pairwise cosine of 0.75 or worse
+(Figure~\ref{fig:diversity}). One voice per language. A corpus built that way teaches the model one speaker's phrase, not the phrase.
 
-The obvious fix, reference cloning, is the wrong one.
+The obvious fix, reference cloning, is the wrong one (Table~\ref{tab:diversity}).
 
 \begin{table}[!htbp]
 \centering
@@ -716,7 +719,7 @@ collapsed language moved from 0.81 to 0.63.
 \subsection{Voice conversion}
 \label{sec:vc}
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_vc.png}
   \caption{Voice conversion candidates. Character error rate added on top of the source clip against how far the voice actually moved. A converter that returns its input scores a perfect zero cost and is worthless, which is why the vertical axis is here at all.}
@@ -726,12 +729,13 @@ collapsed language moved from 0.81 to 0.63.
 Character error rate alone picks the wrong winner here, because a converter that returns its
 input unchanged scores a perfect zero degradation and is worthless. We report the cost added on
 top of the source clip, similarity to the target and to the source on the same calibrated
-scale, and the gap between them, which is the conversion that actually happened.
+scale, and the gap between them, which is the conversion that actually happened
+(Figure~\ref{fig:vc}).
 
 \textbf{Our own model is only usable in one of its two modes.}
 Multilingual-Expressive can be conditioned either on a speaker name from its training
 inventory or on a reference clip. The two land at opposite extremes on the same 184 clips in
-the same 21 languages.
+the same 21 languages (Table~\ref{tab:twomodes}).
 
 \begin{table}[!htbp]
 \centering
@@ -788,7 +792,8 @@ non-English.
 We fine-tune \texttt{whisper-large-v3} with LoRA \citep{hu2021lora} and with full fine-tuning.
 The target for a blank clip is the empty transcript under that clip's language token, which is
 what teaches ``no words here'' rather than ``emit something short''. The four prompt tokens are
-masked out of the loss, so loss falls only on the transcript and the final end-of-text token.
+masked out of the loss, so loss falls only on the transcript and the final end-of-text
+token. Table~\\ref{tab:trainsets} lists what goes in.
 
 \begin{table}[!htbp]
 \centering
@@ -821,7 +826,7 @@ real audio?
 \item With the synthetic lexicon, does it improve them further, and what does it cost?
 \end{enumerate}
 
-Two mixes, identical except for the synthetic positives.
+Two mixes, identical except for the synthetic positives (Table~\ref{tab:mixes}).
 
 \begin{table}[!htbp]
 \centering
@@ -876,11 +881,12 @@ seed & 0 \\
 \end{tabular}
 \end{table}
 
-\textbf{Which modules the adapters touch is a factor, not a detail.} A Whisper block has four
+\textbf{Which modules the adapters touch is one of the swept factors.} A Whisper block has four
 attention projections and two feed-forward matrices, and the feed-forward pair is the larger
 half. \texttt{fc1} maps 1{,}280 to 5{,}120 and \texttt{fc2} maps back, so each of them takes
 two and a half times the low-rank parameters of a $1{,}280 \times 1{,}280$ attention
-projection at the same rank. We sweep both choices rather than assuming one.
+projection at the same rank. We sweep both choices rather than assuming one
+(Table~\ref{tab:targets}).
 
 \begin{table}[!htbp]
 \centering
@@ -906,7 +912,7 @@ attention + MLP & the four above, plus \texttt{fc1}, \texttt{fc2}
 
 That is five ranks in each of the two families at three learning rates, thirty adapter
 configurations, plus three full fine-tunes: 33 per mix and 66 runs in total. Both mixes
-throughout, so every configuration is a matched pair.
+throughout, so every configuration is a matched pair (Table~\ref{tab:grid}).
 
 \begin{table}[!htbp]
 \centering
@@ -931,7 +937,8 @@ benchmark: the eight published arms, the synthetic positives, the wild test spli
 1e-3. The \texttt{corpus} mix finished at loss 9.76 while mixes containing the same clips
 finished at 1.1 to 1.2, which reads as evidence that a blank-heavy mix is bad. It is not. The
 same mix at 2e-4 converges cleanly to 0.64. The checkpoint from the diverged run hallucinates on
-100\% of silence and 100\% of music, which is a broken optimiser, not a data result.
+100\% of silence and 100\% of music. That says the optimiser broke, and says nothing about
+the data.
 
 \subsection{Results}
 
@@ -941,7 +948,7 @@ positives.
 
 {\footnotesize\input{table_paired}}
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=\linewidth]{img/fig_sweep_wild_halluc.png}
   \caption{Hallucination on real voice-free audio, with and without the synthetic positives, at
@@ -949,7 +956,7 @@ positives.
   \label{fig:sweepwild}
 \end{figure}
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_sweep_cost.png}
   \caption{The trade from Figure~\ref{fig:tradeoff}, redrawn with the fine-tunes on it. The
@@ -979,6 +986,7 @@ recovery in 32, and lowers FLEURS character error rate in 31. The median differe
 $-0.118$ on wild audio, $+0.186$ on recovery and $-0.107$ on FLEURS. LibriSpeech does not move:
 the median difference is $0.000$, and neither mix wins it more often than the other.
 
+Figure~\ref{fig:sweepwild} puts every configuration side by side.
 Restrict to the 30 pairs where both halves hold LibriSpeech word error rate at or under 0.040,
 which is the only regime anybody would ship, and it is unanimous. \texttt{all} emits fewer
 words on real voice-free audio in \textbf{30 of 30}, recovers more phrases in 29 of 30, and
@@ -988,10 +996,11 @@ looks quieter are the ones that failed the accuracy test.
 The best single checkpoint in the grid is \texttt{all} at rank 64 and 5e-4: silence
 hallucination 0.619 to \textbf{0.024}, words over wild voice-free audio 0.999 to
 \textbf{0.478}, phrase recovery 0.698 to \textbf{0.827}, for LibriSpeech 0.035 to 0.041 and
-FLEURS 0.305 to 0.398. It is quieter on noise and better on speech than the model it came from,
-which is the corner Figure~\ref{fig:tradeoff} says is empty.
+FLEURS 0.305 to 0.398. It is quieter on noise and better on speech than the model it came from, which is the corner
+Figure~\ref{fig:tradeoff} says is empty. Figure~\ref{fig:sweepcost} redraws that trade with
+all 66 runs on it.
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_loss.png}
   \caption{Training curves for all 66 runs. The mix without the synthetic positives sits below
@@ -1002,7 +1011,7 @@ which is the corner Figure~\ref{fig:tradeoff} says is empty.
   \label{fig:loss}
 \end{figure}
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_loss_vs_result.png}
   \caption{Final training loss against phrase recovery. The two mixes barely overlap on the
@@ -1023,7 +1032,7 @@ on \texttt{all} against 0.45, 0.53 and 0.86 on \texttt{no\_synth}, and all six a
 descending at step 1,000, which is what a thousand steps of 16 clips looks like on 1.5 B
 parameters.
 
-\begin{figure}[!htbp]
+\begin{figure}[!btp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_sweep_family.png}
   \caption{Same rank, same learning rate, same mix, different modules. Adapting the two
@@ -1032,10 +1041,9 @@ parameters.
   \label{fig:sweepfamily}
 \end{figure}
 
-\textbf{Learning to stop lives in the feed-forward layers.} On the \texttt{all} mix, across all
-fifteen matched rank and learning-rate cells, adapting \texttt{fc1} and \texttt{fc2} as well as
-the attention projections lowers word emission on wild audio in \textbf{15 of 15}, by a median
-of 0.133. Attention-only adapters span 0.762 to 0.911 across the whole rank range, against a
+\textbf{Learning to stop lives in the feed-forward layers.} On the \texttt{all} mix, across all fifteen matched rank and learning-rate cells, adapting
+\texttt{fc1} and \texttt{fc2} as well as the attention projections lowers word emission on
+wild audio in \textbf{15 of 15}, by a median of 0.133 (Figure~\ref{fig:sweepfamily}). Attention-only adapters span 0.762 to 0.911 across the whole rank range, against a
 base model at 0.999: five ranks and three learning rates, and none of them really learns to be
 quiet. Adding the MLP pair spans 0.241 to 0.807 over the same grid.
 
@@ -1160,9 +1168,8 @@ and fall back to a flat gate that accepts almost nothing. They need a floor meas
 another corpus before their phrases can be synthesised reliably.
 
 Finally, the wild pool should grow. AudioSet yields more than half of what it is asked for, so
-the bottleneck is not availability, it is compute and storage. A wild benchmark an order of
-magnitude larger would let hallucination be measured per acoustic condition rather than in
-aggregate.
+collecting ten times as much costs only compute and storage. At that size hallucination could
+be measured per acoustic condition instead of in aggregate.
 
 \section{Acknowledgement}
 
