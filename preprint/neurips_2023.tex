@@ -38,6 +38,13 @@
 \setcounter{topnumber}{3}
 \setcounter{bottomnumber}{2}
 \setcounter{totalnumber}{4}
+% A float page centres its contents with stretchy glue, which opens large gaps between two
+% stacked figures. Push them to the top instead and let the slack fall at the bottom.
+\makeatletter
+\setlength{\@fptop}{0pt}
+\setlength{\@fpsep}{14pt plus 0fil}
+\setlength{\@fpbot}{0pt plus 1fil}
+\makeatother
 
 % The default skips put a caption flush against its table and a float flush against the
 % surrounding text, which reads as a wall.
