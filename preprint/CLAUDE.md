@@ -62,6 +62,9 @@ so copied text loses spaces and looks broken even when the page is fine.
   floating, so one can never land mid-sentence at a page top), and no section forward-
   references a float that lives in a later section. Check both before committing:
   every `\label` must have a `\ref` earlier in the file than its own `\begin{figure|table}`.
+- **An introducing sentence must earn its place.** "Table 2 is the measurement." is filler
+  wearing a reference. Say what the reader will see in it and why it is there, or fold the
+  reference into the last sentence of the paragraph above and add no new sentence at all.
 - **Do not move float blocks with a script.** Two attempts corrupted the source. Add an
   introducing sentence above the float instead; that makes the first mention precede it
   without touching the block.
