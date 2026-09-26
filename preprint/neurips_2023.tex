@@ -34,6 +34,9 @@
 \setlength{\textfloatsep}{22pt plus 4pt minus 4pt}
 \setlength{\intextsep}{22pt plus 4pt minus 4pt}
 \setlength{\floatsep}{20pt plus 4pt minus 4pt}
+% One type size for every table in the paper, and tighter columns. Scaling each table to fit
+% gives each one its own size, which is what makes a document look like it changed fonts.
+\setlength{\tabcolsep}{4pt}
 
 \hypersetup{
 pdftitle={How to Reduce Whisper Hallucination},
@@ -127,22 +130,24 @@ closest existing thing to the fix this paper proposes.
 
 \begin{table}[htbp]
 \centering
-\caption{The checkpoints, and the short labels used in every table and figure below.}
+\caption{The checkpoints, and the short labels used in every table and figure below. The two
+Malay fine-tunes are built on \texttt{large-v2} and \texttt{turbo} respectively, and
+\texttt{turbo} differs from \texttt{large-v3} in having four decoder layers rather than
+thirty-two. Wide tables abbreviate the last two labels further, to \texttt{mal-v2} and
+\texttt{mal-turbo-v3}.}
 \label{tab:models}
-\small
-\begin{adjustbox}{max width=\linewidth}
-\begin{tabular}{lll}
+\footnotesize
+\begin{tabular}{lllp{0.16\linewidth}}
 \toprule
-\textbf{label} & \textbf{identifier} & \textbf{what it is} \\
+\textbf{label} & \multicolumn{2}{l}{\textbf{identifier}} & \textbf{what it is} \\
 \midrule
-\texttt{large-v2} & \texttt{openai/whisper-large-v2} & base, 1.55 B \\
-\texttt{large-v3} & \texttt{openai/whisper-large-v3} & base, 1.55 B \\
-\texttt{turbo} & \texttt{openai/whisper-large-v3-turbo} & base, 4 decoder layers \\
-\texttt{malaysian-v2} & \texttt{mesolitica/malaysian-whisper-large-v2} & Malay fine-tune of \texttt{large-v2} \\
-\texttt{malaysian-turbo-v3} & \texttt{mesolitica/Malaysian-whisper-large-v3-turbo-v3} & Malay fine-tune of \texttt{turbo} \\
+\texttt{large-v2} & \texttt{openai/} & \texttt{whisper-large-v2} & base, 1.55 B \\
+\texttt{large-v3} & \texttt{openai/} & \texttt{whisper-large-v3} & base, 1.55 B \\
+\texttt{turbo} & \texttt{openai/} & \texttt{whisper-large-v3-turbo} & base, 4 layers \\
+\texttt{malaysian-v2} & \texttt{mesolitica/} & \texttt{malaysian-whisper-large-v2} & Malay tune \\
+\texttt{malaysian-turbo-v3} & \texttt{mesolitica/} & \texttt{Malaysian-whisper-large-v3-turbo-v3} & Malay tune \\
 \bottomrule
 \end{tabular}
-\end{adjustbox}
 \end{table}
 
 \begin{table}[htbp]
@@ -151,11 +156,10 @@ closest existing thing to the fix this paper proposes.
 string, so any output at all is wrong. The first block counts outputs containing words, the
 second counts any output including a bare full stop.}
 \label{tab:nonspeech}
-\small
-\begin{adjustbox}{max width=\linewidth}
+\footnotesize
 \begin{tabular}{lrrrrrr}
 \toprule
-\textbf{arm} & \textbf{n} & \textbf{large-v2} & \textbf{large-v3} & \textbf{turbo} & \textbf{malaysian-v2} & \textbf{malaysian-turbo-v3} \\
+\textbf{arm} & \textbf{n} & \textbf{large-v2} & \textbf{large-v3} & \textbf{turbo} & \textbf{mal-v2} & \textbf{mal-turbo-v3} \\
 \midrule
 \texttt{silence} & 42 & 85.7\% & 61.9\% & 59.5\% & 35.7\% & \textbf{16.7\%} \\
 \texttt{music} & 600 & 98.7\% & 97.0\% & 96.7\% & 69.7\% & \textbf{31.0\%} \\
@@ -166,7 +170,6 @@ second counts any output including a bare full stop.}
 \texttt{nonspeech} any output & 1{,}168 & 100\% & 100\% & 100\% & 77.8\% & \textbf{9.4\%} \\
 \bottomrule
 \end{tabular}
-\end{adjustbox}
 \end{table}
 
 Every OpenAI checkpoint writes something on every single clip that has no speech in it. Read
@@ -284,9 +287,8 @@ emitting text, which is the failure mode of every aggressive fine-tune we measur
 \caption{The eight benchmark arms. Every arm is a \texttt{test} split. The training corpus is a
 separate build that is disjoint by construction, verified before any training run.}
 \label{tab:arms}
-\small
-\begin{adjustbox}{max width=\linewidth}
-\begin{tabular}{llrl}
+\footnotesize
+\begin{tabular}{lp{0.34\linewidth}rl}
 \toprule
 \textbf{arm} & \textbf{source} & \textbf{clips} & \textbf{correct output} \\
 \midrule
@@ -300,7 +302,6 @@ separate build that is disjoint by construction, verified before any training ru
 \texttt{librispeech\_test\_clean} & LibriSpeech \citep{panayotov2015librispeech} & 2{,}620 & the transcript \\
 \bottomrule
 \end{tabular}
-\end{adjustbox}
 \end{table}
 
 The \texttt{reduplication} arm deserves a note, because it is the only arm where both extremes
@@ -340,8 +341,7 @@ recognition errors.
 \caption{Hallucination yield by corpus, per 8,000 clips heard. Recording quality predicts yield
 across five thousandfold.}
 \label{tab:yield}
-\small
-\begin{adjustbox}{max width=\linewidth}
+\footnotesize
 \begin{tabular}{llrr}
 \toprule
 \textbf{corpus} & \textbf{character} & \textbf{kept} & \textbf{rate} \\
@@ -355,7 +355,6 @@ VoxPopuli \citep{wang2021voxpopuli} & parliament & 4 & 0.05\% \\
 People's Speech \texttt{clean} & curated read speech & 1 & 0.01\% \\
 \bottomrule
 \end{tabular}
-\end{adjustbox}
 \end{table}
 
 Two lessons. Curated corpora barely fail, so a hallucination study built on them will conclude
@@ -413,11 +412,10 @@ the central measurement of the paper and it is what makes a one-sided metric dan
 \centering
 \caption{Accuracy. The last two rows are the multilingual guard, in character error rate.}
 \label{tab:wer}
-\small
-\begin{adjustbox}{max width=\linewidth}
+\footnotesize
 \begin{tabular}{lrrrrrr}
 \toprule
-\textbf{arm} & \textbf{n} & \textbf{large-v2} & \textbf{large-v3} & \textbf{turbo} & \textbf{malaysian-v2} & \textbf{malaysian-turbo-v3} \\
+\textbf{arm} & \textbf{n} & \textbf{large-v2} & \textbf{large-v3} & \textbf{turbo} & \textbf{mal-v2} & \textbf{mal-turbo-v3} \\
 \midrule
 \texttt{librispeech} WER & 2{,}620 & 4.5\% & \textbf{3.5\%} & \textbf{3.5\%} & \textbf{3.5\%} & 10.6\% \\
 \texttt{genuine} WER & 4{,}694 & 35.4\% & \textbf{31.8\%} & \textbf{31.8\%} & 42.3\% & 60.7\% \\
@@ -427,7 +425,6 @@ the central measurement of the paper and it is what makes a one-sided metric dan
 \texttt{fleurs} CER, macro mean & 1{,}160 & 0.422 & \textbf{0.305} & 0.511 & 1.781 & 1.681 \\
 \bottomrule
 \end{tabular}
-\end{adjustbox}
 \end{table}
 
 \textbf{English accuracy says nothing about the other 57 languages.}
@@ -477,11 +474,10 @@ carries 27 points of word error rate. Looping is also what separates \texttt{tur
 \centering
 \caption{\texttt{lexicon\_synth} test split. Emitting the phrase is correct here.}
 \label{tab:lexsynth}
-\small
-\begin{adjustbox}{max width=\linewidth}
+\footnotesize
 \begin{tabular}{lllrl}
 \toprule
-\textbf{model} & \textbf{recovered (bare to room tone)} & \textbf{median CER} & \textbf{mean CER} & \textbf{$>2\times$ output} \\
+\textbf{model} & \textbf{recovered, bare $\to$ tone} & \textbf{median CER} & \textbf{mean CER} & \textbf{$>2\times$} \\
 \midrule
 \texttt{whisper-large-v2} & 63.6\% to 63.4\% & 0.125 & 0.378 to 0.384 & 0.6\% to 0.7\% \\
 \textbf{\texttt{whisper-large-v3}} & \textbf{69.8\% to 68.5\%} & \textbf{0.089} & 0.288 to 0.302 & 0.2\% to 0.4\% \\
@@ -490,7 +486,6 @@ carries 27 points of word error rate. Looping is also what separates \texttt{tur
 \texttt{Malaysian-turbo-v3} & 41.1\% to 35.4\% & 0.385 & 1.508 to \textbf{3.749} & 3.0\% to 5.7\% \\
 \bottomrule
 \end{tabular}
-\end{adjustbox}
 \end{table}
 
 \texttt{Malaysian-turbo-v3} wins every non-speech arm in Table~\ref{tab:nonspeech} and recovers
@@ -585,8 +580,7 @@ than it looks.
 \centering
 \caption{Text-to-speech candidates. Round-trip character error rate, lower is better.}
 \label{tab:tts}
-\small
-\begin{adjustbox}{max width=\linewidth}
+\footnotesize
 \begin{tabular}{lrrrllll}
 \toprule
  & \textbf{mean CER} & \textbf{median} & \textbf{wins} & \textbf{languages} & \textbf{voices} \\
@@ -599,7 +593,6 @@ Higgs Audio v2 & 1.089 & 0.713 & 0 & untagged & cloning \\
 Higgs Audio v3 & 1.230 & 0.483 & 1 & 82/100 & cloning \\
 \bottomrule
 \end{tabular}
-\end{adjustbox}
 \end{table}
 
 Coverage and quality are not the same axis. ToucanTTS covers 7,233 languages and wins nothing.
@@ -627,8 +620,7 @@ The obvious fix, reference cloning, is the wrong one.
 \caption{Two routes to distinct voices, probed on the same 4 languages, 24 phrases and 4 voices.
 Lower cosine means better separated voices.}
 \label{tab:diversity}
-\small
-\begin{adjustbox}{max width=\linewidth}
+\footnotesize
 \begin{tabular}{llll}
 \toprule
 \textbf{route} & \textbf{yield mk / gu / it} & \textbf{median CER} & \textbf{different-voice cosine} \\
@@ -638,7 +630,6 @@ OmniVoice, reference cloning & 46\% / 68\% / 53\% & 0.32 / 0.25 / 0.26 & 0.68 / 
 auto mode, for reference & 89\% / 73\% / 83\% & 0.02 / 0.11 / 0.00 & 0.91 / 0.81 / 0.77 \\
 \bottomrule
 \end{tabular}
-\end{adjustbox}
 \end{table}
 
 Cloning costs about half the yield and separates the voices less well than simply naming a
@@ -686,22 +677,20 @@ masked out of the loss, so loss falls only on the transcript and the final end-o
 \caption{Training sets. Everything is disjoint from the benchmark by construction and every
 test split stays held out.}
 \label{tab:trainsets}
-\small
-\begin{adjustbox}{max width=\linewidth}
-\begin{tabular}{lrrll}
+\footnotesize
+\begin{tabular}{p{0.26\linewidth}rrlp{0.28\linewidth}}
 \toprule
 \textbf{source} & \textbf{clips} & \textbf{hours} & \textbf{target} & \textbf{teaches} \\
 \midrule
 \texttt{corpus} nonspeech (FSD50K \texttt{dev}) & 16{,}983 & 33.3 & empty & noise means say nothing \\
 \texttt{corpus} music (FMA shards 2-12) & 7{,}170 & 58.3 & empty & music means say nothing \\
-\texttt{corpus} Malay speech (Emilia \citep{he2024emilia}) & 5{,}801 & 14.8 & transcript & keep accuracy \\
+\texttt{corpus} Malay speech, Emilia \citep{he2024emilia} & 5{,}801 & 14.8 & transcript & keep accuracy \\
 \texttt{corpus} reduplication & 2{,}514 & 4.0 & exact repeats & do not run away \\
 \texttt{corpus} silence & 59 & 0.7 & empty & room tone means say nothing \\
 \texttt{lexicon\_synth} train & 22{,}845 & 12.5 & the phrase & the phrase is real, transcribe it \\
 \texttt{wild} train & 3{,}656 & 9.6 & empty & real noisy audio means say nothing \\
 \bottomrule
 \end{tabular}
-\end{adjustbox}
 \end{table}
 
 \subsection{Mixes}
@@ -721,8 +710,7 @@ Two mixes, identical except for the synthetic positives.
 \caption{The paired mixes. \texttt{no\_synth} is \texttt{all} with \texttt{lexicon\_synth}
 removed and nothing else changed.}
 \label{tab:mixes}
-\small
-\begin{adjustbox}{max width=\linewidth}
+\footnotesize
 \begin{tabular}{lrrl}
 \toprule
 \textbf{mix} & \textbf{clips} & \textbf{blank share} & \textbf{contains \texttt{lexicon\_synth}} \\
@@ -731,7 +719,6 @@ removed and nothing else changed.}
 \texttt{all} & 59{,}028 & 47\% & yes, 22{,}845 clips \\
 \bottomrule
 \end{tabular}
-\end{adjustbox}
 \end{table}
 
 Removing the synthetic positives also moves the blank share from 47\% to 77\%. That is not a
@@ -756,8 +743,7 @@ projection at the same rank. We sweep both choices rather than assuming one.
 and are exactly linear in rank. At every rank, adding the MLP pair costs 1.83 times the
 attention-only count.}
 \label{tab:targets}
-\small
-\begin{adjustbox}{max width=\linewidth}
+\footnotesize
 \begin{tabular}{llrrrrr}
 \toprule
 \textbf{family} & \textbf{modules} & \textbf{r=8} & \textbf{r=16} & \textbf{r=32} & \textbf{r=64} & \textbf{r=128} \\
@@ -771,7 +757,6 @@ attention + MLP & the four above, plus \texttt{fc1}, \texttt{fc2}
  & & 0.93\% & 1.83\% & 3.60\% & 6.95\% & 13.00\% \\
 \bottomrule
 \end{tabular}
-\end{adjustbox}
 \end{table}
 
 Ten LoRA configurations per mix, five ranks in each family, plus three full fine-tunes, at three
@@ -781,8 +766,7 @@ learning rates each. Both mixes throughout, so every configuration is a matched 
 \centering
 \caption{The grid. Every cell is run on both mixes. 1e-3 is absent on purpose, see below.}
 \label{tab:grid}
-\small
-\begin{adjustbox}{max width=\linewidth}
+\footnotesize
 \begin{tabular}{lll}
 \toprule
 \textbf{method} & \textbf{ranks (alpha $= 2r$)} & \textbf{learning rates} \\
@@ -792,7 +776,6 @@ LoRA, attention + MLP & 8, 16, 32, 64, 128 & 1e-4, 2e-4, 5e-4 \\
 full fine-tune & all 1{,}574.9 M parameters & 5e-6, 1e-5, 2e-5 \\
 \bottomrule
 \end{tabular}
-\end{adjustbox}
 \end{table}
 
 Every run is trained for 1,000 steps with 50 warmup steps in bf16, then scored on the complete
@@ -818,9 +801,7 @@ more, \texttt{recovered} the share of genuinely spoken phrases it got back. Lowe
 everywhere except \texttt{recovered}.}
 \label{tab:paired}
 \small
-\begin{adjustbox}{max width=\linewidth}
 \input{table_paired}
-\end{adjustbox}
 \end{table}
 
 \begin{figure}[htbp]
