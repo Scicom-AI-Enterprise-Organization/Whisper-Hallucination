@@ -391,9 +391,9 @@ Stage 1 is one LoRA run per mix on `whisper-large-v3`; stage 2 takes the winning
 |---|---|
 | base models | `openai/whisper-large-v3`, `openai/whisper-large-v3-turbo` |
 | method | LoRA (stage 1 + 2) and full fine-tune (stage 2) |
-| LoRA rank / alpha / dropout | 32 / 64 / 0.05 |
-| LoRA target modules | `q_proj`, `k_proj`, `v_proj`, `out_proj` (attn) + `fc1`, `fc2` (MLP) |
-| trainable parameters | 57.7 M at r=32 (**3.6%**) — `fc1`/`fc2` hold most of a block |
+| LoRA rank / alpha / dropout | 8, 16, 32, 64, 128 / 2r / 0.05 |
+| LoRA target modules | **two families, both swept** — see below |
+| trainable parameters | 7.9 M to 230.7 M (0.51% to 13.00%) |
 | learning rate | **2e-4** LoRA, 1e-5 full — see below |
 | steps / warmup | 1,000 / 50 |
 | batch size × grad accum | 8 × 2 = 16 clips per step (16k clips seen, ~0.3 epoch of `all`) |
@@ -401,6 +401,26 @@ Stage 1 is one LoRA run per mix on `whisper-large-v3`; stage 2 takes the winning
 | max label length | 200 tokens |
 | loss | on the transcript only — the four prompt tokens are masked to −100 |
 | throughput | ~12.8 clips/s per H20, ~21 min per run |
+
+**Which modules the adapters touch is a swept factor, not a fixed choice.** A Whisper block
+has four attention projections and two feed-forward matrices, and the feed-forward pair is the
+larger half: `fc1` maps 1,280 → 5,120 and `fc2` maps back, so each costs 2.5× the low-rank
+parameters of a 1,280 × 1,280 attention projection at the same rank.
+
+| family | modules | r=8 | r=16 | r=32 | r=64 | r=128 |
+|---|---|---:|---:|---:|---:|---:|
+| **attn only** | `q_proj` `k_proj` `v_proj` `out_proj` | 7.9 M | 15.7 M | 31.5 M | 62.9 M | 125.8 M |
+| | | 0.51% | 1.01% | 2.00% | 3.92% | 7.54% |
+| **attn + MLP** | the four above + `fc1` `fc2` | 14.4 M | 28.8 M | 57.7 M | 115.3 M | 230.7 M |
+| | | 0.93% | 1.83% | 3.60% | 6.95% | 13.00% |
+
+Counts are measured from the runs, not estimated, and are exactly linear in rank. Adding the
+MLP pair costs **1.83×** the attention-only count at every rank.
+
+```bash
+bash train/grid.sh 0 all:32:1e-4 no_synth:32:1e-4          # attn + MLP, the default
+bash train/grid.sh 1 all:32:1e-4:attn no_synth:32:1e-4:attn # attention only
+```
 
 **lr=1e-3 is too high and the first sweep proved it.** At that rate `corpus` finished at loss
 9.76 while mixes containing the same clips finished at 1.1–1.2, which reads as "the 74% blank
@@ -436,9 +456,9 @@ diverged there.
 | LoRA | 128 / 256 | 230.7 M (13.0%) | 1e-4, 2e-4, 5e-4 |
 | full fine-tune | — | 1,574.9 M (100%) | 5e-6, 1e-5, 2e-5 |
 
-Adapters cover the MLP as well as attention. `fc1`/`fc2` hold most of the parameters in a
-Whisper block, so attention-only adapters leave the bulk of each layer untouched — including
-them nearly doubles the trainable count at every rank (r=32: 31.5 M → 57.7 M).
+Both families are swept at every rank, so "should the adapters touch the MLP?" is answered by
+measurement rather than assumed. Including `fc1`/`fc2` nearly doubles the trainable count at
+every rank (r=32: 31.5 M → 57.7 M).
 
 ```bash
 # one GPU per pair of jobs, `rank:lr`, rank 0 = full fine-tune. Each job trains then

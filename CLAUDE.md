@@ -393,6 +393,14 @@ in the wrong language and returns CER > 1.0 that says nothing about the audio â€
 at 1.47 until the QA was fixed to force the language and batch by it, as `score_tts.py` and
 `score_vc.py` already did.
 
+**LoRA target modules are a swept factor now, not a constant.** Two families, both run at
+every rank: `attn` is `q_proj k_proj v_proj out_proj`, `attnmlp` adds `fc1 fc2`. `train/grid.sh`
+takes the set as a fourth field on a job (`all:32:1e-4:attn`) and puts the family in the run
+name (`v3_loraattn_r32_...` against `v3_lora_r32_...`), so the two never collide and older runs
+stay readable. Measured trainable counts, exactly linear in rank: attention-only 983,040 per
+rank unit, attention+MLP 1,802,240, so the MLP pair costs 1.83x at every rank. At r=32 that is
+31.5 M against 57.7 M.
+
 **LoRA at lr=1e-3 is too high for this data.** The first sweep ran there: `corpus` finished at
 loss 9.76 while mixes containing the same clips finished at 1.1-1.2, which reads as "the 74%
 blank mix is bad" and is not. The same mix at **lr=2e-4 converges cleanly** -- final 0.64,

@@ -740,26 +740,56 @@ and removing them necessarily makes the mix more blank-dominated.
 
 \subsection{Grid}
 
-Twelve configurations per mix, twenty-four runs in total. LoRA alpha tracks twice the rank so
-rank is the only thing that varies. Adapters cover the attention projections and the two
-feed-forward layers, because those hold most of the parameters in a Whisper block. Full
+LoRA alpha tracks twice the rank, so rank is the only thing that varies within a family. Full
 fine-tunes use batch 4 with 4 accumulation steps to hold the same 16 clips per optimiser step as
 LoRA's 8 with 2, so effective batch size does not confound the comparison.
 
+\textbf{Which modules the adapters touch is a factor, not a detail.} A Whisper block has four
+attention projections and two feed-forward matrices, and the feed-forward pair is the larger
+half. \texttt{fc1} maps 1{,}280 to 5{,}120 and \texttt{fc2} maps back, so each of them takes
+two and a half times the low-rank parameters of a \texttt{1{,}280 \times 1{,}280} attention
+projection at the same rank. We sweep both choices rather than assuming one.
+
 \begin{table}[htbp]
 \centering
-\caption{The grid. 1e-3 is absent on purpose, see below.}
+\caption{The two adapter families. Trainable counts are measured from the runs, not estimated,
+and are exactly linear in rank. At every rank, adding the MLP pair costs 1.83 times the
+attention-only count.}
+\label{tab:targets}
+\small
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{llrrrrr}
+\toprule
+\textbf{family} & \textbf{modules} & \textbf{r=8} & \textbf{r=16} & \textbf{r=32} & \textbf{r=64} & \textbf{r=128} \\
+\midrule
+attention only & \texttt{q\_proj}, \texttt{k\_proj}, \texttt{v\_proj}, \texttt{out\_proj}
+ & 7.9\,M & 15.7\,M & 31.5\,M & 62.9\,M & 125.8\,M \\
+ & & 0.51\% & 1.01\% & 2.00\% & 3.92\% & 7.54\% \\
+\addlinespace[2pt]
+attention + MLP & the four above, plus \texttt{fc1}, \texttt{fc2}
+ & 14.4\,M & 28.8\,M & 57.7\,M & 115.3\,M & 230.7\,M \\
+ & & 0.93\% & 1.83\% & 3.60\% & 6.95\% & 13.00\% \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+Ten LoRA configurations per mix, five ranks in each family, plus three full fine-tunes, at three
+learning rates each. Both mixes throughout, so every configuration is a matched pair.
+
+\begin{table}[htbp]
+\centering
+\caption{The grid. Every cell is run on both mixes. 1e-3 is absent on purpose, see below.}
 \label{tab:grid}
 \small
 \begin{adjustbox}{max width=\linewidth}
-\begin{tabular}{llrl}
+\begin{tabular}{lll}
 \toprule
-\textbf{method} & \textbf{rank / alpha} & \textbf{trainable params} & \textbf{learning rates} \\
+\textbf{method} & \textbf{ranks (alpha $= 2r$)} & \textbf{learning rates} \\
 \midrule
-LoRA & 32 / 64 & 57.7 M (3.6\%) & 1e-4, 2e-4, 5e-4 \\
-LoRA & 64 / 128 & 115.3 M (7.0\%) & 1e-4, 2e-4, 5e-4 \\
-LoRA & 128 / 256 & 230.7 M (13.0\%) & 1e-4, 2e-4, 5e-4 \\
-full fine-tune & & 1{,}574.9 M (100\%) & 5e-6, 1e-5, 2e-5 \\
+LoRA, attention only & 8, 16, 32, 64, 128 & 1e-4, 2e-4, 5e-4 \\
+LoRA, attention + MLP & 8, 16, 32, 64, 128 & 1e-4, 2e-4, 5e-4 \\
+full fine-tune & all 1{,}574.9 M parameters & 5e-6, 1e-5, 2e-5 \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
