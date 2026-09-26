@@ -17,6 +17,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+# The paper is set in Times: neurips_2023.sty does \renewcommand{\rmdefault}{ptm}. Matplotlib
+# defaults to DejaVu Sans, so every figure label was in a different typeface from the body
+# text. Match the document instead.
+matplotlib.rcParams.update({
+    "font.family": "serif",
+    "font.serif": ["Times New Roman", "Times", "STIXGeneral", "DejaVu Serif"],
+    "mathtext.fontset": "stix",
+    "axes.unicode_minus": False,
+})
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 IMG = HERE / "img"
@@ -667,12 +677,54 @@ def fig_sweep_rank():
     save(fig, "fig_sweep_rank.png")
 
 
+def fig_sweep_family():
+    """Same rank, same learning rate, different modules. Isolates what the MLP pair buys."""
+    rows = sweep_rows()
+    if not rows:
+        print("!! fig_sweep_family.png: no sweep_rows.json yet")
+        return
+    by = {}
+    for _, fam, rank, lr, a, n in rows:
+        if fam == "full" or not a or a.get("wild_words") is None:
+            continue
+        by.setdefault((fam, lr), {})[rank] = a["wild_words"]
+    if not by:
+        print("!! fig_sweep_family.png: no adapter runs yet")
+        return
+    fig, ax = plt.subplots(figsize=(6.6, 4.0), dpi=DPI)
+    style = {"1e-4": ":", "2e-4": "--", "5e-4": "-"}
+    seen = set()
+    for (fam, lr), pts in sorted(by.items()):
+        xs = sorted(pts)
+        color = "#1a5276" if fam == "lora" else "#e67e22"
+        lab = None
+        if fam not in seen:
+            seen.add(fam)
+            lab = FAM_LABEL[fam]
+        ax.plot(xs, [pts[x] for x in xs], marker="o", markersize=4.5, color=color,
+                linewidth=1.6, linestyle=style.get(lr, "-"), alpha=0.9, label=lab)
+    ax.axhline(0.999, color="#1a1a2e", linewidth=0.9, linestyle=":", alpha=0.7)
+    ax.text(0.99, 0.992, "base large-v3", transform=ax.get_yaxis_transform(), ha="right",
+            fontsize=7.6, color="#1a1a2e", style="italic", va="top")
+    ax.set_xscale("log", base=2)
+    ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    ax.set_xticks(RANKS)
+    ax.set_xticklabels([str(r) for r in RANKS], fontsize=8.5, color=TICK)
+    pct(ax, 1.05)
+    frame(ax, xlab="LoRA rank", ylab="words emitted over voice-free wild audio",
+          title="Learning to stop lives in the feed-forward layers",
+          sub="`all` mix; one line per learning rate, dotted 1e-4, dashed 2e-4, solid 5e-4",
+          axis="both")
+    legend_below(ax, ncol=2, pad=0.18)
+    save(fig, "fig_sweep_family.png")
+
+
 if __name__ == "__main__":
     for fn in (fig_nonspeech, fig_repetition, fig_tradeoff, fig_accuracy, fig_fleurs_per_lang,
                fig_lexsynth_recovered, fig_lexsynth_tail, fig_wild_yield, fig_wild_blank,
                fig_tts, fig_vc, fig_voice_diversity,
                fig_sweep_wild_halluc, fig_sweep_wild_loop, fig_sweep_cost,
-               fig_loss, fig_loss_vs_result, fig_sweep_rank):
+               fig_loss, fig_loss_vs_result, fig_sweep_rank, fig_sweep_family):
         try:
             fn()
         except Exception as e:

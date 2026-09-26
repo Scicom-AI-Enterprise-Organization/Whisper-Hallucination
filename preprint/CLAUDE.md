@@ -41,11 +41,18 @@ Build: `pdflatex neurips_2023 && bibtex neurips_2023 && pdflatex neurips_2023 &&
   README wants one picture that says everything. A paper does not: every panel needs its own
   number and its own caption. `plot_figs.py` re-draws them as single-panel PNGs into `img/`
   straight from the scorer output. Never hand-edit a figure, and never copy a composite in.
+- **Figures are set in the paper's typeface.** `neurips_2023.sty` does
+  `\renewcommand{\rmdefault}{ptm}`, so the body is Times. Matplotlib defaults to DejaVu Sans,
+  which put every figure label in a different font from the text. `plot_figs.py` sets
+  `font.family: serif` with Times first and `mathtext.fontset: stix`. Do not remove it.
 - **Legends go outside the axes**, under the plot (`legend_below`). Inside the frame they land
   on the bars and points a reader came for, and which corner is free changes with the data.
-- **Float placement is `[tb]`, not `[H]`.** `[H]` pins a figure where it is declared and leaves
-  the rest of the page blank when it does not fit, which is what made the first draft look
-  half empty.
+- **Float placement is `[!htbp]` with relaxed fractions.** `[H]` pins a figure where it is
+  declared and blanks the rest of the page; plain `[tb]` plus LaTeX's default `\textfraction`
+  sends floats drifting pages away from the paragraph that introduces them. The preamble sets
+  `topfraction` 0.92, `textfraction` 0.06 and `floatpagefraction` 0.70, with `placeins`
+  barriers per section. Check placement with: every figure's caption page must be within one
+  page of its first mention.
 - **Acknowledgements are professional.** Thank Scicom (MSC) Berhad. No jokes about the
   electricity bill.
 - **Section titles are short noun phrases.** "Wild audio", not "Wild pool: audio that actually

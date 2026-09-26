@@ -27,6 +27,17 @@
 \usepackage{adjustbox}
 \usepackage[section]{placeins}
 
+% LaTeX will not put a float on a page whose text drops below \textfraction, which with 17
+% figures sends them drifting pages away from the paragraph that introduces them. Let a float
+% take more of the page and let a float page be less full.
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.06}
+\renewcommand{\floatpagefraction}{0.70}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4}
+
 % The default skips put a caption flush against its table and a float flush against the
 % surrounding text, which reads as a wall.
 \setlength{\abovecaptionskip}{10pt}
@@ -128,7 +139,7 @@ OpenAI releases. The other two are Mesolitica's Malay fine-tunes, which matter h
 their training pipeline is public and already contains non-speech audio, so they are the
 closest existing thing to the fix this paper proposes.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{The checkpoints, and the short labels used in every table and figure below. The two
 Malay fine-tunes are built on \texttt{large-v2} and \texttt{turbo} respectively, and
@@ -150,7 +161,7 @@ thirty-two. Wide tables abbreviate the last two labels further, to \texttt{mal-v
 \end{tabular}
 \end{table}
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Hallucination on audio that contains no speech. The correct output is the empty
 string, so any output at all is wrong. The first block counts outputs containing words, the
@@ -282,7 +293,7 @@ emitting text, which is the failure mode of every aggressive fine-tune we measur
 
 \subsection{Non-speech audio}
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{The eight benchmark arms. Every arm is a \texttt{test} split. The training corpus is a
 separate build that is disjoint by construction, verified before any training run.}
@@ -336,7 +347,7 @@ words emitted where Silero voice activity detection finds no speech. We never ca
 hallucination because a transcript disagrees with a reference, since that finds ordinary
 recognition errors.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Hallucination yield by corpus, per 8,000 clips heard. Recording quality predicts yield
 across five thousandfold.}
@@ -383,7 +394,7 @@ Their pipeline is open, their training mix already contains non-speech audio, an
 only checkpoints here that were deliberately tuned against hallucination. Treat them as the
 strong baseline, not as a foil.
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_tradeoff.png}
   \caption{Every checkpoint trades one failure for the other. Horizontal axis is how often the model emits words over audio with no speech in it, pooled over the three non-speech arms and weighted by clip count. Vertical axis is how often it recovers a phrase that is genuinely spoken. The top left corner is the model everyone wants and nothing is there.}
@@ -394,21 +405,21 @@ strong baseline, not as a foil.
 $r = +0.63$ between the pooled non-speech word-emission rate and phrase recovery. Quiet models delete real speech and accurate models write over silence. This is
 the central measurement of the paper and it is what makes a one-sided metric dangerous.
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_nonspeech.png}
   \caption{Hallucination on the three non-speech arms. Every bar is error, because the correct output is the empty string.}
   \label{fig:benchmark}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_repetition.png}
   \caption{Both extremes are wrong on repeated speech. A model that emits more repeats than were spoken is running away; a model that emits nothing has deleted the speech. \texttt{Malaysian-turbo-v3} does the second on 58.0\% of clips.}
   \label{fig:redup}
 \end{figure}
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Accuracy. The last two rows are the multilingual guard, in character error rate.}
 \label{tab:wer}
@@ -438,7 +449,7 @@ these languages at all. For base \texttt{large-v3}, Amharic sits at 1.81 charact
 Khmer at 1.58, Somali at 1.44, while Spanish, Italian and Dutch sit at 0.01. The mean measures
 the tail and the median measures the typical language. Quoting one without the other misleads.
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_fleurs_per_lang.png}
   \caption{The same measurement language by language, ordered by base \texttt{large-v3}
@@ -448,7 +459,7 @@ the tail and the median measures the typical language. Quoting one without the o
   \label{fig:fleursperlang}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_accuracy.png}
   \caption{English accuracy hides what a multilingual fine-tune destroyed. \texttt{malaysian-whisper-v2} matches base \texttt{large-v3} on LibriSpeech and returns character error rate 1.05 on the typical FLEURS language.}
@@ -463,14 +474,14 @@ carries 27 points of word error rate. Looping is also what separates \texttt{tur
 
 \subsection{The positive arm}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_lexsynth_recovered.png}
   \caption{The ranking inverts when the phrase is really spoken. 6,267 clips in 83 languages, each run three ways. Padding is applied to the same clips, so each triple is a within-clip comparison.}
   \label{fig:lexsynth}
 \end{figure}
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{\texttt{lexicon\_synth} test split. Emitting the phrase is correct here.}
 \label{tab:lexsynth}
@@ -500,7 +511,7 @@ clips run past twice the phrase length.
 
 \subsection{Results on wild audio}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_lexsynth_tail.png}
   \caption{Mean character error rate on the positive arm is a tail statistic. The median barely
@@ -509,7 +520,7 @@ clips run past twice the phrase length.
   \label{fig:lexsynthtail}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_wild_yield.png}
   \caption{Hallucination yield by corpus, per 8,000 clips heard, on a log scale. Curated corpora barely fail. GigaSpeech is the right material and still yields 0.41\%, because its segments are cut to speech.}
@@ -526,7 +537,7 @@ Most wild loops are model-specific. On clips mined because \texttt{large-v3} loo
 \texttt{turbo} loops on 17.2\%. A loop corpus mined with one model is not a fair loop benchmark
 for another.
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_wild_blank.png}
   \caption{Real audio that a voice activity detector confirms has no speech in it. Every OpenAI
@@ -569,14 +580,14 @@ than it looks.
 
 \subsection{Choosing a generator}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_tts.png}
   \caption{Text-to-speech candidates on 48 lexicon phrases in 22 languages, identical text, scored by recognition round trip. Coverage and quality are not the same axis.}
   \label{fig:tts}
 \end{figure}
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Text-to-speech candidates. Round-trip character error rate, lower is better.}
 \label{tab:tts}
@@ -601,7 +612,7 @@ hundred-language sweep, with Multilingual-Expressive handling Malay, English, Ch
 
 \subsection{Voice diversity}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_voice_diversity.png}
   \caption{One voice per language, and what fixed it. Pairwise speaker similarity on a calibrated scale where 0.605 is two strangers and 0.853 is two clips of the same person.}
@@ -615,7 +626,7 @@ language. A corpus built that way teaches the model one speaker's phrase, not th
 
 The obvious fix, reference cloning, is the wrong one.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Two routes to distinct voices, probed on the same 4 languages, 24 phrases and 4 voices.
 Lower cosine means better separated voices.}
@@ -639,7 +650,7 @@ collapsed language moved from 0.81 to 0.63.
 
 \subsection{Voice conversion}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_vc.png}
   \caption{Voice conversion candidates. Character error rate added on top of the source clip against how far the voice actually moved. A converter that returns its input scores a perfect zero cost and is worthless, which is why the vertical axis is here at all.}
@@ -672,7 +683,7 @@ The target for a blank clip is the empty transcript under that clip's language t
 what teaches ``no words here'' rather than ``emit something short''. The four prompt tokens are
 masked out of the loss, so loss falls only on the transcript and the final end-of-text token.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{Training sets. Everything is disjoint from the benchmark by construction and every
 test split stays held out.}
@@ -705,7 +716,7 @@ real audio?
 
 Two mixes, identical except for the synthetic positives.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{The paired mixes. \texttt{no\_synth} is \texttt{all} with \texttt{lexicon\_synth}
 removed and nothing else changed.}
@@ -737,7 +748,7 @@ half. \texttt{fc1} maps 1{,}280 to 5{,}120 and \texttt{fc2} maps back, so each o
 two and a half times the low-rank parameters of a \texttt{1{,}280 \times 1{,}280} attention
 projection at the same rank. We sweep both choices rather than assuming one.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{The two adapter families. Trainable counts are measured from the runs, not estimated,
 and are exactly linear in rank. At every rank, adding the MLP pair costs 1.83 times the
@@ -759,10 +770,11 @@ attention + MLP & the four above, plus \texttt{fc1}, \texttt{fc2}
 \end{tabular}
 \end{table}
 
-Ten LoRA configurations per mix, five ranks in each family, plus three full fine-tunes, at three
-learning rates each. Both mixes throughout, so every configuration is a matched pair.
+That is five ranks in each of the two families at three learning rates, thirty adapter
+configurations, plus three full fine-tunes: 33 per mix and 66 runs in total. Both mixes
+throughout, so every configuration is a matched pair.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{The grid. Every cell is run on both mixes. 1e-3 is absent on purpose, see below.}
 \label{tab:grid}
@@ -793,7 +805,7 @@ Table~\ref{tab:paired} is the answer to both questions. Every row is one fine-tu
 \texttt{whisper-large-v3}, and the two rows in each pair differ only by the 22,845 synthetic
 positives.
 
-\begin{table}[htbp]
+\begin{table}[!htbp]
 \centering
 \caption{The paired sweep. \texttt{wild words} is the share of 4,421 real voice-free clips
 where the model emitted words, \texttt{wild loop} the share carrying a token run of six or
@@ -804,7 +816,7 @@ everywhere except \texttt{recovered}.}
 \input{table_paired}
 \end{table}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_sweep_wild_halluc.png}
   \caption{Hallucination on real voice-free audio, with and without the synthetic positives, at
@@ -812,7 +824,7 @@ everywhere except \texttt{recovered}.}
   \label{fig:sweepwild}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_sweep_cost.png}
   \caption{The trade from Figure~\ref{fig:tradeoff}, redrawn with the fine-tunes on it. The
@@ -854,7 +866,7 @@ hallucination 0.619 to \textbf{0.024}, words over wild voice-free audio 0.999 to
 FLEURS 0.305 to 0.398. It is quieter on noise and better on speech than the model it came from,
 which is the corner Figure~\ref{fig:tradeoff} says is empty.
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_loss.png}
   \caption{Training curves for all 24 runs. The mix without the synthetic positives sits below
@@ -865,7 +877,7 @@ which is the corner Figure~\ref{fig:tradeoff} says is empty.
   \label{fig:loss}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.86\linewidth]{img/fig_loss_vs_result.png}
   \caption{Final training loss against phrase recovery. The two mixes barely overlap on the
