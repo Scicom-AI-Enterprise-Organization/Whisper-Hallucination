@@ -8,6 +8,10 @@
 # as several dozen undefined citations that have nothing to do with the source.
 set -u
 cd "$(dirname "$0")"
+# latexmk -C alone has left a stale aux behind after an interrupted run, which then throws
+# "Missing \begin{document}" from inside hyperref's .out file. Remove them outright.
+rm -f neurips_2023.aux neurips_2023.out neurips_2023.toc neurips_2023.bbl \
+      neurips_2023.blg neurips_2023.fls neurips_2023.fdb_latexmk
 latexmk -C > /dev/null 2>&1
 latexmk -pdf -interaction=nonstopmode -halt-on-error neurips_2023.tex > /tmp/latexmk.log 2>&1
 python3 - <<'PY'

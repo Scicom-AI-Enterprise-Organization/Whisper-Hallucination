@@ -50,8 +50,8 @@
 % surrounding text, which reads as a wall.
 \setlength{\abovecaptionskip}{10pt}
 \setlength{\belowcaptionskip}{8pt}
-\setlength{\textfloatsep}{22pt plus 4pt minus 4pt}
-\setlength{\intextsep}{22pt plus 4pt minus 4pt}
+\setlength{\textfloatsep}{16pt plus 2pt minus 2pt}
+\setlength{\intextsep}{13pt plus 2pt minus 2pt}
 \setlength{\floatsep}{20pt plus 4pt minus 4pt}
 % One type size for every table in the paper, and tighter columns. Scaling each table to fit
 % gives each one its own size, which is what makes a document look like it changed fonts.
@@ -441,9 +441,9 @@ Their pipeline is open, their training mix already contains non-speech audio, an
 only checkpoints here that were deliberately tuned against hallucination. Treat them as the
 strong baseline, not as a foil.
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_tradeoff.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_tradeoff.png}
   \caption{Every checkpoint trades one failure for the other. Horizontal axis is how often the model emits words over audio with no speech in it, pooled over the three non-speech arms and weighted by clip count. Vertical axis is how often it recovers a phrase that is genuinely spoken. The top left corner is the model everyone wants and nothing is there.}
   \label{fig:tradeoff}
 \end{figure}
@@ -452,16 +452,16 @@ strong baseline, not as a foil.
 $r = +0.63$ between the pooled non-speech word-emission rate and phrase recovery. Quiet models delete real speech and accurate models write over silence. This is
 the central measurement of the paper and it is what makes a one-sided metric dangerous.
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_nonspeech.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_nonspeech.png}
   \caption{Hallucination on the three non-speech arms. Every bar is error, because the correct output is the empty string.}
   \label{fig:benchmark}
 \end{figure}
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_repetition.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_repetition.png}
   \caption{Both extremes are wrong on repeated speech. A model that emits more repeats than were spoken is running away; a model that emits nothing has deleted the speech. \texttt{Malaysian-turbo-v3} does the second on 58.0\% of clips.}
   \label{fig:redup}
 \end{figure}
@@ -498,9 +498,9 @@ these languages at all. For base \texttt{large-v3}, Amharic sits at 1.81 charact
 Khmer at 1.58, Somali at 1.44, while Spanish, Italian and Dutch sit at 0.01. The mean measures
 the tail and the median measures the typical language. Quoting one without the other misleads.
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_fleurs_per_lang.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_fleurs_per_lang.png}
   \caption{The same measurement language by language, ordered by base \texttt{large-v3}
   difficulty. Whisper genuinely cannot transcribe the right hand end: Amharic, Khmer and Somali
   sit above 1.4 for every checkpoint. The two Malay fine-tunes sit above the usable line almost
@@ -508,9 +508,9 @@ the tail and the median measures the typical language. Quoting one without the o
   \label{fig:fleursperlang}
 \end{figure}
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_accuracy.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_accuracy.png}
   \caption{English accuracy hides what a multilingual fine-tune destroyed. \texttt{malaysian-whisper-v2} matches base \texttt{large-v3} on LibriSpeech and returns character error rate 1.05 on the typical FLEURS language.}
   \label{fig:accuracy}
 \end{figure}
@@ -523,9 +523,9 @@ carries 27 points of word error rate. Looping is also what separates \texttt{tur
 
 \subsection{The positive arm}
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_lexsynth_recovered.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_lexsynth_recovered.png}
   \caption{The ranking inverts when the phrase is really spoken. 6,267 clips in 83 languages, each run three ways. Padding is applied to the same clips, so each triple is a within-clip comparison.}
   \label{fig:lexsynth}
 \end{figure}
@@ -561,18 +561,18 @@ twice the phrase length (Figure~\ref{fig:lexsynthtail}).
 
 \subsection{Results on wild audio}
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_lexsynth_tail.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_lexsynth_tail.png}
   \caption{Mean character error rate on the positive arm is a tail statistic. The median barely
   moves between checkpoints while the mean triples, because a few percent of clips run past
   twice the phrase length. Report both.}
   \label{fig:lexsynthtail}
 \end{figure}
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_wild_yield.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_wild_yield.png}
   \caption{Hallucination yield by corpus, per 8,000 clips heard, on a log scale. Curated corpora barely fail. GigaSpeech is the right material and still yields 0.41\%, because its segments are cut to speech.}
   \label{fig:wildyield}
 \end{figure}
@@ -587,9 +587,9 @@ Most wild loops are model-specific. On clips mined because \texttt{large-v3} loo
 \texttt{turbo} loops on 17.2\%. A loop corpus mined with one model is not a fair loop benchmark
 for another.
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_wild_blank.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_wild_blank.png}
   \caption{Real audio that a voice activity detector confirms has no speech in it. Every OpenAI
   checkpoint writes something on all 4,421 clips. Most of what they write is a phrase from the
   lexicon, which is what makes a blocklist work, but only once the clip is already known to be
@@ -654,9 +654,9 @@ than it looks.
 
 \subsection{Choosing a generator}
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_tts.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_tts.png}
   \caption{Text-to-speech candidates on 48 lexicon phrases in 22 languages, identical text, scored by recognition round trip. Coverage and quality are not the same axis.}
   \label{fig:tts}
 \end{figure}
@@ -691,9 +691,9 @@ why.
 
 \subsection{Voice diversity}
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_voice_diversity.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_voice_diversity.png}
   \caption{One voice per language, and what fixed it. Pairwise speaker similarity on a calibrated scale where 0.605 is two strangers and 0.853 is two clips of the same person.}
   \label{fig:diversity}
 \end{figure}
@@ -730,9 +730,9 @@ collapsed language moved from 0.81 to 0.63.
 \subsection{Voice conversion}
 \label{sec:vc}
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_vc.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_vc.png}
   \caption{Voice conversion candidates. Character error rate added on top of the source clip against how far the voice actually moved. A converter that returns its input scores a perfect zero cost and is worthless, which is why the vertical axis is here at all.}
   \label{fig:vc}
 \end{figure}
@@ -959,7 +959,7 @@ positives.
 
 {\footnotesize\input{table_paired}}
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{img/fig_sweep_wild_halluc.png}
   \caption{Hallucination on real voice-free audio, with and without the synthetic positives, at
@@ -967,9 +967,9 @@ positives.
   \label{fig:sweepwild}
 \end{figure}
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_sweep_cost.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_sweep_cost.png}
   \caption{The trade from Figure~\ref{fig:tradeoff}, redrawn with the fine-tunes on it. The
   mix without the synthetic positives walks left and down. The mix with them walks left and
   up.}
@@ -1011,9 +1011,9 @@ FLEURS 0.305 to 0.398. It is quieter on noise and better on speech than the mode
 Figure~\ref{fig:tradeoff} says is empty. Figure~\ref{fig:sweepcost} redraws that trade with
 all 66 runs on it.
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_loss.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_loss.png}
   \caption{Training curves for all 66 runs. The mix without the synthetic positives sits below
   the mix with them for the whole of training, and it is the worse model on every axis that
   matters. An empty target is cheap to predict, and \texttt{no\_synth} is 77\% blank against
@@ -1022,9 +1022,9 @@ all 66 runs on it.
   \label{fig:loss}
 \end{figure}
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_loss_vs_result.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_loss_vs_result.png}
   \caption{Final training loss against phrase recovery. The two mixes barely overlap on the
   loss axis and the ranking inverts across them, so loss cannot be used to choose between them.
   Within a mix it carries little signal either.}
@@ -1043,9 +1043,9 @@ on \texttt{all} against 0.45, 0.53 and 0.86 on \texttt{no\_synth}, and all six a
 descending at step 1,000, which is what a thousand steps of 16 clips looks like on 1.5 B
 parameters.
 
-\begin{figure}[!btp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.86\linewidth]{img/fig_sweep_family.png}
+  \includegraphics[width=0.78\linewidth]{img/fig_sweep_family.png}
   \caption{Same rank, same learning rate, same mix, different modules. Adapting the two
   feed-forward matrices as well as the four attention projections is what makes the model stop.
   Attention-only adapters barely move off the base model at any rank.}
