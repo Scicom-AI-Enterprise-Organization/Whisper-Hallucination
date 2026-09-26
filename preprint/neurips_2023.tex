@@ -75,10 +75,11 @@ urlcolor=blue
 \maketitle
 
 \begin{abstract}
-Whisper changed what open speech recognition means: one checkpoint, 99 languages, no
-per-language tuning, running on a laptop. It is still the default four years on, and it is
-still the teacher that Distil-Whisper, Kotoba-Whisper and NVIDIA's Granary are all distilled
-from. But it writes sentences nobody said. On 42 clips of pure room tone, \texttt{whisper-large-v3}
+Whisper changed what open speech recognition means: one permissively licensed checkpoint, 99
+languages, no per-language tuning, running on a laptop. Four years on it is still what runs in
+production, downloaded roughly 4.6 M times a month against 568 k for its nearest open rival,
+and it is still the teacher that Distil-Whisper, Kotoba-Whisper and NVIDIA's Granary are
+distilled from. But it writes sentences nobody said. On 42 clips of pure room tone, \texttt{whisper-large-v3}
 emits words on 61.9\% of them and emits something on 100\% of them. The usual response is to
 distil a student from Whisper pseudo-labels and filter the hallucinations out of the corpus
 first. That removes the evidence, not the behaviour: the student is fitted to the subset where
@@ -105,9 +106,8 @@ of the synthetic positives. The benchmark, the lexicon and the synthetic corpus 
 \section{Introduction}
 
 Whisper \citep{radford2022whisper} changed what open speech recognition means. Multilingual
-transcription used to mean a model per language and a pipeline per domain. Whisper made it one
-MIT-licensed checkpoint covering 99 languages, with no per-language tuning, running on a
-laptop. Four years later it is still the default, and it is good: we measured it on 20 FLEURS
+transcription used to mean a model per language and a pipeline per domain. Whisper made it one permissively licensed
+checkpoint covering 99 languages, with no per-language tuning, running on a laptop. Four years later it is still the default, and it is good: we measured it on 20 FLEURS
 \citep{conneau2022fleurs} test clips in each of 58 languages, and
 \texttt{whisper-large-v3} reaches a character error rate of 0.075 on the typical language,
 with 35 of the 58 under 0.15 (Figure~\ref{fig:fleursperlang}).
@@ -122,15 +122,36 @@ Granary \citep{koluguri2025granary}, and therefore so are Canary-1B-v2 and
 Parakeet-TDT-0.6B-v3 \citep{sekoyan2025canaryv2}. A defect in Whisper is not contained to
 Whisper. It propagates into the corpora that train its successors.
 
-It is no longer the most accurate model, and that makes the point stronger rather than weaker.
-Canary-1B-v2 reports an average word error rate of 8.1\% against \texttt{whisper-large-v3}'s
-9.9\% on its 25 European languages, SeamlessM4T \citep{seamless2023m4t} reported a 45\%
-relative reduction over \texttt{whisper-large-v2} on FLEURS across 77 overlapping languages,
-and Omnilingual ASR \citep{keren2025omnilingual} covers more than 1,600 languages. The first
-two of those were trained on Whisper output. Fixing the teacher is worth doing precisely
-because the students have already overtaken it, and Section~\ref{sec:distil} argues that the
-way their corpora are built lets its worst behaviour through while deleting the evidence for
-it.
+It is no longer the most accurate model, and it is still the one in production. Canary-1B-v2
+reports an average word error rate of 8.1\% against \texttt{whisper-large-v3}'s 9.9\% on its
+25 European languages. SeamlessM4T \citep{seamless2023m4t} reported a 45\% relative reduction
+over \texttt{whisper-large-v2} on FLEURS across 77 overlapping languages. Omnilingual ASR
+\citep{keren2025omnilingual} covers more than 1,600 languages. None of that has displaced it,
+for three reasons that have nothing to do with word error rate.
+
+\textbf{Licence.} Whisper's code is MIT and its weights are Apache-2.0, so it ships in a
+commercial product without a conversation. SeamlessM4T, the model with the 45\% reduction, is
+CC-BY-NC: that number is not available to anyone building a product. Canary-1B-v2 and
+Parakeet-TDT-0.6B-v3 are CC-BY-4.0 and are genuinely usable, but they cover 25 languages
+against Whisper's 99.
+
+\textbf{Code-switching.} Real speech in most of the world mixes languages inside one
+utterance. The corpus behind this paper is Malaysian, where a single sentence routinely moves
+between Malay, English, Mandarin and Tamil, and Whisper is the model practitioners reach for
+because it degrades gracefully when the language changes mid-clip rather than locking to the
+language it detected first. A model trained on 25 European languages does not have this
+problem to solve.
+
+\textbf{Adoption.} At the time of writing \texttt{whisper-large-v3} is downloaded roughly
+4.6 M times a month from Hugging Face, against 568 k for Parakeet-TDT-0.6B-v3, 301 k for
+SeamlessM4T v2 and 55 k for Canary-1B-v2. Omnilingual ASR is recent enough that the only
+copies on the Hub are community conversions. Whatever the leaderboards say, Whisper is what is
+running.
+
+So the defect is not confined to one model that has been superseded. It is in the model most
+production systems use, and it is in the teacher that Distil-Whisper, Kotoba-Whisper and
+Granary distilled from. Section~\ref{sec:distil} argues that the way those corpora are built
+lets the behaviour through while deleting the evidence for it.
 
 The failure is this. Over audio with no speech in it, Whisper writes a sentence anyway. Not
 rarely, not only on hard audio, and not harmlessly.
