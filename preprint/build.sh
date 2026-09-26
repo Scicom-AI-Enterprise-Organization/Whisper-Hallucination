@@ -14,6 +14,31 @@ rm -f neurips_2023.aux neurips_2023.out neurips_2023.toc neurips_2023.bbl \
       neurips_2023.blg neurips_2023.fls neurips_2023.fdb_latexmk
 latexmk -C > /dev/null 2>&1
 latexmk -pdf -interaction=nonstopmode -halt-on-error neurips_2023.tex > /tmp/latexmk.log 2>&1
+# every float must be cited before it appears, and in the same order as its citations
+python3 - <<'PY'
+import re
+src = open("neurips_2023.tex").read().split("\n")
+order, first = [], {}
+for i, l in enumerate(src):
+    m = re.match(r"\\begin\{(figure|table)\}", l)
+    if m:
+        j = i
+        while j < len(src) and not src[j].startswith("\\end{" + m.group(1) + "}"):
+            j += 1
+        lab = next((re.search(r"\\label\{((?:fig|tab):[^}]+)\}", src[k]).group(1)
+                    for k in range(i, j + 1)
+                    if re.search(r"\\label\{((?:fig|tab):[^}]+)\}", src[k])), None)
+        if lab:
+            order.append((lab, i))
+    for mm in re.finditer(r"\\ref\{((?:fig|tab):[^}]+)\}", l):
+        first.setdefault(mm.group(1), i)
+late = [k for k, i in order if k not in first or first[k] > i]
+mis = [(order[a][0], order[a + 1][0]) for a in range(len(order) - 1)
+       if order[a][0] in first and order[a + 1][0] in first
+       and first[order[a][0]] > first[order[a + 1][0]]]
+if late: print("  FLOATS BEFORE THEIR FIRST MENTION:", late)
+if mis:  print("  FLOAT ORDER DISAGREES WITH MENTION ORDER:", mis)
+PY
 python3 - <<'PY'
 import re
 log = open("neurips_2023.log", errors="ignore").read()

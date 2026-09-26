@@ -514,6 +514,13 @@ and returns character error rate 1.05 on the typical FLEURS language. Two of its
 land under 0.15, against 35 for \texttt{large-v3}. Specialising on Malay cost everything else,
 and no English benchmark can see it (Figure~\ref{fig:accuracy}).
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.78\linewidth]{img/fig_accuracy.png}
+  \caption{English accuracy hides what a multilingual fine-tune destroyed. \texttt{malaysian-whisper-v2} matches base \texttt{large-v3} on LibriSpeech and returns character error rate 1.05 on the typical FLEURS language.}
+  \label{fig:accuracy}
+\end{figure}
+
 The macro mean and the median disagree by four times because Whisper cannot transcribe some of
 these languages at all. For base \texttt{large-v3}, Amharic sits at 1.81 character error rate,
 Khmer at 1.58, Somali at 1.44, while Spanish, Italian and Dutch sit at 0.01. The mean measures
@@ -530,13 +537,6 @@ the languages Whisper cannot do at all are separated from the ones a fine-tune b
   sit above 1.4 for every checkpoint. The two Malay fine-tunes sit above the usable line almost
   everywhere, which is the damage LibriSpeech cannot report.}
   \label{fig:fleursperlang}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.78\linewidth]{img/fig_accuracy.png}
-  \caption{English accuracy hides what a multilingual fine-tune destroyed. \texttt{malaysian-whisper-v2} matches base \texttt{large-v3} on LibriSpeech and returns character error rate 1.05 on the typical FLEURS language.}
-  \label{fig:accuracy}
 \end{figure}
 
 \texttt{malaysian-turbo-v3} looks broken in Table~\ref{tab:wer} and is not. Drop the roughly 1\% of
