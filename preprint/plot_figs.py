@@ -40,6 +40,7 @@ MODELS = [
     ("Malaysian-whisper-large-v3-turbo-v3", "malaysian-turbo-v3", "#203882", "o"),
 ]
 GRID = dict(color="#e0e0e0", linewidth=0.8, linestyle="--", alpha=0.6)
+OURS = "#203882"          # Scicom's own models, so a reader can tell whose is whose
 INK = "#333333"
 TICK = "#444444"
 DPI = 200
@@ -335,16 +336,18 @@ def fig_wild_blank():
 
 # 10. picking a generator
 def fig_tts():
-    rows = [("Multilingual-Expressive", 0.221, "45 named voices"),
-            ("OmniVoice (auto)", 0.349, "646 languages, 1 voice each"),
-            ("OmniVoice (voice design)", 0.589, "646 languages, 48 tags"),
-            ("ToucanTTS", 0.830, "7,233 languages"),
-            ("Higgs Audio v2", 1.089, "cloning"),
-            ("Higgs Audio v3", 1.230, "cloning")]
+    # (label, mean CER, note, ours). Scicom's own model is marked and coloured differently,
+    # because a reader comparing candidates needs to know which one the authors made.
+    rows = [("Scicom Multilingual-Expressive-TTS-1.7B", 0.221, "45 named voices", True),
+            ("OmniVoice (auto)", 0.349, "646 languages, 1 voice each", False),
+            ("OmniVoice (voice design)", 0.589, "646 languages, 48 tags", False),
+            ("ToucanTTS", 0.830, "7,233 languages", False),
+            ("Higgs Audio v2", 1.089, "cloning", False),
+            ("Higgs Audio v3", 1.230, "cloning", False)]
     rows = rows[::-1]
-    fig, ax = plt.subplots(figsize=(6.6, 3.7), dpi=DPI)
+    fig, ax = plt.subplots(figsize=(6.8, 3.7), dpi=DPI)
     y = np.arange(len(rows))
-    colors = ["#1e8449" if r[1] < 0.4 else "#5b7fd4" for r in rows]
+    colors = [OURS if r[3] else "#5b7fd4" for r in rows]
     ax.barh(y, [r[1] for r in rows], height=0.6, color=colors, edgecolor="white",
             linewidth=0.7, zorder=3)
     for yy, r in zip(y, rows):
@@ -352,10 +355,15 @@ def fig_tts():
                 color=INK)
     ax.set_yticks(y)
     ax.set_yticklabels([r[0] for r in rows], fontsize=8.5, color=INK)
+    for tick, r in zip(ax.get_yticklabels(), rows):
+        if r[3]:
+            tick.set_color(OURS)
+            tick.set_fontweight("bold")
     ax.set_xlim(0, 2.0)
     frame(ax, xlab="round-trip character error rate, lower is better", axis="x",
           title="Coverage and quality are not the same axis",
-          sub="48 lexicon phrases, 22 languages, identical text for every system")
+          sub="48 lexicon phrases, 22 languages, identical text for every system; "
+              "the Scicom model is in dark blue")
     save(fig, "fig_tts.png")
 
 
@@ -395,16 +403,21 @@ def fig_vc():
 
     fig, ax = plt.subplots(figsize=(6.6, 4.4), dpi=DPI)
     for i, (name, d, gap, dur) in enumerate(pts):
-        color = "#922b21" if dur > 1.5 else ("#1e8449" if d < 0.15 else "#5b7fd4")
+        ours = name.startswith("scicom")
+        color = OURS if ours else ("#922b21" if dur > 1.5 else
+                                   ("#1e8449" if d < 0.15 else "#5b7fd4"))
         ax.scatter([d], [gap], s=80 + 200 * max(dur - 1, 0), c=color, edgecolors="white",
                    linewidths=1.2, zorder=5)
         # Three systems land within two calibrated points of each other, so alternating above
         # and below is not enough; those get pushed sideways by hand.
         dx, dy, ha = OFFSETS.get(name, (0, 13, "center"))
-        ax.annotate(name, (d, gap), textcoords="offset points", xytext=(dx, dy), ha=ha,
-                    fontsize=7.2, color=INK, zorder=6)
+        ax.annotate("Scicom " + name if ours else name, (d, gap),
+                    textcoords="offset points", xytext=(dx, dy), ha=ha, fontsize=7.2,
+                    color=OURS if ours else INK,
+                    fontweight="bold" if ours else "normal", zorder=6)
     ax.axvline(0, color="#1a1a2e", linewidth=0.9, linestyle=":", alpha=0.5)
-    ax.text(0.015, 0.975, "marker size is output length relative to the source; red runs long",
+    ax.text(0.015, 0.975, "marker size is output length relative to the source; "
+            "dark blue is Scicom's own model, red runs long",
             transform=ax.transAxes, fontsize=7.4, color="#666666", style="italic", va="top")
     ax.set_ylim(-14, 112)
     ax.set_xlim(-0.62, 1.62)

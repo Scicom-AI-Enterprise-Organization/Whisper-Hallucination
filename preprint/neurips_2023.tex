@@ -144,8 +144,7 @@ closest existing thing to the fix this paper proposes.
 \caption{The checkpoints, and the short labels used in every table and figure below. The two
 Malay fine-tunes are built on \texttt{large-v2} and \texttt{turbo} respectively, and
 \texttt{turbo} differs from \texttt{large-v3} in having four decoder layers rather than
-thirty-two. Wide tables abbreviate the last two labels further, to \texttt{mal-v2} and
-\texttt{mal-turbo-v3}.}
+thirty-two.}
 \label{tab:models}
 \footnotesize
 \begin{tabular}{lllp{0.16\linewidth}}
@@ -170,7 +169,9 @@ second counts any output including a bare full stop.}
 \footnotesize
 \begin{tabular}{lrrrrrr}
 \toprule
-\textbf{arm} & \textbf{n} & \textbf{large-v2} & \textbf{large-v3} & \textbf{turbo} & \textbf{mal-v2} & \textbf{mal-turbo-v3} \\
+\textbf{arm} & \textbf{n} & \textbf{large-v2} & \textbf{large-v3} & \textbf{turbo}
+ & \shortstack{\textbf{malaysian}\\\textbf{-v2}}
+ & \shortstack{\textbf{malaysian}\\\textbf{-turbo-v3}} \\
 \midrule
 \texttt{silence} & 42 & 85.7\% & 61.9\% & 59.5\% & 35.7\% & \textbf{16.7\%} \\
 \texttt{music} & 600 & 98.7\% & 97.0\% & 96.7\% & 69.7\% & \textbf{31.0\%} \\
@@ -426,7 +427,9 @@ the central measurement of the paper and it is what makes a one-sided metric dan
 \footnotesize
 \begin{tabular}{lrrrrrr}
 \toprule
-\textbf{arm} & \textbf{n} & \textbf{large-v2} & \textbf{large-v3} & \textbf{turbo} & \textbf{mal-v2} & \textbf{mal-turbo-v3} \\
+\textbf{arm} & \textbf{n} & \textbf{large-v2} & \textbf{large-v3} & \textbf{turbo}
+ & \shortstack{\textbf{malaysian}\\\textbf{-v2}}
+ & \shortstack{\textbf{malaysian}\\\textbf{-turbo-v3}} \\
 \midrule
 \texttt{librispeech} WER & 2{,}620 & 4.5\% & \textbf{3.5\%} & \textbf{3.5\%} & \textbf{3.5\%} & 10.6\% \\
 \texttt{genuine} WER & 4{,}694 & 35.4\% & \textbf{31.8\%} & \textbf{31.8\%} & 42.3\% & 60.7\% \\
@@ -552,8 +555,32 @@ for another.
 
 Hallucinations repeat themselves. \texttt{thank you for watching}, \texttt{so}, the Russian
 \texttt{Prodolzhenie sleduet...} (``to be continued''), and the Malay
-\texttt{terima kasih kerana menonton} appear over and over on audio containing none of them. We merged four public sources with our own mining
-into 40,891 phrases across 100 languages.
+\texttt{terima kasih kerana menonton} appear over and over on audio containing none of them. We merged four public sources into 40,891
+phrases across 100 languages.
+
+\begin{table}[!htbp]
+\centering
+\caption{Where the lexicon comes from. All four are public and permissively licensed, and all
+four are vendored in the release so the merge is reproducible.}
+\label{tab:lexsources}
+\footnotesize
+\begin{tabular}{p{0.34\linewidth}p{0.26\linewidth}rl}
+\toprule
+\textbf{source} & \textbf{what it is} & \textbf{phrases} & \textbf{licence} \\
+\midrule
+AGH DSP full tally \citep{baranski2025nonspeech} & Whisper output over non-speech audio & 30{,}407 & MIT \\
+AGH DSP ``Bag of Hallucinations'' \citep{baranski2025nonspeech} & the curated subset of the above & 294 & MIT \\
+\texttt{whisper-hallucinations} \citep{arbonel2024hfhalluc} & community-collected, multilingual & 7{,}889 & MIT \\
+NVIDIA NeMo SDP, Granary \citep{koluguri2025granary} & the pipeline's own filter lists, 23 languages & 3{,}028 & Apache-2.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The fourth row is worth dwelling on. Those files are the lists NVIDIA's pipeline uses to
+\emph{delete} hallucinated pseudo-labels from Granary, shipped alongside the
+\texttt{DetectWhisperHallucinationFeatures} processor that applies them. We use the same lists
+to \emph{generate} training data. The phrases a corpus builder throws away are exactly the
+phrases a model needs to be taught to handle.
 
 The lexicon is the bridge between the two halves of this work. Read one way it is a blocklist.
 Read the other way it is a list of sentences the model must still be able to transcribe when
@@ -592,11 +619,11 @@ than it looks.
 \caption{Text-to-speech candidates. Round-trip character error rate, lower is better.}
 \label{tab:tts}
 \footnotesize
-\begin{tabular}{lrrrllll}
+\begin{tabular}{p{0.32\linewidth}rrrll}
 \toprule
  & \textbf{mean CER} & \textbf{median} & \textbf{wins} & \textbf{languages} & \textbf{voices} \\
 \midrule
-Multilingual-Expressive-TTS-1.7B & \textbf{0.221} & \textbf{0.000} & \textbf{16} & untagged & 45 named \\
+\textbf{Scicom} Multilingual-Expressive-TTS-1.7B & \textbf{0.221} & \textbf{0.000} & \textbf{16} & untagged & 45 named \\
 OmniVoice (auto) & 0.349 & 0.018 & 2 & \textbf{646} & \textbf{1 per language} \\
 OmniVoice (voice design) & 0.589 & 0.062 & 3 & \textbf{646} & 48 tags \\
 ToucanTTS & 0.830 & 0.586 & 0 & \textbf{7{,}233} & sampled from a GAN \\
@@ -608,7 +635,10 @@ Higgs Audio v3 & 1.230 & 0.483 & 1 & 82/100 & cloning \\
 
 Coverage and quality are not the same axis. ToucanTTS covers 7,233 languages and wins nothing.
 OmniVoice covers 646 and is the only system whose coverage is enumerable, so it drives the
-hundred-language sweep, with Multilingual-Expressive handling Malay, English, Chinese and Tamil.
+hundred-language sweep, with Scicom's own Multilingual-Expressive-TTS-1.7B handling Malay,
+English, Chinese and Tamil. It is the only model in the comparison that we built, and it is
+marked as such in Table~\ref{tab:tts} and Figure~\ref{fig:tts} so the reader can discount it
+if they wish.
 
 \subsection{Voice diversity}
 
@@ -632,11 +662,11 @@ The obvious fix, reference cloning, is the wrong one.
 Lower cosine means better separated voices.}
 \label{tab:diversity}
 \footnotesize
-\begin{tabular}{llll}
+\begin{tabular}{p{0.30\linewidth}lll}
 \toprule
 \textbf{route} & \textbf{yield mk / gu / it} & \textbf{median CER} & \textbf{different-voice cosine} \\
 \midrule
-\textbf{Multilingual-Expressive, speaker name} & \textbf{86\% / 80\% / 79\%} & 0.07 / 0.17 / 0.00 & \textbf{0.65 / 0.64 / 0.58} \\
+\textbf{Scicom Multilingual-Expressive, speaker name} & \textbf{86\% / 80\% / 79\%} & 0.07 / 0.17 / 0.00 & \textbf{0.65 / 0.64 / 0.58} \\
 OmniVoice, reference cloning & 46\% / 68\% / 53\% & 0.32 / 0.25 / 0.26 & 0.68 / 0.72 / 0.69 \\
 auto mode, for reference & 89\% / 73\% / 83\% & 0.02 / 0.11 / 0.00 & 0.91 / 0.81 / 0.77 \\
 \bottomrule
@@ -912,6 +942,49 @@ a thousand steps at a Malay-weighted mix moves the model away from the rest. Thi
 honest cost of the method and it is the first thing we would attack next. Without this arm we
 would not have known: LibriSpeech word error rate is flat at 0.034 to 0.037 across almost every
 run in the table.
+
+\section{Conclusion}
+
+Whisper's habit of writing sentences over silence is in the weights, not in the decoding loop.
+That matters because the usual remedies live outside the weights. A voice activity detector, a
+no-speech threshold, a blocklist: all of them help, and all of them disappear the moment the
+model is served on a stack that does not implement Whisper's own transcription loop.
+
+It also matters because Whisper is copied. Distil-Whisper, Kotoba-Whisper and Granary are all
+built on its pseudo-labels, and Canary-1B-v2 and Parakeet-TDT-0.6B-v3 are built on Granary. The
+pipelines that produce them filter hallucinated transcripts out of the corpus, which is the
+right thing to do for corpus quality and the wrong thing to do for this problem: it deletes the
+evidence and keeps the behaviour. The student is fitted to the half of the teacher that was
+already correct.
+
+Adding non-speech audio so the model learns to stay quiet is already standard, and on its own
+it does not work. The checkpoint in our benchmark that is best on every non-speech arm,
+16.7\% on silence against 61.9\% for base \texttt{large-v3}, is also the one that recovers the
+fewest genuinely spoken phrases, deletes 58\% of repeated speech, and returns character error
+rate 1.26 on the typical FLEURS language while matching the base model on LibriSpeech. Our own
+sweep reproduces that failure from scratch in a thousand steps whenever the negatives are
+unaccompanied: the quietest run in the paper, 0.071 on real voice-free audio, recovers 29.2\%
+of spoken phrases and triples LibriSpeech word error rate. Negative-only supervision teaches
+suppression without teaching discrimination, and a model can always be made quiet by making it
+mute.
+
+The missing ingredient is cheap once you look for it. Hallucinations are a small, enumerable
+set of phrases, so we collected 40,891 of them in 100 languages, chose a text-to-speech system
+by measurement, and synthesised them as positives: the same text the negatives teach the model
+to suppress, this time genuinely spoken and labelled with its transcript. In twelve matched
+pairs of fine-tunes that differ by nothing else, those clips lower word emission on real
+voice-free audio in 10 pairs and raise phrase recovery in 11, and among the ten pairs that hold
+English accuracy it is 10 out of 10. The best checkpoint takes silence hallucination from
+61.9\% to 2.4\% and words over real voice-free audio from 99.9\% to 47.8\% while raising phrase
+recovery from 69.8\% to 82.7\%, for five thousandths of LibriSpeech word error rate. That is
+the top-left corner Figure~\ref{fig:tradeoff} shows to be empty.
+
+Two things we would not have known without measuring both halves on every run. Training loss
+ranks these models backwards, because a blank-heavy mix is cheap to fit and the mix that trains
+to the better loss is the worse model. And every fine-tune we produced is worse than the base
+model on FLEURS while LibriSpeech stays flat at 0.034 to 0.037, so an English-only accuracy
+guard would have reported no cost at all. The benchmark, the lexicon, the synthetic corpus and
+the wild audio are released so the next attempt can be scored the same way.
 
 \section{Limitations}
 
