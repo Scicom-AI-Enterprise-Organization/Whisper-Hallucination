@@ -641,7 +641,9 @@ OmniVoice covers 646 and is the only system whose coverage is enumerable, so it 
 hundred-language sweep, with Scicom's own Multilingual-Expressive-TTS-1.7B handling Malay,
 English, Chinese and Tamil. It is the only model in the comparison that we built, and it is
 marked as such in Table~\ref{tab:tts} and Figure~\ref{fig:tts} so the reader can discount it
-if they wish.
+if they wish. Its 0.221 is measured in speaker-name mode, which is the only mode it is good in;
+its zero-shot cloning path is the worst system in this paper and Section~\ref{sec:vc} shows
+why.
 
 \subsection{Voice diversity}
 
@@ -682,6 +684,7 @@ auto-mode clips kept. 12,190 of 15,675 new clips passed the quality gate, 77.8\%
 collapsed language moved from 0.81 to 0.63.
 
 \subsection{Voice conversion}
+\label{sec:vc}
 
 \begin{figure}[!htbp]
   \centering
@@ -694,6 +697,47 @@ Character error rate alone picks the wrong winner here, because a converter that
 input unchanged scores a perfect zero degradation and is worthless. We report the cost added on
 top of the source clip, similarity to the target and to the source on the same calibrated
 scale, and the gap between them, which is the conversion that actually happened.
+
+\textbf{Our own model is only usable in one of its two modes, and we should say so.}
+Multilingual-Expressive can be conditioned either on a speaker name from its training
+inventory or on a reference clip. The two land at opposite extremes on the same 184 clips in
+the same 21 languages.
+
+\begin{table}[!htbp]
+\centering
+\caption{The two ways to condition Scicom's Multilingual-Expressive, measured on the same
+phrases. Naming a speaker is the best result in the whole comparison. Zero-shot cloning from a
+reference clip is the worst, and the reason is duration, not timbre.}
+\label{tab:twomodes}
+\footnotesize
+\begin{tabular}{L{0.26\linewidth}rrrrr}
+\toprule
+\textbf{conditioning} & \textbf{CER} & \textbf{$\Delta$CER} & \textbf{$\to$ target} & \textbf{duration $\times$} & \textbf{$>2\times$} \\
+\midrule
+speaker name & \textbf{0.308} & \textbf{$-$0.035} & n/a & \textbf{1.03} & \textbf{2.7\%} \\
+reference clip, zero shot & 1.740 & $+$1.397 & 0.861 & 3.27 & 67.9\% \\
+\addlinespace[2pt]
+\textit{Higgs v3, for comparison} & \textit{0.653} & \textit{$+$0.311} & \textit{0.813} & \textit{0.90} & \textit{2.7\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+In speaker-name mode it is the intelligibility winner outright, and the only system anywhere in
+this comparison with a negative $\Delta$CER: the re-voiced clip is easier to recognise than the
+OmniVoice clip it was asked to re-voice, across all 21 languages, at the right length.
+
+Zero shot from a reference clip it is the worst system we measured. It matches the target
+voice better than anything else, 0.861 raw cosine against Higgs v3's 0.813, so the timbre is
+not the problem. It does not stop. The median output is \textbf{3.27 times} the length of the
+source and \textbf{67.9\%} of clips run past twice, which is what drags character error rate to
+1.740. On two-word phrases it keeps talking. Read the similarity with that in mind as well,
+because a longer clip gives a better speaker-embedding estimate, so the voice match is
+flattered by the same over-generation that ruins the transcript.
+
+The practical consequence for this paper is that the positive pool is built with speaker names
+only. Anyone reaching for this model to clone a specific voice from one reference clip should
+use Higgs v3 or OmniVoice instead, or fix the duration first with a stop condition or by
+trimming to the phrase.
 
 \subsection{Quality gate}
 

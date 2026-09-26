@@ -105,7 +105,7 @@ def fig_nonspeech():
     ax.set_xticklabels([n for _, n in arms], fontsize=8.5, color=INK)
     ax.set_ylim(0, 1.05)
     pct(ax)
-    frame(ax, ylab="clips where the model emitted words",
+    frame(ax, ylab="clips where the model emitted words  (lower is better)",
           title="Hallucination on audio with no speech in it",
           sub="the correct output is the empty string, so every bar is error")
     legend_below(ax, ncol=5, pad=0.20)
@@ -136,7 +136,7 @@ def fig_repetition():
     ticks = [t for t in ax.get_xticks() if 0 <= t <= 0.72]
     ax.set_xticks(ticks)
     ax.set_xticklabels([f"{t:.0%}" for t in ticks], fontsize=8.5, color=TICK)
-    frame(ax, xlab="share of 1,440 clips", axis="x",
+    frame(ax, xlab="share of 1,440 clips  (lower is better on both series)", axis="x",
           title="Both extremes are wrong on repeated speech",
           sub="the clip contains a unit repeated an exact number of times")
     legend_below(ax, ncol=1, pad=0.18)
@@ -178,7 +178,7 @@ def fig_tradeoff():
     ax.set_yticks(np.arange(0.3, 0.81, 0.1))
     ax.set_yticklabels([f"{v:.0%}" for v in np.arange(0.3, 0.81, 0.1)], fontsize=8.5, color=TICK)
     frame(ax, xlab="emits words over audio with NO speech  (worse to the right)",
-          ylab="recovers the phrase when it IS spoken",
+          ylab="recovers the phrase when it IS spoken  (higher is better)",
           title="Every checkpoint trades one failure for the other", axis="both")
     save(fig, "fig_tradeoff.png")
 
@@ -202,7 +202,7 @@ def fig_accuracy():
     ax.set_xticks(x)
     ax.set_xticklabels([n for _, n, _, _ in MODELS], fontsize=8.5, color=INK)
     ax.set_ylim(0, 1.45)
-    frame(ax, ylab="error rate",
+    frame(ax, ylab="error rate  (lower is better)",
           title="English accuracy hides what a multilingual fine-tune destroyed",
           sub="malaysian-v2 matches base large-v3 on librispeech and loses every other language")
     legend_below(ax, ncol=2, pad=0.16)
@@ -225,7 +225,7 @@ def fig_fleurs_per_lang():
     ax.set_ylim(0, 2.02)
     ax.set_xticks([])
     frame(ax, xlab="58 FLEURS languages, ordered by base large-v3 CER (easiest to hardest)",
-          ylab="character error rate (clipped at 2.0)",
+          ylab="character error rate, clipped at 2.0  (lower is better)",
           title="Where the multilingual damage actually is",
           sub="the two Malay fine-tunes sit above the usable line in almost every language")
     legend_below(ax, ncol=5, pad=0.14)
@@ -278,7 +278,7 @@ def fig_lexsynth_tail():
                 fontweight="bold")
     ax.set_xticks(x)
     ax.set_xticklabels([n for _, n, _, _ in MODELS], fontsize=8.5, color=INK)
-    frame(ax, ylab="character error rate, room tone condition",
+    frame(ax, ylab="character error rate, room tone  (lower is better)",
           title="Report the median as well, or the tail speaks for the arm",
           sub="3 to 6 percent of clips run past twice the phrase length and carry the mean")
     legend_below(ax, ncol=2, pad=0.16)
@@ -327,7 +327,7 @@ def fig_wild_blank():
     ax.set_xticklabels([n for _, n, _, _ in MODELS], fontsize=8.5, color=INK)
     ax.set_ylim(0, 1.15)
     pct(ax, 1.0)
-    frame(ax, ylab="share of 4,421 clips",
+    frame(ax, ylab="share of 4,421 clips  (lower is better)",
           title="Real audio a VAD confirms has no speech in it",
           sub="the lexicon explains most of what gets written, but only once the clip is known blank")
     legend_below(ax, ncol=2, pad=0.16)
@@ -438,7 +438,7 @@ def fig_vc():
     ax.set_ylim(-14, 112)
     ax.set_xlim(-0.62, 1.62)
     frame(ax, xlab="character error rate added on top of the source clip",
-          ylab="identity moved, calibrated points\n(0 = a stranger, 100 = the target)",
+          ylab="identity moved, calibrated points  (higher is better)\n(0 = a stranger, 100 = the target)",
           title="A converter that changes nothing scores a perfect zero cost", axis="both")
     save(fig, "fig_vc.png")
 
@@ -473,7 +473,7 @@ def fig_voice_diversity():
     ax.set_xticklabels(collapsed, fontsize=7.2, color=INK, rotation=90)
     ax.set_xlim(-0.6, len(collapsed) - 0.4)
     ax.set_ylim(0.40, 0.97)
-    frame(ax, ylab="median pairwise speaker similarity",
+    frame(ax, ylab="median pairwise speaker similarity  (lower is better)",
           title="One voice per language, and what fixed it",
           sub=f"the {len(collapsed)} OmniVoice languages that sat at 0.75 or worse, "
               "calibrated WavLM scale")
@@ -548,14 +548,14 @@ def _paired(metric, ylab, title, sub, fname, base=None, as_pct=True):
 
 
 def fig_sweep_wild_halluc():
-    _paired("wild_words", "words emitted over voice-free wild audio",
+    _paired("wild_words", "words emitted over voice-free wild audio  (lower is better)",
             "Question 1 and 2, side by side: hallucination on real audio",
             "every bar is one fine-tune of whisper-large-v3, 1,000 steps, same data except the "
             "synthetic positives", "fig_sweep_wild_halluc.png", base=0.999)
 
 
 def fig_sweep_wild_loop():
-    _paired("wild_loop", "clips with a token run of six or more",
+    _paired("wild_loop", "clips with a token run of six or more  (lower is better)",
             "The repetition half, on the same audio",
             "looping on real voice-free clips", "fig_sweep_wild_loop.png")
 
@@ -621,7 +621,8 @@ def fig_loss():
     ax.set_yticks([0.3, 0.5, 1, 2, 4, 8])
     ax.set_yticklabels(["0.3", "0.5", "1", "2", "4", "8"], fontsize=8.5, color=TICK)
     ax.set_xlim(0, 1000)
-    frame(ax, xlab="optimiser step", ylab="training loss, log scale",
+    frame(ax, xlab="optimiser step",
+          ylab="training loss, log scale  (lower is not better, see caption)",
           title="The mix with the better loss is the worse model",
           sub="24 runs, logged every 25 steps; an empty target is cheap, so a blanker mix "
               "scores lower by construction")
@@ -660,7 +661,7 @@ def fig_loss_vs_result():
     ax.set_xticks([0.3, 0.5, 1, 2, 3])
     ax.set_xticklabels(["0.3", "0.5", "1", "2", "3"], fontsize=8.5, color=TICK)
     frame(ax, xlab="final training loss, log scale",
-          ylab="phrase recovered when it IS spoken",
+          ylab="phrase recovered when it IS spoken  (higher is better)",
           title="Training loss does not rank these models",
           sub="every run left of 0.5 is a negatives-only mix, and every one of them is worse",
           axis="both")
@@ -699,7 +700,7 @@ def fig_sweep_rank():
     ax.set_xticklabels(["8", "16", "32", "64", "128", "256", "1,600"], fontsize=8.5, color=TICK)
     pct(ax, 1.05)
     frame(ax, xlab="trainable parameters, millions, log scale",
-          ylab="words emitted over voice-free wild audio",
+          ylab="words emitted over voice-free wild audio  (lower is better)",
           title="Does capacity buy anything?",
           sub="marker shape is which modules the adapters touch", axis="both")
     legend_below(ax, ncol=3, pad=0.22)
@@ -740,7 +741,8 @@ def fig_sweep_family():
     ax.set_xticks(RANKS)
     ax.set_xticklabels([str(r) for r in RANKS], fontsize=8.5, color=TICK)
     pct(ax, 1.05)
-    frame(ax, xlab="LoRA rank", ylab="words emitted over voice-free wild audio",
+    frame(ax, xlab="LoRA rank",
+          ylab="words emitted over voice-free wild audio  (lower is better)",
           title="Learning to stop lives in the feed-forward layers",
           sub="`all` mix; one line per learning rate, dotted 1e-4, dashed 2e-4, solid 5e-4",
           axis="both")
