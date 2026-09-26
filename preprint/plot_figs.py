@@ -446,22 +446,39 @@ def fig_voice_diversity():
 # These read a dump produced on the GPU box by `bench/sweep_table.py --json`, because the run
 # directories are 24 merged checkpoints and never leave it.
 SWEEP = HERE / "sweep_rows.json"
-CONFIGS = [("lora_r32", 32, lr) for lr in ("1e-4", "2e-4", "5e-4")] + \
-          [("lora_r64", 64, lr) for lr in ("1e-4", "2e-4", "5e-4")] + \
-          [("lora_r128", 128, lr) for lr in ("1e-4", "2e-4", "5e-4")] + \
-          [("full", 0, lr) for lr in ("5e-6", "1e-5", "2e-5")]
+LRS = ("1e-4", "2e-4", "5e-4")
+RANKS = (8, 16, 32, 64, 128)
+# Trainable parameters per rank unit, measured from the runs. The MLP pair costs 1.83x.
+PER_RANK = {"loraattn": 983_040, "lora": 1_802_240}
+FULL_PARAMS = 1_574_900_000
+CONFIGS = ([("lora", r, lr) for r in RANKS for lr in LRS]
+           + [("loraattn", r, lr) for r in RANKS for lr in LRS]
+           + [("full", 0, lr) for lr in ("5e-6", "1e-5", "2e-5")])
+FAM_MARKER = {"lora": "s", "loraattn": "o", "full": "*"}
+FAM_LABEL = {"lora": "attn + MLP", "loraattn": "attn only", "full": "full fine-tune"}
+
+
+def run_name(fam, rank, lr, mix):
+    return f"v3_full_{mix}_lr{lr}" if fam == "full" else f"v3_{fam}_r{rank}_{mix}_lr{lr}"
+
+
+def params_of(fam, rank):
+    return FULL_PARAMS if fam == "full" else PER_RANK[fam] * rank
 
 
 def sweep_rows():
+    """[(label, family, rank, lr, all_row, no_synth_row)] for every configuration present."""
     if not SWEEP.exists():
         return None
     rows = {r["run"]: r for r in json.loads(SWEEP.read_text())}
     out = []
-    for _, rank, lr in CONFIGS:
+    for fam, rank, lr in CONFIGS:
+        a = rows.get(run_name(fam, rank, lr, "all"))
+        n = rows.get(run_name(fam, rank, lr, "no_synth"))
+        if a is None and n is None:
+            continue
         label = (f"r{rank}\n{lr}" if rank else f"full\n{lr}")
-        a = rows.get(f"v3_lora_r{rank}_all_lr{lr}" if rank else f"v3_full_all_lr{lr}")
-        n = rows.get(f"v3_lora_r{rank}_no_synth_lr{lr}" if rank else f"v3_full_no_synth_lr{lr}")
-        out.append((label, a, n))
+        out.append((label, fam, rank, lr, a, n))
     return out
 
 
@@ -472,8 +489,8 @@ def _paired(metric, ylab, title, sub, fname, base=None, as_pct=True):
         return
     fig, ax = plt.subplots(figsize=(6.8, 3.9), dpi=DPI)
     x = np.arange(len(rows))
-    av = [(r[1] or {}).get(metric) for r in rows]
-    nv = [(r[2] or {}).get(metric) for r in rows]
+    av = [(r[4] or {}).get(metric) for r in rows]
+    nv = [(r[5] or {}).get(metric) for r in rows]
     ax.bar(x - 0.2, [v if v is not None else 0 for v in nv], width=0.38, color="#922b21",
            edgecolor="white", linewidth=0.7, label="without the synthetic lexicon", zorder=3)
     ax.bar(x + 0.2, [v if v is not None else 0 for v in av], width=0.38, color="#1e8449",
@@ -483,7 +500,7 @@ def _paired(metric, ylab, title, sub, fname, base=None, as_pct=True):
         ax.text(len(rows) - 0.4, base, f" base large-v3  {base:.3f}", fontsize=7.4,
                 color="#1a1a2e", style="italic", va="bottom", ha="right")
     ax.set_xticks(x)
-    ax.set_xticklabels([r[0] for r in rows], fontsize=7.6, color=INK)
+    ax.set_xticklabels([r[0] for r in rows], fontsize=6.0, color=INK)
     if as_pct:
         pct(ax, max([v for v in av + nv + [base or 0] if v is not None] + [0.01]) * 1.2)
     frame(ax, ylab=ylab, title=title, sub=sub)
@@ -510,14 +527,18 @@ def fig_sweep_cost():
         print("!! fig_sweep_cost.png: no sweep_rows.json yet")
         return
     fig, ax = plt.subplots(figsize=(6.6, 4.4), dpi=DPI)
-    for label, a, n in rows:
-        for r, color, marker, lab in ((n, "#922b21", "o", "without synthetic lexicon"),
-                                      (a, "#1e8449", "s", "with synthetic lexicon")):
+    seen = set()
+    for label, fam, rank, lr, a, n in rows:
+        for r, mix, color, marker in ((n, "no_synth", "#922b21", "o"),
+                                      (a, "all", "#1e8449", "s")):
             if not r or r.get("wild_words") is None or r.get("lex_rec") is None:
                 continue
-            ax.scatter([r["wild_words"]], [r["lex_rec"]], s=80, c=color, marker=marker,
-                       edgecolors="white", linewidths=1.1, zorder=5,
-                       label=lab if label == rows[0][0] else None)
+            lab = None
+            if mix not in seen:
+                seen.add(mix)
+                lab = f"{'with' if mix == 'all' else 'without'} synthetic lexicon"
+            ax.scatter([r["wild_words"]], [r["lex_rec"]], s=70, c=color, marker=marker,
+                       edgecolors="white", linewidths=1.0, zorder=5, label=lab)
     ax.scatter([0.999], [0.698], s=200, c="#1a1a2e", marker="*", edgecolors="white",
                linewidths=1.2, zorder=6, label="base large-v3")
     frame(ax, xlab="words emitted over voice-free wild audio  (better to the left)",
@@ -577,18 +598,21 @@ def fig_loss_vs_result():
     runs = json.loads(LOSS.read_text())
     final = {k: v["points"][-1][1] for k, v in runs.items()}
     fig, ax = plt.subplots(figsize=(6.6, 4.2), dpi=DPI)
-    first = True
-    for _, rank, lr in CONFIGS:
-        for mix, color, marker in (("no_synth", "#922b21", "o"), ("all", "#1e8449", "s")):
-            name = (f"v3_lora_r{rank}_{mix}_lr{lr}" if rank else f"v3_full_{mix}_lr{lr}")
-            row = next((r for r in json.loads(SWEEP.read_text()) if r["run"] == name), None)
-            if not row or name not in final or row.get("lex_rec") is None:
+    seen = set()
+    for _, fam, rank, lr, a, n in rows:
+        for row, mix, color, marker in ((n, "no_synth", "#922b21", "o"),
+                                        (a, "all", "#1e8449", "s")):
+            if not row or row.get("lex_rec") is None:
                 continue
-            ax.scatter([final[name]], [row["lex_rec"]], s=80, c=color, marker=marker,
-                       edgecolors="white", linewidths=1.1, zorder=5,
-                       label=(f"{'with' if mix == 'all' else 'without'} synthetic lexicon")
-                       if first else None)
-        first = False
+            name = run_name(fam, rank, lr, mix)
+            if name not in final:
+                continue
+            lab = None
+            if mix not in seen:
+                seen.add(mix)
+                lab = f"{'with' if mix == 'all' else 'without'} synthetic lexicon"
+            ax.scatter([final[name]], [row["lex_rec"]], s=70, c=color, marker=marker,
+                       edgecolors="white", linewidths=1.0, zorder=5, label=lab)
     ax.axhline(0.698, color="#1a1a2e", linewidth=0.9, linestyle=":", alpha=0.7)
     ax.text(0.98, 0.706, "base large-v3, 0.698", transform=ax.get_yaxis_transform(),
             ha="right", fontsize=7.6, color="#1a1a2e", style="italic")
@@ -605,12 +629,50 @@ def fig_loss_vs_result():
     save(fig, "fig_loss_vs_result.png")
 
 
+def fig_sweep_rank():
+    """Trainable parameters against the result, which is the rank and target-set question."""
+    rows = sweep_rows()
+    if not rows:
+        print("!! fig_sweep_rank.png: no sweep_rows.json yet")
+        return
+    fig, ax = plt.subplots(figsize=(6.6, 4.2), dpi=DPI)
+    seen = set()
+    for _, fam, rank, lr, a, n in rows:
+        for r, mix, color in ((n, "no_synth", "#922b21"), (a, "all", "#1e8449")):
+            if not r or r.get("wild_words") is None:
+                continue
+            key = (fam, mix)
+            lab = None
+            if key not in seen:
+                seen.add(key)
+                lab = f"{FAM_LABEL[fam]}, {'with' if mix == 'all' else 'without'} synth"
+            # a star reads much smaller than a square at the same point area
+            size = 190 if fam == "full" else 70
+            ax.scatter([params_of(fam, rank) / 1e6], [r["wild_words"]], s=size, c=color,
+                       marker=FAM_MARKER[fam], edgecolors="white", linewidths=1.0,
+                       zorder=5, label=lab)
+    ax.axhline(0.999, color="#1a1a2e", linewidth=0.9, linestyle=":", alpha=0.7)
+    ax.text(0.99, 0.985, "base large-v3", transform=ax.get_yaxis_transform(), ha="right",
+            fontsize=7.6, color="#1a1a2e", style="italic", va="top")
+    ax.set_xscale("log")
+    ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    ax.set_xticks([8, 16, 32, 64, 128, 256, 1600])
+    ax.set_xticklabels(["8", "16", "32", "64", "128", "256", "1,600"], fontsize=8.5, color=TICK)
+    pct(ax, 1.05)
+    frame(ax, xlab="trainable parameters, millions, log scale",
+          ylab="words emitted over voice-free wild audio",
+          title="Does capacity buy anything?",
+          sub="marker shape is which modules the adapters touch", axis="both")
+    legend_below(ax, ncol=3, pad=0.22)
+    save(fig, "fig_sweep_rank.png")
+
+
 if __name__ == "__main__":
     for fn in (fig_nonspeech, fig_repetition, fig_tradeoff, fig_accuracy, fig_fleurs_per_lang,
                fig_lexsynth_recovered, fig_lexsynth_tail, fig_wild_yield, fig_wild_blank,
                fig_tts, fig_vc, fig_voice_diversity,
                fig_sweep_wild_halluc, fig_sweep_wild_loop, fig_sweep_cost,
-               fig_loss, fig_loss_vs_result):
+               fig_loss, fig_loss_vs_result, fig_sweep_rank):
         try:
             fn()
         except Exception as e:
