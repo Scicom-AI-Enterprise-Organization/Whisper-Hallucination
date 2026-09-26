@@ -845,9 +845,36 @@ and removing them necessarily makes the mix more blank-dominated.
 
 \subsection{Grid}
 
-LoRA alpha tracks twice the rank, so rank is the only thing that varies within a family. Full
-fine-tunes use batch 4 with 4 accumulation steps to hold the same 16 clips per optimiser step as
-LoRA's 8 with 2, so effective batch size does not confound the comparison.
+LoRA alpha tracks twice the rank, so rank is the only thing that varies within a family. Full fine-tunes use batch 4 with 4 accumulation steps to hold the same 16 clips per optimiser
+step as LoRA's 8 with 2, so effective batch size does not confound the comparison.
+Table~\ref{tab:trainconfig} lists everything else, and none of it varies across the 66 runs.
+
+\begin{table}[!htbp]
+\centering
+\caption{Training configuration, identical for every one of the 66 runs except the three
+factors being swept: method, rank and learning rate. One GPU per run, so the per-device batch
+is the batch.}
+\label{tab:trainconfig}
+\footnotesize
+\begin{tabular}{L{0.26\linewidth}L{0.58\linewidth}}
+\toprule
+\textbf{setting} & \textbf{value} \\
+\midrule
+optimiser & AdamW, fused \\
+$\beta_1$, $\beta_2$, $\epsilon$ & 0.9, 0.999, $1\times10^{-8}$ \\
+weight decay & 0.0 \\
+schedule & linear decay, 50 warmup steps \\
+gradient clipping & 1.0 \\
+precision & bf16 \\
+batch $\times$ accumulation, LoRA & $8 \times 2 = 16$ clips per step \\
+batch $\times$ accumulation, full & $4 \times 4 = 16$ clips per step \\
+steps & 1{,}000, so 16{,}000 clips seen \\
+max label length & 200 tokens \\
+loss & on the transcript and the final end-of-text token only; the four prompt tokens are masked to $-100$ \\
+seed & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \textbf{Which modules the adapters touch is a factor, not a detail.} A Whisper block has four
 attention projections and two feed-forward matrices, and the feed-forward pair is the larger

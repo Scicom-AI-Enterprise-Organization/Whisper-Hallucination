@@ -395,8 +395,10 @@ Stage 1 is one LoRA run per mix on `whisper-large-v3`; stage 2 takes the winning
 | LoRA target modules | **two families, both swept** — see below |
 | trainable parameters | 7.9 M to 230.7 M (0.51% to 13.00%) |
 | learning rate | **2e-4** LoRA, 1e-5 full — see below |
+| optimiser | AdamW (fused), β₁ 0.9, β₂ 0.999, ε 1e-8, weight decay 0.0 |
+| schedule | linear decay, 50 warmup steps, gradient clipping 1.0 |
 | steps / warmup | 1,000 / 50 |
-| batch size × grad accum | 8 × 2 = 16 clips per step (16k clips seen, ~0.3 epoch of `all`) |
+| batch size × grad accum | LoRA 8 × 2, full 4 × 4 — both 16 clips per step (16k seen, ~0.3 epoch of `all`) |
 | precision | bf16 |
 | max label length | 200 tokens |
 | loss | on the transcript only — the four prompt tokens are masked to −100 |

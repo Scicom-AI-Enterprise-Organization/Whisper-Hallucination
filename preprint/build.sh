@@ -25,5 +25,6 @@ print(f"pages {pages[0] if pages else '?'} | errors {len(errs)} | "
 for e in errs[:5]:
     print("  ", e.strip())
 PY
+# do not pipe this script through head: SIGPIPE kills it mid-build and the aux is left stale
 echo "a clean log is not a clean page: rasterise one and look at it"
 echo "  gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r62 -dFirstPage=N -dLastPage=N -sOutputFile=/tmp/p.png neurips_2023.pdf"
