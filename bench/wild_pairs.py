@@ -72,6 +72,9 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--runs", default="runs")
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--summary", action="store_true",
+                    help="print the paired statistics the write-up quotes, so no count is "
+                         "done by hand")
     ap.add_argument("--tex", type=Path, default=None,
                     help="emit the paper's paired table as booktabs rows, so no number is "
                          "retyped between the scorer and the manuscript")
@@ -99,6 +102,38 @@ def main():
             print(f"{tag:<22}" + "".join(
                 f"{r[k]:>8.3f}" if isinstance(r.get(k), float) else f"{'-':>8}"
                 for k, _ in cols))
+    if a.summary:
+        pairs = []
+        for fam, rank, lr in CONFIGS:
+            A = rows.get(run_name(fam, rank, lr, "all"))
+            N = rows.get(run_name(fam, rank, lr, "no_synth"))
+            if A and N and A.get("wild_words") is not None and N.get("wild_words") is not None:
+                pairs.append((f"{fam} r{rank} {lr}", A, N))
+        print(f"\ncomplete pairs: {len(pairs)}")
+        for metric, lower_better in (("wild_words", True), ("lex_rec", False),
+                                     ("fl_cer", True), ("ls_wer", True),
+                                     ("wild_loop", True), ("silence", True)):
+            d = [(A[metric] - N[metric]) for _, A, N in pairs
+                 if isinstance(A.get(metric), float) and isinstance(N.get(metric), float)]
+            wins = sum((x < 0) if lower_better else (x > 0) for x in d)
+            print(f"  {metric:<11} all wins {wins}/{len(d)}   median delta "
+                  f"{statistics.median(d):+.3f}" if d else f"  {metric}: none")
+        # the regime anybody would ship: both halves hold English accuracy
+        keep = [(k, A, N) for k, A, N in pairs
+                if A.get("ls_wer", 9) <= 0.040 and N.get("ls_wer", 9) <= 0.040]
+        print(f"\n  pairs holding lsWER <= 0.040 on BOTH halves: {len(keep)}")
+        for metric, lower_better in (("wild_words", True), ("lex_rec", False), ("fl_cer", True)):
+            wins = sum((A[metric] < N[metric]) if lower_better else (A[metric] > N[metric])
+                       for _, A, N in keep)
+            print(f"    {metric:<11} all wins {wins}/{len(keep)}")
+        best = min((r for r in rows.values() if r.get("wild_words") is not None
+                    and r.get("ls_wer", 9) <= 0.045 and "_all_" in r["run"]),
+                   key=lambda r: r["wild_words"], default=None)
+        if best:
+            print(f"\n  best `all` run holding lsWER<=0.045: {best['run']}")
+            print("   ", {k: best.get(k) for k in
+                          ("wild_words", "lex_rec", "ls_wer", "fl_cer", "silence")})
+
     if a.tex:
         lines = [r"\begin{tabular}{llrrrrr}", r"\toprule",
                  r"\textbf{config} & \textbf{mix} & \textbf{wild words} & \textbf{wild loop}"
