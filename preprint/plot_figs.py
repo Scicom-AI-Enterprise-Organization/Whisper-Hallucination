@@ -378,32 +378,48 @@ def fig_vc():
     ceil = cal["ceiling_same_speaker"]["mean"]
     scale = lambda c: (c - floor) / (ceil - floor)
 
+    # Display names, and one exclusion. `scicom_untargeted_oldnames` used a speaker name that
+    # is not in the model's inventory, so a quarter of its grid was unconditioned; the corrected
+    # run is `scicom_untargeted`. Plotting both would show the same system twice, once broken.
+    NAMES = {"scicom_clone": "Scicom ME, cloning",
+             "scicom_untargeted": "Scicom ME, speaker name",
+             "higgs3_clone": "Higgs v3, cloning",
+             "omnivoice_clone": "OmniVoice, cloning",
+             "openvoice_clone": "OpenVoice + MeloTTS",
+             "openvoice_longref": "OpenVoice, 20 s ref",
+             "openvoice": "OpenVoice, 6 s ref",
+             "seedvc_longref": "seed-vc, 20 s ref",
+             "seedvc": "seed-vc, 6 s ref",
+             "knnvc": "kNN-VC"}
     pts = []
     for name, v in vc.items():
+        if name.endswith("_oldnames"):
+            continue
         if not isinstance(v, dict) or v.get("n", 0) < 40:
             continue
         st, ss, d = v.get("mean_sim_tgt"), v.get("mean_sim_src"), v.get("mean_d_cer")
         if st is None or ss is None or d is None:
             continue
-        pts.append((name.replace("_", " "), d, (scale(st) - scale(ss)) * 100,
-                    v.get("median_dur_ratio") or 1.0))
+        pts.append((NAMES.get(name, name.replace("_", " ")), d,
+                    (scale(st) - scale(ss)) * 100, v.get("median_dur_ratio") or 1.0))
     pts.sort(key=lambda r: r[1])
 
     OFFSETS = {
-        "knnvc": (-8, -16, "right"),
-        "openvoice": (10, -16, "left"),
-        "openvoice longref": (12, 6, "left"),
-        "seedvc": (-10, -4, "right"),
-        "seedvc longref": (12, -4, "left"),
-        "higgs3 clone": (-12, -4, "right"),
-        "omnivoice clone": (-10, 8, "right"),
-        "scicom clone": (0, -20, "center"),
-        "openvoice clone": (0, 13, "center"),
+        "kNN-VC": (-8, -16, "right"),
+        "OpenVoice, 6 s ref": (10, -16, "left"),
+        "OpenVoice, 20 s ref": (12, 6, "left"),
+        "seed-vc, 6 s ref": (-10, -4, "right"),
+        "seed-vc, 20 s ref": (12, -4, "left"),
+        "Higgs v3, cloning": (-12, -4, "right"),
+        "OmniVoice, cloning": (-10, 8, "right"),
+        "Scicom ME, cloning": (0, -20, "center"),
+        "Scicom ME, speaker name": (0, 13, "center"),
+        "OpenVoice + MeloTTS": (0, 13, "center"),
     }
 
     fig, ax = plt.subplots(figsize=(6.6, 4.4), dpi=DPI)
     for i, (name, d, gap, dur) in enumerate(pts):
-        ours = name.startswith("scicom")
+        ours = name.startswith("Scicom")
         color = OURS if ours else ("#922b21" if dur > 1.5 else
                                    ("#1e8449" if d < 0.15 else "#5b7fd4"))
         ax.scatter([d], [gap], s=80 + 200 * max(dur - 1, 0), c=color, edgecolors="white",
@@ -411,7 +427,7 @@ def fig_vc():
         # Three systems land within two calibrated points of each other, so alternating above
         # and below is not enough; those get pushed sideways by hand.
         dx, dy, ha = OFFSETS.get(name, (0, 13, "center"))
-        ax.annotate("Scicom " + name if ours else name, (d, gap),
+        ax.annotate(name, (d, gap),
                     textcoords="offset points", xytext=(dx, dy), ha=ha, fontsize=7.2,
                     color=OURS if ours else INK,
                     fontweight="bold" if ours else "normal", zorder=6)

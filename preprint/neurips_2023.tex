@@ -48,6 +48,9 @@
 % One type size for every table in the paper, and tighter columns. Scaling each table to fit
 % gives each one its own size, which is what makes a document look like it changed fonts.
 \setlength{\tabcolsep}{4pt}
+% A p{} column is justified, so a two-word line gets stretched across the whole column and
+% leaves a canyon between the words. Every wrapped column in this paper is ragged right.
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 
 \hypersetup{
 pdftitle={How to Reduce Whisper Hallucination},
@@ -147,7 +150,7 @@ Malay fine-tunes are built on \texttt{large-v2} and \texttt{turbo} respectively,
 thirty-two.}
 \label{tab:models}
 \footnotesize
-\begin{tabular}{lllp{0.16\linewidth}}
+\begin{tabular}{lllL{0.16\linewidth}}
 \toprule
 \textbf{label} & \multicolumn{2}{l}{\textbf{identifier}} & \textbf{what it is} \\
 \midrule
@@ -300,7 +303,7 @@ emitting text, which is the failure mode of every aggressive fine-tune we measur
 separate build that is disjoint by construction, verified before any training run.}
 \label{tab:arms}
 \footnotesize
-\begin{tabular}{lp{0.34\linewidth}rl}
+\begin{tabular}{lL{0.34\linewidth}rl}
 \toprule
 \textbf{arm} & \textbf{source} & \textbf{clips} & \textbf{correct output} \\
 \midrule
@@ -564,7 +567,7 @@ phrases across 100 languages.
 four are vendored in the release so the merge is reproducible.}
 \label{tab:lexsources}
 \footnotesize
-\begin{tabular}{p{0.34\linewidth}p{0.26\linewidth}rl}
+\begin{tabular}{L{0.34\linewidth}L{0.26\linewidth}rl}
 \toprule
 \textbf{source} & \textbf{what it is} & \textbf{phrases} & \textbf{licence} \\
 \midrule
@@ -619,7 +622,7 @@ than it looks.
 \caption{Text-to-speech candidates. Round-trip character error rate, lower is better.}
 \label{tab:tts}
 \footnotesize
-\begin{tabular}{p{0.32\linewidth}rrrll}
+\begin{tabular}{L{0.32\linewidth}rrrll}
 \toprule
  & \textbf{mean CER} & \textbf{median} & \textbf{wins} & \textbf{languages} & \textbf{voices} \\
 \midrule
@@ -662,7 +665,7 @@ The obvious fix, reference cloning, is the wrong one.
 Lower cosine means better separated voices.}
 \label{tab:diversity}
 \footnotesize
-\begin{tabular}{p{0.30\linewidth}lll}
+\begin{tabular}{L{0.30\linewidth}lll}
 \toprule
 \textbf{route} & \textbf{yield mk / gu / it} & \textbf{median CER} & \textbf{different-voice cosine} \\
 \midrule
@@ -719,7 +722,7 @@ masked out of the loss, so loss falls only on the transcript and the final end-o
 test split stays held out.}
 \label{tab:trainsets}
 \footnotesize
-\begin{tabular}{p{0.26\linewidth}rrlp{0.28\linewidth}}
+\begin{tabular}{L{0.26\linewidth}rrlL{0.28\linewidth}}
 \toprule
 \textbf{source} & \textbf{clips} & \textbf{hours} & \textbf{target} & \textbf{teaches} \\
 \midrule
