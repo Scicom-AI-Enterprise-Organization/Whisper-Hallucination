@@ -135,6 +135,24 @@ def main():
                           ("wild_words", "lex_rec", "ls_wer", "fl_cer", "silence")})
 
     if a.tex:
+        # Best per column, but only over the runs that hold English accuracy. The raw minimum
+        # on `wild words` belongs to a checkpoint that stopped transcribing, and bolding that
+        # as "best" would recommend the failure this paper is about.
+        # Only over the rows this table prints. Computing it over every run directory let the
+        # mix sweep's `balanced` own the wild-words column, so the bold never appeared at all.
+        printed = {run_name(f, rk, l, m) for f, rk, l in CONFIGS for m in ("no_synth", "all")}
+        shippable = [r for k, r in rows.items()
+                     if k in printed and isinstance(r.get("ls_wer"), float)
+                     and r["ls_wer"] <= 0.040 and r.get("wild_words") is not None]
+        best = {}
+        # `wild_loop` is deliberately not bolded: it sits between 0.000 and 0.017 for every
+        # run against a base of 0.008, so a winner there is noise dressed as a result.
+        for k, lower in (("wild_words", True), ("lex_rec", False),
+                         ("ls_wer", True), ("fl_cer", True)):
+            vals = [r[k] for r in shippable if isinstance(r.get(k), float)]
+            if vals:
+                best[k] = min(vals) if lower else max(vals)
+
         # A longtable, not a tabular in a float: 66 data rows do not fit on one page, and a
         # float that does not fit is a float that gets squeezed or shunted to the end.
         head = (r"\textbf{config} & \textbf{mix} & \textbf{wild words} & \textbf{wild loop}"
@@ -164,8 +182,12 @@ def main():
                 cfg = ((f"LoRA r{rank} {FAM_LABEL[fam]}, {lr}" if rank
                         else f"full, {lr}") if not got else "")
                 got = True
+                # only a row that itself holds accuracy can hold a bolded best
+                ok = isinstance(r.get("ls_wer"), float) and r["ls_wer"] <= 0.040
                 cells = " & ".join(
-                    f"{r[k]:.3f}" if isinstance(r.get(k), float) else "--"
+                    (f"\\textbf{{{r[k]:.3f}}}" if ok and best.get(k) is not None
+                     and abs(r[k] - best[k]) < 1e-9 else f"{r[k]:.3f}")
+                    if isinstance(r.get(k), float) else "--"
                     for k in ("wild_words", "wild_loop", "lex_rec", "ls_wer", "fl_cer"))
                 label = r"\texttt{no\_synth}" if mix == "no_synth" else r"\texttt{all}"
                 lines.append(f"{cfg} & {label} & {cells} \\\\")
