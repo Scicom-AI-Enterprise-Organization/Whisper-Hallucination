@@ -11,3 +11,4 @@
 *.synctex*
 # the PDF is 1.2 MB and rebuilds from source in three pdflatex passes
 *.pdf
+*Screenshot*

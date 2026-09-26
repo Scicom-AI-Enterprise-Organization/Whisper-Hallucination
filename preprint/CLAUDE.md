@@ -11,6 +11,15 @@ same venue style.
 
 Build: `pdflatex neurips_2023 && bibtex neurips_2023 && pdflatex neurips_2023 && pdflatex neurips_2023`
 
+**A clean log does not mean a clean page.** `\texttt{1{,}280 \times 1{,}280}` put maths in
+text mode inside a typewriter group. pdflatex reported zero errors, zero warnings and zero
+overfull boxes, and the PDF rendered the rest of that sentence as run-together math italic and
+then set the next three paragraphs in monospace, because the `\texttt` group never closed.
+Grepping the log would never have caught it. **Rasterise a page and look at it** after any edit
+that touches markup: `gs -sDEVICE=png16m -r62 -dFirstPage=N -dLastPage=N -sOutputFile=/tmp/p.png neurips_2023.pdf`.
+Text extraction is not a substitute either: this template's Times fonts carry no ToUnicode map,
+so copied text loses spaces and looks broken even when the page is fine.
+
 ## The argument, in the order it has to be told
 
 1. **Whisper is still the best multilingual STT there is.** Say that plainly, then say what

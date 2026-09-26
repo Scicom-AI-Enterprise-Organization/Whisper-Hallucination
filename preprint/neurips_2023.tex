@@ -745,7 +745,7 @@ LoRA's 8 with 2, so effective batch size does not confound the comparison.
 \textbf{Which modules the adapters touch is a factor, not a detail.} A Whisper block has four
 attention projections and two feed-forward matrices, and the feed-forward pair is the larger
 half. \texttt{fc1} maps 1{,}280 to 5{,}120 and \texttt{fc2} maps back, so each of them takes
-two and a half times the low-rank parameters of a \texttt{1{,}280 \times 1{,}280} attention
+two and a half times the low-rank parameters of a $1{,}280 \times 1{,}280$ attention
 projection at the same rank. We sweep both choices rather than assuming one.
 
 \begin{table}[!htbp]
