@@ -117,7 +117,7 @@ transcription used to mean a model per language and a pipeline per domain. Whisp
 checkpoint covering 99 languages, with no per-language tuning, running on a laptop. Four years later it is still the default, and it is good: we measured it on 20 FLEURS
 \citep{conneau2022fleurs} test clips in each of 58 languages, and
 \texttt{whisper-large-v3} reaches a character error rate of 0.075 on the typical language,
-with 35 of the 58 under 0.15 (Figure~\ref{fig:fleursperlang}).
+with 35 of the 58 under 0.15.
 
 This paper is about the one thing it does badly, and it is worth being clear at the outset
 that the thing it does badly is narrow. Whisper is not broken. It transcribes speech extremely
@@ -202,6 +202,8 @@ thirty-two.}
 \end{tabular}
 \end{table}
 
+Table~\ref{tab:nonspeech} is the measurement.
+
 \begin{table}[!htbp]
 \centering
 \caption{Hallucination on audio that contains no speech. The correct output is the empty
@@ -226,8 +228,8 @@ second counts any output including a bare full stop.}
 \end{tabular}
 \end{table}
 
-Every OpenAI checkpoint writes something on every single clip that has no speech in it
-(Figure~\ref{fig:benchmark}). Read
+Every OpenAI checkpoint in Table~\ref{tab:nonspeech} writes something on every single clip
+that has no speech in it. Read
 the first block and the second block together, because published hallucination rates for the
 same model on the same audio differ by more than ten times depending on which one an author
 chose to report.
@@ -235,8 +237,7 @@ chose to report.
 The second failure is repetition. On 1,440 clips built from a known unit repeated a known
 number of times, the 95th percentile of emitted repeats divided by true repeats is 1.00 for
 \texttt{large-v3} and 18.3 for \texttt{turbo}. The two Malay fine-tunes reach 55.0 and 73.3.
-A single clip can produce hundreds of copies of one token. Figure~\ref{fig:redup} shows both
-extremes side by side.
+A single clip can produce hundreds of copies of one token.
 
 Both failures come from the same place. The Whisper decoder is a language model conditioned on
 an audio encoder. When the acoustic evidence is weak or absent, the prior takes over and the
@@ -305,7 +306,7 @@ margin: 16.7\% on silence against 61.9\% for base \texttt{large-v3}, and 9.3\% o
 against 89.9\%. Adding negatives is the single most effective thing anyone in this table did.
 
 Then look at what it cost. The same checkpoint recovers 41.1\% of phrases that are genuinely
-spoken, against 69.8\% for the base model it was tuned from (Table~\ref{tab:lexsynth}), deletes
+spoken, against 69.8\% for the base model it was tuned from, deletes
 58.0\% of clips containing repeated speech, and returns character error rate 1.26 on the typical
 FLEURS language. It did not learn to detect silence. It learned a prior against emitting text,
 and that prior fires on real speech too.
@@ -415,7 +416,7 @@ People's Speech \texttt{clean} & curated read speech & 1 & 0.01\% \\
 \end{tabular}
 \end{table}
 
-Two lessons (Figure~\ref{fig:wildyield}). Curated corpora barely fail, so a hallucination
+Two lessons. Curated corpora barely fail, so a hallucination
 study built on them will conclude the problem is small. And a corpus can be the right material and still hide the failure:
 GigaSpeech is podcasts and YouTube and yields 0.41\%, because its segments are cut to speech.
 
@@ -441,6 +442,8 @@ Their pipeline is open, their training mix already contains non-speech audio, an
 only checkpoints here that were deliberately tuned against hallucination. Treat them as the
 strong baseline, not as a foil.
 
+Figure~\ref{fig:tradeoff} is the whole benchmark in one picture.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.78\linewidth]{img/fig_tradeoff.png}
@@ -452,6 +455,8 @@ strong baseline, not as a foil.
 $r = +0.63$ between the pooled non-speech word-emission rate and phrase recovery. Quiet models delete real speech and accurate models write over silence. This is
 the central measurement of the paper and it is what makes a one-sided metric dangerous.
 
+Figure~\ref{fig:benchmark} breaks the same measurement out arm by arm.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.78\linewidth]{img/fig_nonspeech.png}
@@ -459,12 +464,16 @@ the central measurement of the paper and it is what makes a one-sided metric dan
   \label{fig:benchmark}
 \end{figure}
 
+Figure~\ref{fig:redup} shows both failure modes on the reduplication arm at once.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.78\linewidth]{img/fig_repetition.png}
   \caption{Both extremes are wrong on repeated speech. A model that emits more repeats than were spoken is running away; a model that emits nothing has deleted the speech. \texttt{Malaysian-turbo-v3} does the second on 58.0\% of clips.}
   \label{fig:redup}
 \end{figure}
+
+Table~\ref{tab:wer} is the accuracy side.
 
 \begin{table}[!htbp]
 \centering
@@ -498,6 +507,8 @@ these languages at all. For base \texttt{large-v3}, Amharic sits at 1.81 charact
 Khmer at 1.58, Somali at 1.44, while Spanish, Italian and Dutch sit at 0.01. The mean measures
 the tail and the median measures the typical language. Quoting one without the other misleads.
 
+Figure~\ref{fig:fleursperlang} plots it language by language.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.78\linewidth]{img/fig_fleurs_per_lang.png}
@@ -523,12 +534,16 @@ carries 27 points of word error rate. Looping is also what separates \texttt{tur
 
 \subsection{The positive arm}
 
+Figure~\ref{fig:lexsynth} shows the three framings side by side.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.78\linewidth]{img/fig_lexsynth_recovered.png}
   \caption{The ranking inverts when the phrase is really spoken. 6,267 clips in 83 languages, each run three ways. Padding is applied to the same clips, so each triple is a within-clip comparison.}
   \label{fig:lexsynth}
 \end{figure}
+
+Table~\ref{tab:lexsynth} gives the numbers.
 
 \begin{table}[!htbp]
 \centering
@@ -569,6 +584,8 @@ twice the phrase length (Figure~\ref{fig:lexsynthtail}).
   twice the phrase length. Report both.}
   \label{fig:lexsynthtail}
 \end{figure}
+
+Figure~\ref{fig:wildyield} plots the yield by corpus on a log scale.
 
 \begin{figure}[H]
   \centering
@@ -654,12 +671,16 @@ than it looks.
 
 \subsection{Choosing a generator}
 
+Figure~\ref{fig:tts} ranks the candidates.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.78\linewidth]{img/fig_tts.png}
   \caption{Text-to-speech candidates on 48 lexicon phrases in 22 languages, identical text, scored by recognition round trip. Coverage and quality are not the same axis.}
   \label{fig:tts}
 \end{figure}
+
+Table~\ref{tab:tts} gives the same ranking with the numbers.
 
 \begin{table}[!htbp]
 \centering
@@ -690,6 +711,8 @@ its zero-shot cloning path is the worst system in this paper and Section~\ref{se
 why.
 
 \subsection{Voice diversity}
+
+Figure~\ref{fig:diversity} shows how little separation there was.
 
 \begin{figure}[H]
   \centering
@@ -729,6 +752,8 @@ collapsed language moved from 0.81 to 0.63.
 
 \subsection{Voice conversion}
 \label{sec:vc}
+
+Figure~\ref{fig:vc} plots cost against identity moved.
 
 \begin{figure}[H]
   \centering
@@ -959,6 +984,8 @@ positives.
 
 {\footnotesize\input{table_paired}}
 
+Figure~\ref{fig:sweepwild} puts every configuration side by side.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{img/fig_sweep_wild_halluc.png}
@@ -966,6 +993,8 @@ positives.
   every configuration in the grid.}
   \label{fig:sweepwild}
 \end{figure}
+
+Figure~\ref{fig:sweepcost} redraws the trade with all 66 runs on it.
 
 \begin{figure}[H]
   \centering
@@ -1011,6 +1040,8 @@ FLEURS 0.305 to 0.398. It is quieter on noise and better on speech than the mode
 Figure~\ref{fig:tradeoff} says is empty. Figure~\ref{fig:sweepcost} redraws that trade with
 all 66 runs on it.
 
+Figure~\ref{fig:loss} shows every training curve.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.78\linewidth]{img/fig_loss.png}
@@ -1021,6 +1052,8 @@ all 66 runs on it.
   are still descending at step 1,000.}
   \label{fig:loss}
 \end{figure}
+
+Figure~\ref{fig:lossresult} plots final loss against what it bought.
 
 \begin{figure}[H]
   \centering
@@ -1042,6 +1075,8 @@ the mixes, not the models. The full fine-tunes make the same point from the othe
 on \texttt{all} against 0.45, 0.53 and 0.86 on \texttt{no\_synth}, and all six are still
 descending at step 1,000, which is what a thousand steps of 16 clips looks like on 1.5 B
 parameters.
+
+Figure~\ref{fig:sweepfamily} isolates the module choice.
 
 \begin{figure}[H]
   \centering

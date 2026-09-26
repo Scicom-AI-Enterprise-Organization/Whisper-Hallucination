@@ -56,7 +56,16 @@ so copied text loses spaces and looks broken even when the page is fine.
   `font.family: serif` with Times first and `mathtext.fontset: stix`. Do not remove it.
 - **Legends go outside the axes**, under the plot (`legend_below`). Inside the frame they land
   on the bars and points a reader came for, and which corner is free changes with the data.
-- **Float placement is `[!htbp]` with relaxed fractions.** `[H]` pins a figure where it is
+- **Every float appears immediately after the sentence that first mentions it.** This is the
+  rule, not a preference. A figure is the evidence for a claim, so it cannot sit inside the
+  claim or five pages from it. Two consequences: figures are `[H]` (exact placement, never
+  floating, so one can never land mid-sentence at a page top), and no section forward-
+  references a float that lives in a later section. Check both before committing:
+  every `\label` must have a `\ref` earlier in the file than its own `\begin{figure|table}`.
+- **Do not move float blocks with a script.** Two attempts corrupted the source. Add an
+  introducing sentence above the float instead; that makes the first mention precede it
+  without touching the block.
+- **Old note, superseded:** float placement was `[!htbp]` with relaxed fractions. `[H]` pins a figure where it is
   declared and blanks the rest of the page; plain `[tb]` plus LaTeX's default `\textfraction`
   sends floats drifting pages away from the paragraph that introduces them. The preamble sets
   `topfraction` 0.92, `textfraction` 0.06 and `floatpagefraction` 0.70, with `placeins`
