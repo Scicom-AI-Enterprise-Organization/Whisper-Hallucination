@@ -93,9 +93,9 @@ and it is still the teacher that Distil-Whisper, Kotoba-Whisper and NVIDIA's Gra
 distilled from. But it writes sentences nobody said. On 42 clips of pure room tone, \texttt{whisper-large-v3}
 emits words on 61.9\% of them and emits something on 100\% of them. The usual response is to
 distil a student from Whisper pseudo-labels and filter the hallucinations out of the corpus
-first. That removes the evidence, not the behaviour: the student is fitted to the subset where
-the teacher was right, so it inherits a failure mode that never appears in its own training
-data. The second response, adding non-speech audio so the model learns to stay quiet, is
+first. That deletes the evidence while leaving the behaviour in place: the student is fitted to the
+subset where the teacher was right, and inherits a failure mode that never appears in its own
+training data. The second response, adding non-speech audio so the model learns to stay quiet, is
 already used in production systems and it works, but it teaches suppression without teaching
 discrimination. The checkpoint that is best on every non-speech arm here is also the one that
 recovers the fewest genuinely spoken phrases and deletes 58\% of repeated speech. We argue the teacher has to be fixed, with both halves of the signal, and we do the work that
