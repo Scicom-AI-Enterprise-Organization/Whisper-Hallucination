@@ -381,8 +381,8 @@ def fig_vc():
     # Display names, and one exclusion. `scicom_untargeted_oldnames` used a speaker name that
     # is not in the model's inventory, so a quarter of its grid was unconditioned; the corrected
     # run is `scicom_untargeted`. Plotting both would show the same system twice, once broken.
-    NAMES = {"scicom_clone": "Scicom ME, cloning",
-             "scicom_untargeted": "Scicom ME, speaker name",
+    NAMES = {"scicom_clone": "Scicom, cloning",
+             "scicom_untargeted": "Scicom, speaker name",
              "higgs3_clone": "Higgs v3, cloning",
              "omnivoice_clone": "OmniVoice, cloning",
              "openvoice_clone": "OpenVoice + MeloTTS",
@@ -412,8 +412,8 @@ def fig_vc():
         "seed-vc, 20 s ref": (12, -4, "left"),
         "Higgs v3, cloning": (-12, -4, "right"),
         "OmniVoice, cloning": (-10, 8, "right"),
-        "Scicom ME, cloning": (0, -20, "center"),
-        "Scicom ME, speaker name": (0, 13, "center"),
+        "Scicom, cloning": (0, -20, "center"),
+        "Scicom, speaker name": (0, 13, "center"),
         "OpenVoice + MeloTTS": (0, 13, "center"),
     }
 

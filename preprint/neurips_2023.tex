@@ -127,20 +127,24 @@ reports an average word error rate of 8.1\% against \texttt{whisper-large-v3}'s 
 25 European languages. SeamlessM4T \citep{seamless2023m4t} reported a 45\% relative reduction
 over \texttt{whisper-large-v2} on FLEURS across 77 overlapping languages. Omnilingual ASR
 \citep{keren2025omnilingual} covers more than 1,600 languages. None of that has displaced it,
-for three reasons that have nothing to do with word error rate.
+for four reasons that have nothing to do with word error rate.
+
+\textbf{Coverage.} This is the big one. Canary-1B-v2 and Parakeet-TDT-0.6B-v3 cover 25
+languages, all but two of them European. Whisper covers 99. For anyone working outside that
+list, an 8.1\% average on 25 languages is not an improvement on 9.9\%, it is a model that
+does not run. The 1.8-point gap only exists where both models work, and most of the world's
+speakers are not in that intersection.
 
 \textbf{Licence.} Whisper's code is MIT and its weights are Apache-2.0, so it ships in a
 commercial product without a conversation. SeamlessM4T, the model with the 45\% reduction, is
 CC-BY-NC: that number is not available to anyone building a product. Canary-1B-v2 and
-Parakeet-TDT-0.6B-v3 are CC-BY-4.0 and are genuinely usable, but they cover 25 languages
-against Whisper's 99.
+Parakeet-TDT-0.6B-v3 are CC-BY-4.0 and are genuinely usable, within those 25 languages.
 
 \textbf{Code-switching.} Real speech in most of the world mixes languages inside one
 utterance. The corpus behind this paper is Malaysian, where a single sentence routinely moves
 between Malay, English, Mandarin and Tamil, and Whisper is the model practitioners reach for
 because it degrades gracefully when the language changes mid-clip rather than locking to the
-language it detected first. A model trained on 25 European languages does not have this
-problem to solve.
+language it detected first.
 
 \textbf{Adoption.} At the time of writing \texttt{whisper-large-v3} is downloaded roughly
 4.6 M times a month from Hugging Face, against 568 k for Parakeet-TDT-0.6B-v3, 301 k for
