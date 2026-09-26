@@ -698,7 +698,7 @@ input unchanged scores a perfect zero degradation and is worthless. We report th
 top of the source clip, similarity to the target and to the source on the same calibrated
 scale, and the gap between them, which is the conversion that actually happened.
 
-\textbf{Our own model is only usable in one of its two modes, and we should say so.}
+\textbf{Our own model is only usable in one of its two modes.}
 Multilingual-Expressive can be conditioned either on a speaker name from its training
 inventory or on a reference clip. The two land at opposite extremes on the same 184 clips in
 the same 21 languages.
@@ -1011,9 +1011,9 @@ of a paired comparison is exactly the filtering this paper argues against; with 
 headline is 30 of 32 rather than 31 of 33.
 
 \textbf{Repetition on wild audio does not move.} The \texttt{wild loop} column sits between
-0.000 and 0.017 for every run against a base of 0.008, and \texttt{all} is lower in only 2 of
-12 pairs. We report this because it is what the data says, not because it helps. Real
-voice-free clips rarely loop in the first place, so there is almost nothing there to fix. The
+0.000 and 0.017 for every run against a base of 0.008, and \texttt{all} is lower in only 6 of
+33 pairs. Real voice-free clips rarely loop in the first place, so there is almost nothing
+there to fix. The
 repetition effect is real but it lives on the \texttt{reduplication} arm, where the deletion
 rate never exceeds 0.006 across all 66 runs, meaning no configuration bought its quiet by
 erasing repeated speech.

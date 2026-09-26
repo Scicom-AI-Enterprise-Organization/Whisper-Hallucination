@@ -552,20 +552,24 @@ built stimuli. Lower is better except `lexRec`.
 
 <!-- mix-table:end -->
 
-**`blank_only` is the failure made deliberate.** Perfect 0.000 runaway — because it emits
-nothing on 67% of clips that contain repeated speech, recovers 4.6% of spoken phrases, and
-lands librispeech WER at **0.846** against base 0.035. Ranked on the non-speech arms alone it
-would look like the best model here. That is the whole argument for measuring both halves.
+**Read the `lr` column before comparing rows.** `plus_synth` and `balanced` ran at 1e-3 and
+the rest at 2e-4, so this table is a mix comparison with a learning-rate confound in it. The
+controlled experiment is the 66-run grid above, where every configuration is a matched pair.
+
+**`blank_only` is the failure made deliberate.** Best in the table on every non-speech arm:
+0.000 on silence, 0.198 on music, 0.042 on nonspeech, 0.000 runaway. It gets there by emitting
+nothing on **55.7%** of clips that contain repeated speech, recovering **1.9%** of spoken
+phrases, and landing librispeech WER at **0.848** against base 0.035, with FLEURS CER 0.996.
+Ranked on the non-speech arms alone it wins. That is the whole argument for measuring both
+halves.
 
 **More blank supervision is not what helps.** The staged corpus alone, converged, barely moves
-hallucination (silence 0.667 vs base 0.619; nonspeech 0.936 vs 0.899). The gain in `all` comes
-from the `lexicon_synth` positives, not from more blanks.
+hallucination (silence 0.667 vs base 0.619, nonspeech 0.936 vs 0.899) and costs FLEURS 0.756.
+Every mix that improves both halves contains `lexicon_synth`.
 
-**`all` is the only run that improves both halves.** Silence hallucination falls 96%, word
-emission on real voice-free audio halves (0.999 → 0.470), phrase recovery rises 0.698 → 0.827
-— for +0.005 librispeech WER and +0.04 HALAS CER. Those last two are the honest cost, and
-`lexicon_synth` recovery is partly in-domain since its train split is in the mix; librispeech
-and `wild` are the out-of-domain checks.
+**`lexicon_synth` recovery is partly in-domain**, since its train split is in these mixes.
+`librispeech`, `fleurs` and `wild` are the out-of-domain checks, and they are the ones the
+grid above is judged on.
 
 ## The published dataset
 
@@ -647,11 +651,16 @@ Docs: `CLAUDE.md` (gotchas, read first), `DATASET_CARD.md`, `SOURCES.md`, `ABLAT
 
 ## Status
 
-**Done:** benchmark built, published, baselined on 5 checkpoints. False-positive arm measured
-with 3 padding conditions. TTS and VC generators selected by measurement. `lexicon_synth`
-published — 29,112 clips, 83 languages, 45 voices.
+**Done:** benchmark built, published, baselined on 5 checkpoints, with `fleurs` added as the
+multilingual accuracy guard. False-positive arm measured with 3 padding conditions. TTS and VC
+generators selected by measurement. `lexicon_synth` published (29,112 clips, 83 languages, 45
+voices) and `wild` published (8,296 clips of real audio that made a model fail, split by
+recording). Training sweep run and scored: **66 runs, 33 matched pairs**, five LoRA ranks in
+two adapter families plus full fine-tunes, three learning rates, both mixes, every run scored
+on all eleven arms and logged to W&B.
 
-**Not done:** the ablation (34 configs designed, none run), the fine-tune, judge floors for
-the 7 skipped languages.
+**Not done:** the decoder ablation (34 configs designed, none run), stage two of the sweep
+(the winning configuration on `whisper-large-v3-turbo`), judge floors for the 7 skipped
+languages, and the FLEURS regression every fine-tune shows.
 
 Known weaknesses are listed in `CLAUDE.md`. Read them before quoting a number.

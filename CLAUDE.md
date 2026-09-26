@@ -176,6 +176,51 @@ second one: `finetune_whisper.py` writes `wandb_run_id` into `run.json`, and
 `group` is the mix, so the with-synth / without-synth pair reads as two groups in one view.
 Both are best-effort — no key, or a failed init, must never take down a training run.
 
+## The training sweep, as measured
+
+66 runs, 33 matched pairs: five LoRA ranks (8 to 128) in two adapter families, plus full
+fine-tunes, at three learning rates, every configuration on BOTH mixes. `train/grid.sh` takes
+jobs as `mix:rank:lr[:attn]`. Read the numbers with `bench/wild_pairs.py`; never count rows by
+hand, the `--summary` flag computes every ratio the write-ups quote.
+
+**The paired question: does the synthetic lexicon help on real audio?** Yes, and it is not
+close. Adding it lowers word emission on VAD-confirmed voice-free wild audio in **31 of 33**
+pairs, raises phrase recovery in **32 of 33**, lowers FLEURS macro CER in **31 of 33**. Medians
+-0.118, +0.186, -0.107. LibriSpeech does not move either way (median 0.000). Among the 30 pairs
+that hold LibriSpeech at or under 0.040 it is **30 of 30** on hallucination. Recovery separates
+the two mixes completely: over sixty LoRA runs nothing trained without the positives exceeds
+0.602 and nothing with them falls below 0.662.
+
+**Negatives alone reproduce `Malaysian-turbo-v3` in a thousand steps.** `no_synth` at r128 and
+5e-4 reaches 0.071 on wild audio, the quietest number anywhere, with recovery 0.292, FLEURS
+0.839 and LibriSpeech tripled to 0.113. A model can always be made quiet by making it mute.
+
+**`wild` loop rate does not move and we say so.** 0.000 to 0.017 against a base of 0.008, `all`
+lower in only 6 of 33. Voice-free clips rarely loop, so there is nothing there to fix. The
+repetition result lives on `reduplication`, where deletion never exceeds 0.006 across all 66.
+
+**Which modules the adapters touch matters more than how many parameters they have.** On the
+`all` mix, adapting `fc1`/`fc2` as well as attention lowers wild hallucination in **15 of 15**
+matched rank and LR cells, median -0.133. Attention-only spans 0.762 to 0.911 across every rank
+from 8 to 128 against a base of 0.999: it never learns to be quiet. attn+MLP at r8 (14.4 M)
+beats attn-only at r64 (62.9 M). **And the effect needs the positives**: on `no_synth` the same
+comparison is 7 of 15, median +0.005, i.e. nothing. The capacity only pays when there is a
+contrastive signal to spend it on.
+
+**Every fine-tune is worse than base on FLEURS** (best 0.381 against 0.305) while LibriSpeech
+stays flat at 0.034-0.037. Without the multilingual arm none of that cost is visible.
+
+**Training loss ranks these models backwards.** 28 of 30 `no_synth` LoRA runs finish below
+*every* `all` run (median 0.322 against 0.621), and `no_synth` is the worse model on every axis
+that matters. A blank target is cheap to predict and `no_synth` is 77% blank against 47%, so
+cross-entropy across mixes with different blank shares measures the mixes. Do not use it to
+pick a checkpoint.
+
+**One divergence worth remembering.** `loraattn` r128 at 5e-4 on `no_synth` finished at loss
+8.27, LibriSpeech 0.985, recovery 0.000, words on 100% of silence. The identical configuration
+on `all` converged to 0.658 and is unremarkable. Aggressive LR plus a blank-heavy mix plus no
+MLP adapters is the failure corner.
+
 ## Production is vLLM
 
 faster-whisper can't serve at scale, so most of `ablation/configs.json` is diagnostic only.
