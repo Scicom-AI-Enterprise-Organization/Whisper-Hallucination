@@ -843,6 +843,37 @@ hallucination 0.619 to \textbf{0.024}, words over wild voice-free audio 0.999 to
 FLEURS 0.305 to 0.398. It is quieter on noise and better on speech than the model it came from,
 which is the corner Figure~\ref{fig:tradeoff} says is empty.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.86\linewidth]{img/fig_loss.png}
+  \caption{Training curves for all 24 runs. The mix without the synthetic positives sits below
+  the mix with them for the whole of training, and it is the worse model on every axis that
+  matters. An empty target is cheap to predict, and \texttt{no\_synth} is 77\% blank against
+  \texttt{all} at 47\%, so the gap is arithmetic rather than evidence. Full fine-tunes (dashed)
+  are still descending at step 1,000.}
+  \label{fig:loss}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.86\linewidth]{img/fig_loss_vs_result.png}
+  \caption{Final training loss against phrase recovery. The two mixes barely overlap on the
+  loss axis and the ranking inverts across them, so loss cannot be used to choose between them.
+  Within a mix it carries little signal either.}
+  \label{fig:lossresult}
+\end{figure}
+
+\textbf{Training loss is the wrong thing to watch here.} Eight of the nine \texttt{no\_synth}
+LoRA runs finish below every \texttt{all} LoRA run: 0.310 to 0.476 against 0.541 to 0.709. The
+ninth, rank 128 at 5e-4, ends at 0.678 and is the run whose LibriSpeech word error rate tripled.
+The mix that trains to a visibly better loss is the one that recovers 0.54 to 0.60 of spoken
+phrases against 0.76 to 0.84 (Figure~\ref{fig:loss}, Figure~\ref{fig:lossresult}). The reason is arithmetic:
+\texttt{no\_synth} is 77\% blank-labelled against \texttt{all} at 47\%, and predicting an empty
+transcript is cheap. Comparing cross-entropy across mixes with different blank shares measures
+the mixes, not the models. The full fine-tunes make the same point from the other side: they
+end at 1.5 to 2.8 on \texttt{all} and are still descending at step 1,000, which is what a
+thousand steps of 16 clips looks like on 1.5 B parameters.
+
 \textbf{Repetition on wild audio does not move.} The \texttt{wild loop} column sits between
 0.000 and 0.017 for every run against a base of 0.008, and \texttt{all} is lower in only 2 of
 12 pairs. We report this because it is what the data says, not because it helps. Real

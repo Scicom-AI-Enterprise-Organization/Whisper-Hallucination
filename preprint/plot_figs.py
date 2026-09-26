@@ -528,11 +528,89 @@ def fig_sweep_cost():
     save(fig, "fig_sweep_cost.png")
 
 
+# ── training curves ──────────────────────────────────────────────────────────────────────
+LOSS = HERE / "wandb_loss.json"
+
+
+def fig_loss():
+    if not LOSS.exists():
+        print("!! fig_loss.png: no wandb_loss.json yet")
+        return
+    runs = json.loads(LOSS.read_text())
+    fig, ax = plt.subplots(figsize=(6.6, 4.0), dpi=DPI)
+    shown = set()
+    for name, r in sorted(runs.items()):
+        mix = (r.get("config") or {}).get("mix") or ("all" if "_all_" in name else "no_synth")
+        full = "_full_" in name
+        color = "#1e8449" if mix == "all" else "#922b21"
+        lab = None
+        key = (mix, full)
+        if key not in shown:
+            shown.add(key)
+            lab = f"{'with' if mix == 'all' else 'without'} synthetic lexicon"
+            lab += ", full fine-tune" if full else ", LoRA"
+        xs = [p[0] for p in r["points"]]
+        ys = [p[1] for p in r["points"]]
+        ax.plot(xs, ys, color=color, linewidth=1.5 if full else 1.0,
+                linestyle="--" if full else "-", alpha=0.9 if full else 0.6, label=lab)
+    ax.set_yscale("log")
+    # A log axis prints its own minor labels (4x10^-1 and friends) straight through the
+    # explicit ticks below.
+    ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    ax.set_ylim(0.25, 12)
+    ax.set_yticks([0.3, 0.5, 1, 2, 4, 8])
+    ax.set_yticklabels(["0.3", "0.5", "1", "2", "4", "8"], fontsize=8.5, color=TICK)
+    ax.set_xlim(0, 1000)
+    frame(ax, xlab="optimiser step", ylab="training loss, log scale",
+          title="The mix with the better loss is the worse model",
+          sub="24 runs, logged every 25 steps; an empty target is cheap, so a blanker mix "
+              "scores lower by construction")
+    legend_below(ax, ncol=2, pad=0.18)
+    save(fig, "fig_loss.png")
+
+
+def fig_loss_vs_result():
+    rows = sweep_rows()
+    if not rows or not LOSS.exists():
+        print("!! fig_loss_vs_result.png: needs sweep_rows.json and wandb_loss.json")
+        return
+    runs = json.loads(LOSS.read_text())
+    final = {k: v["points"][-1][1] for k, v in runs.items()}
+    fig, ax = plt.subplots(figsize=(6.6, 4.2), dpi=DPI)
+    first = True
+    for _, rank, lr in CONFIGS:
+        for mix, color, marker in (("no_synth", "#922b21", "o"), ("all", "#1e8449", "s")):
+            name = (f"v3_lora_r{rank}_{mix}_lr{lr}" if rank else f"v3_full_{mix}_lr{lr}")
+            row = next((r for r in json.loads(SWEEP.read_text()) if r["run"] == name), None)
+            if not row or name not in final or row.get("lex_rec") is None:
+                continue
+            ax.scatter([final[name]], [row["lex_rec"]], s=80, c=color, marker=marker,
+                       edgecolors="white", linewidths=1.1, zorder=5,
+                       label=(f"{'with' if mix == 'all' else 'without'} synthetic lexicon")
+                       if first else None)
+        first = False
+    ax.axhline(0.698, color="#1a1a2e", linewidth=0.9, linestyle=":", alpha=0.7)
+    ax.text(0.98, 0.706, "base large-v3, 0.698", transform=ax.get_yaxis_transform(),
+            ha="right", fontsize=7.6, color="#1a1a2e", style="italic")
+    ax.set_xscale("log")
+    ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    ax.set_xticks([0.3, 0.5, 1, 2, 3])
+    ax.set_xticklabels(["0.3", "0.5", "1", "2", "3"], fontsize=8.5, color=TICK)
+    frame(ax, xlab="final training loss, log scale",
+          ylab="phrase recovered when it IS spoken",
+          title="Training loss does not rank these models",
+          sub="every run left of 0.5 is a negatives-only mix, and every one of them is worse",
+          axis="both")
+    legend_below(ax, ncol=2, pad=0.18)
+    save(fig, "fig_loss_vs_result.png")
+
+
 if __name__ == "__main__":
     for fn in (fig_nonspeech, fig_repetition, fig_tradeoff, fig_accuracy, fig_fleurs_per_lang,
                fig_lexsynth_recovered, fig_lexsynth_tail, fig_wild_yield, fig_wild_blank,
                fig_tts, fig_vc, fig_voice_diversity,
-               fig_sweep_wild_halluc, fig_sweep_wild_loop, fig_sweep_cost):
+               fig_sweep_wild_halluc, fig_sweep_wild_loop, fig_sweep_cost,
+               fig_loss, fig_loss_vs_result):
         try:
             fn()
         except Exception as e:
